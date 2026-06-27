@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -34,14 +35,40 @@ export default function OrangTuaDashboard() {
 
   const loadData = async () => {
     setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
     
-    // Default mock IDs for demo/local sandbox if user not logged in
-    let studentName = 'Althaf Syahputra'
-    let studentId = 'stud-1'
+    // 1. Try to read from cookie first (custom POS-style auth)
+    let user = null
+    const match = document.cookie.match(new RegExp('(^| )sekolah_tk_token=([^;]+)'))
+    if (match) {
+      try {
+        const token = match[2]
+        const parts = token.split('.')
+        const payloadJson = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
+        const payload = JSON.parse(payloadJson)
+        user = {
+          id: payload.id,
+          email: payload.email,
+          user_metadata: {
+            role: payload.role,
+            username: payload.username,
+            student_name: payload.username === 'orangtua' ? 'Althaf Syahputra' : ''
+          }
+        }
+      } catch (e) {
+        console.error('Error decoding cookie token:', e)
+      }
+    }
+
+    if (!user) {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      user = authUser
+    }
+    
+    let studentName = ''
+    let studentId = ''
 
     if (user) {
-      studentName = user.user_metadata?.student_name || studentName
+      studentName = user.user_metadata?.student_name || ''
       // Query database for student details
       const { data: stud } = await supabase
         .from('students_tk')
@@ -52,19 +79,6 @@ export default function OrangTuaDashboard() {
         setStudentData(stud)
         studentId = stud.id
       }
-    } else {
-      setStudentData({
-        id: studentId,
-        nama: studentName,
-        nik: '647101...',
-        nisn: '015...',
-        tempat_lahir: 'Balikpapan',
-        tanggal_lahir: '2021-05-17',
-        jenis_kelamin: 'L',
-        agama: 'Islam',
-        alamat: 'Jl. Syarifuddin Yoes, RT 03 No. 4, Balikpapan',
-        status: 'active'
-      })
     }
 
     // Fetch attendance logs from attendance_tk table
@@ -89,35 +103,14 @@ export default function OrangTuaDashboard() {
       .in('target', ['Semua', 'Orang Tua'])
       .order('id', { ascending: false })
 
-    if (att && att.length > 0) {
-      setAttendanceLogs(att)
-    } else {
-      setAttendanceLogs([
-        { id: 'att-1', date: '2026-06-26', status: 'Hadir' },
-        { id: 'att-2', date: '2026-06-25', status: 'Hadir' },
-        { id: 'att-3', date: '2026-06-24', status: 'Izin' },
-        { id: 'att-4', date: '2026-06-23', status: 'Hadir' },
-      ])
-    }
+    if (att) setAttendanceLogs(att)
+    else setAttendanceLogs([])
 
-    if (grd && grd.length > 0) {
-      setGradeLogs(grd)
-    } else {
-      setGradeLogs([
-        { id: 'grd-1', subject: 'Hafalan & Doa', score: 90, description: 'Lancar melafalkan Surah Al-Humazah dan doa harian.' },
-        { id: 'grd-2', subject: 'Calistung', score: 85, description: 'Sangat baik dalam mengeja kata beranggotakan 4 huruf.' },
-        { id: 'grd-3', subject: 'Karakter & Sikap', score: 95, description: 'Menunjukkan adab makan yang baik dan suka membantu teman.' }
-      ])
-    }
+    if (grd) setGradeLogs(grd)
+    else setGradeLogs([])
 
-    if (ann && ann.length > 0) {
-      setAnnouncements(ann)
-    } else {
-      setAnnouncements([
-        { id: 'ann-1', title: 'Libur Tahun Baru Hijriah', content: 'Diberitahukan kepada seluruh orang tua siswa bahwa KBM akan diliburkan pada hari Selasa dalam rangka memperingati Tahun Baru Hijriah.' },
-        { id: 'ann-2', title: 'Pembagian Seragam PPDB', content: 'Bagi peserta didik baru yang sudah melunasi pembayaran uang pangkal, pengambilan seragam dapat dilakukan di kantor TU mulai pukul 08.00 WITA.' }
-      ])
-    }
+    if (ann) setAnnouncements(ann)
+    else setAnnouncements([])
 
     setLoading(false)
   }
@@ -129,17 +122,40 @@ export default function OrangTuaDashboard() {
   const handleUploadPayment = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!paymentFile) {
-      alert('Pilih berkas bukti pembayaran terlebih dahulu.')
+      toast.error('Pilih berkas bukti pembayaran terlebih dahulu.')
       return
     }
 
     setPaymentPending(true)
-    // Mock upload delay
-    setTimeout(() => {
-      setPaymentPending(false)
+    try {
+      // Upload bukti ke Supabase Storage (bucket: payment-proofs)
+      const fileExt = paymentFile.name.split('.').pop()
+      const filePath = `proofs/${Date.now()}.${fileExt}`
+      const { error: uploadError } = await supabase.storage
+        .from('payment-proofs')
+        .upload(filePath, paymentFile)
+
+      if (uploadError) throw uploadError
+
+      const { data: { publicUrl } } = supabase.storage
+        .from('payment-proofs')
+        .getPublicUrl(filePath)
+
+      // Save proof record to payments_tk
+      await supabase.from('payments_tk').insert({
+        method: 'Transfer',
+        amount: 250000,
+        proof: publicUrl,
+        status: 'Pending'
+      })
+
       setPaymentSuccess(true)
-      alert('Bukti pembayaran berhasil diunggah! Status: Menunggu Verifikasi Admin.')
-    }, 2000)
+      toast.success('Bukti pembayaran berhasil diunggah! Status: Menunggu Verifikasi Admin.')
+    } catch (err: any) {
+      toast.error('Gagal mengunggah: ' + (err.message || 'Unknown error'))
+    } finally {
+      setPaymentPending(false)
+    }
   }
 
   if (loading) {

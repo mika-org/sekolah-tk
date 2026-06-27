@@ -7,9 +7,11 @@
     "dev:3200": "next dev --turbopack -p 3200",
     "build": "next build --turbopack",
     "start": "next start",
+    "db:seed": "node scripts/seed-admin.js",
     "lint": "eslint"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1075.0",
     "@base-ui/react": "^1.6.0",
     "@hookform/resolvers": "^5.4.0",
     "@supabase/ssr": "^0.12.0",

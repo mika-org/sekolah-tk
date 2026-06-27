@@ -22,7 +22,8 @@ import {
   MessageSquare,
   DollarSign,
   FileSpreadsheet,
-  Layers
+  Layers,
+  UserCog
 } from 'lucide-react'
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -36,26 +37,35 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   useEffect(() => {
     async function getUser() {
+      // 1. Try to read from cookie first (custom POS-style auth)
+      const match = document.cookie.match(new RegExp('(^| )sekolah_tk_token=([^;]+)'))
+      if (match) {
+        try {
+          const token = match[2]
+          const parts = token.split('.')
+          const payloadJson = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
+          const payload = JSON.parse(payloadJson)
+          
+          setUser({
+            id: payload.id,
+            email: payload.email,
+            user_metadata: {
+              role: payload.role,
+              username: payload.username,
+              student_name: payload.username === 'orangtua' ? 'Althaf' : ''
+            }
+          })
+          setLoading(false)
+          return
+        } catch (e) {
+          console.error('Error decoding cookie token:', e)
+        }
+      }
+
+      // 2. Fallback to Supabase Auth
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUser(user)
-      } else {
-        // Mock user for local testing if not authenticated
-        setUser({
-          id: 'mock-user-id',
-          email: 'admin@sekolah-istiqamah.sch.id',
-          user_metadata: {
-            role: pathname.includes('super-admin')
-              ? 'super_admin'
-              : pathname.includes('admin')
-                ? 'admin'
-                : pathname.includes('guru')
-                  ? 'guru'
-                  : 'orang_tua',
-            username: 'admin',
-            student_name: 'Althaf'
-          }
-        })
       }
       setLoading(false)
     }
@@ -85,7 +95,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { name: 'Master Guru', href: '/dashboard/super-admin/teachers', icon: GraduationCap },
           { name: 'Master Murid', href: '/dashboard/super-admin/students', icon: Users },
           { name: 'Master Kelas', href: '/dashboard/super-admin/classes', icon: Layers },
+          { name: 'Pendaftar PPDB', href: '/dashboard/admin/ppdb', icon: UserCheck },
+          { name: 'Verifikasi Pembayaran', href: '/dashboard/admin/payments', icon: DollarSign },
+          { name: 'Kelola Galeri', href: '/dashboard/admin/gallery', icon: BookOpen },
+          { name: 'Pengumuman', href: '/dashboard/admin/announcements', icon: Megaphone },
+          { name: 'Testimoni', href: '/dashboard/admin/testimonials', icon: MessageSquare },
           { name: 'Laporan PPDB', href: '/dashboard/super-admin/reports', icon: FileSpreadsheet },
+          { name: 'Manajemen User', href: '/dashboard/admin/users', icon: UserCog },
           { name: 'Audit Log', href: '/dashboard/super-admin/audit-logs', icon: FileText },
           { name: 'Pengaturan Web', href: '/dashboard/super-admin/settings', icon: Settings },
         ]
@@ -96,6 +112,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { name: 'Verifikasi Pembayaran', href: '/dashboard/admin/payments', icon: DollarSign },
           { name: 'Kelola Galeri', href: '/dashboard/admin/gallery', icon: BookOpen },
           { name: 'Pengumuman', href: '/dashboard/admin/announcements', icon: Megaphone },
+          { name: 'Testimoni', href: '/dashboard/admin/testimonials', icon: MessageSquare },
+          { name: 'Manajemen User', href: '/dashboard/admin/users', icon: UserCog },
         ]
       case 'guru':
         return [
@@ -130,7 +148,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex h-screen bg-[#F8F6F2] overflow-hidden">
+    <div className="flex h-screen bg-[#F8F6F2] overflow-hidden font-sans">
       
       {/* DESKTOP SIDEBAR */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-primary-blue text-white flex-shrink-0 relative">

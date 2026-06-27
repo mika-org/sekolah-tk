@@ -19,9 +19,9 @@ import {
 } from 'lucide-react'
 
 export default function SuperAdminDashboard() {
-  const [teachersCount, setTeachersCount] = useState(12)
-  const [studentsCount, setStudentsCount] = useState(140)
-  const [classesCount, setClassesCount] = useState(6)
+  const [teachersCount, setTeachersCount] = useState(0)
+  const [studentsCount, setStudentsCount] = useState(0)
+  const [classesCount, setClassesCount] = useState(0)
   const [logs, setLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -29,23 +29,25 @@ export default function SuperAdminDashboard() {
 
   const loadData = async () => {
     setLoading(true)
-    
-    // Fetch logs from activity_logs_tk
-    const { data: logsData } = await supabase
-      .from('activity_logs_tk')
-      .select('*')
-      .order('created_at', { ascending: false })
-      .limit(5)
 
-    if (logsData && logsData.length > 0) {
-      setLogs(logsData)
-    } else {
-      setLogs([
-        { id: 'log-1', activity: 'Super Admin mengubah role permission untuk Guru.', created_at: new Date(Date.now() - 600000).toISOString() },
-        { id: 'log-2', activity: 'Admin menyetujui pendaftaran PPDB Kayla Ramadhani.', created_at: new Date(Date.now() - 3600000).toISOString() },
-        { id: 'log-3', activity: 'Guru menginput absensi TK A hari ini.', created_at: new Date(Date.now() - 7200000).toISOString() },
-        { id: 'log-4', activity: 'Super Admin mengonfigurasi tahun ajaran baru 2026/2027.', created_at: new Date(Date.now() - 86400000).toISOString() }
+    try {
+      const [teachersRes, studentsRes, classesRes, logsRes] = await Promise.all([
+        fetch('/api/admin/data?table=teachers_tk&limit=1000'),
+        fetch('/api/admin/data?table=students_tk&limit=1000'),
+        fetch('/api/admin/data?table=classes_tk&limit=1000'),
+        fetch('/api/admin/data?table=activity_logs_tk&limit=5&orderBy=created_at&ascending=false')
       ])
+
+      const [teachers, students, classes, logsResult] = await Promise.all([
+        teachersRes.json(), studentsRes.json(), classesRes.json(), logsRes.json()
+      ])
+
+      setTeachersCount((teachers.data || []).length)
+      setStudentsCount((students.data || []).length)
+      setClassesCount((classes.data || []).length)
+      setLogs(logsResult.data || [])
+    } catch {
+      // silently fail
     }
     setLoading(false)
   }

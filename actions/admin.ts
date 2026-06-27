@@ -4,6 +4,17 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import bcrypt from 'bcryptjs'
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+
+const s3Client = new S3Client({
+  endpoint: process.env.SUPABASE_S3_ENDPOINT,
+  region: process.env.SUPABASE_S3_REGION || 'ap-southeast-1',
+  credentials: {
+    accessKeyId: process.env.SUPABASE_S3_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.SUPABASE_S3_SECRET_ACCESS_KEY || '',
+  },
+  forcePathStyle: true,
+})
 
 export async function approvePPDB(ppdbId: string) {
   try {
@@ -167,5 +178,193 @@ export async function approvePPDB(ppdbId: string) {
   } catch (e: any) {
     console.error(e)
     return { error: 'Terjadi kesalahan sistem: ' + e.message }
+  }
+}
+
+export async function uploadGalleryPhoto(formData: FormData) {
+  try {
+    const file = formData.get('file') as File
+    const title = formData.get('title') as string
+    const category = formData.get('category') as string
+
+    if (!file || !title || !category) {
+      return { error: 'Semua field wajib diisi.' }
+    }
+
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+
+    const ext = file.name.split('.').pop()
+    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+    const filePath = `gallery/${fileName}`
+
+    const bucketName = 'bucket_tk'
+
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: filePath,
+      Body: buffer,
+      ContentType: file.type,
+    })
+
+    await s3Client.send(command)
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+    const match = supabaseUrl.match(/https:\/\/(.*?)\.supabase/)
+    const projectId = match ? match[1] : 'rgccflnozdvdmmxnshqv'
+    const publicUrl = `https://${projectId}.supabase.co/storage/v1/object/public/${bucketName}/${filePath}`
+
+    const supabaseAdmin = createAdminClient()
+    const { data, error: dbError } = await supabaseAdmin
+      .from('galleries_tk')
+      .insert({ title, category, image: publicUrl })
+      .select()
+      .single()
+
+    if (dbError) {
+      return { error: 'Gagal menyimpan ke database: ' + dbError.message }
+    }
+
+    revalidatePath('/dashboard/admin/gallery')
+    return { success: true, data }
+  } catch (err: any) {
+    console.error('Upload error:', err)
+    return { error: 'Gagal mengunggah foto: ' + err.message }
+  }
+}
+
+export async function deleteGalleryPhoto(id: string, imageUrl: string) {
+  try {
+    const supabaseAdmin = createAdminClient()
+    const bucketName = 'bucket_tk'
+    const urlParts = imageUrl?.split(`/${bucketName}/`)
+    const storagePath = urlParts?.[1]
+
+    if (storagePath) {
+      const command = new DeleteObjectCommand({
+        Bucket: bucketName,
+        Key: storagePath,
+      })
+      await s3Client.send(command)
+    }
+
+    const { error } = await supabaseAdmin
+      .from('galleries_tk')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      return { error: 'Gagal menghapus dari database: ' + error.message }
+    }
+
+    revalidatePath('/dashboard/admin/gallery')
+    return { success: true }
+  } catch (err: any) {
+    console.error('Delete error:', err)
+    return { error: 'Gagal menghapus foto: ' + err.message }
+  }
+}
+
+// ─── TESTIMONIALS ─────────────────────────────────────────────────────────────
+
+export async function uploadTestimonialPhoto(formData: FormData) {
+  try {
+    const file = formData.get('file') as File
+    if (!file || file.size === 0) return { photoUrl: null }
+
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+    const ext = file.name.split('.').pop()
+    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+    const filePath = `testimonials/${fileName}`
+    const bucketName = 'bucket_tk'
+
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: filePath,
+      Body: buffer,
+      ContentType: file.type,
+    })
+    await s3Client.send(command)
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+    const match = supabaseUrl.match(/https:\/\/(.*?)\.supabase/)
+    const projectId = match ? match[1] : ''
+    const photoUrl = `https://${projectId}.supabase.co/storage/v1/object/public/${bucketName}/${filePath}`
+
+    return { photoUrl }
+  } catch (err: any) {
+    console.error('Upload testimonial photo error:', err)
+    return { error: 'Gagal upload foto: ' + err.message }
+  }
+}
+
+export async function saveTestimonial(data: {
+  name: string
+  job: string
+  content: string
+  published: boolean
+  photo?: string | null
+}) {
+  try {
+    const supabaseAdmin = createAdminClient()
+    const { data: result, error } = await supabaseAdmin
+      .from('testimonials_tk')
+      .insert({
+        name: data.name,
+        job: data.job,
+        content: data.content,
+        published: data.published,
+        photo: data.photo || null,
+      })
+      .select()
+      .single()
+
+    if (error) return { error: error.message }
+
+    revalidatePath('/dashboard/admin/testimonials')
+    return { success: true, data: result }
+  } catch (err: any) {
+    return { error: err.message }
+  }
+}
+
+export async function toggleTestimonialPublished(id: string, published: boolean) {
+  try {
+    const supabaseAdmin = createAdminClient()
+    const { error } = await supabaseAdmin
+      .from('testimonials_tk')
+      .update({ published })
+      .eq('id', id)
+
+    if (error) return { error: error.message }
+    revalidatePath('/dashboard/admin/testimonials')
+    return { success: true }
+  } catch (err: any) {
+    return { error: err.message }
+  }
+}
+
+export async function deleteTestimonial(id: string, photoUrl?: string | null) {
+  try {
+    const supabaseAdmin = createAdminClient()
+    const bucketName = 'bucket_tk'
+
+    if (photoUrl) {
+      const urlParts = photoUrl?.split(`/${bucketName}/`)
+      const storagePath = urlParts?.[1]
+      if (storagePath) {
+        const command = new DeleteObjectCommand({ Bucket: bucketName, Key: storagePath })
+        await s3Client.send(command)
+      }
+    }
+
+    const { error } = await supabaseAdmin.from('testimonials_tk').delete().eq('id', id)
+    if (error) return { error: error.message }
+
+    revalidatePath('/dashboard/admin/testimonials')
+    return { success: true }
+  } catch (err: any) {
+    return { error: err.message }
   }
 }

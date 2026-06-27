@@ -21,6 +21,7 @@ import {
   Camera,
   Megaphone
 } from 'lucide-react'
+import { toast } from 'sonner'
 
 export default function AdminDashboard() {
   const [ppdbList, setPpdbList] = useState<any[]>([])
@@ -36,49 +37,12 @@ export default function AdminDashboard() {
 
   const loadData = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('ppdb_tk')
-      .select('*')
-      .order('created_at', { ascending: false })
-
-    if (!error && data && data.length > 0) {
-      setPpdbList(data)
-    } else {
-      // Fallback Mock Data for demo/local sandbox
-      setPpdbList([
-        {
-          id: 'ppdb-1',
-          student_name: 'Althaf Syahputra',
-          birth_date: '2021-05-17',
-          status: 'Submitted',
-          payment_status: 'Pending',
-          created_at: new Date(Date.now() - 3600000 * 2).toISOString()
-        },
-        {
-          id: 'ppdb-2',
-          student_name: 'Kayla Ramadhani',
-          birth_date: '2021-08-25',
-          status: 'Submitted',
-          payment_status: 'Pending',
-          created_at: new Date(Date.now() - 3600000 * 5).toISOString()
-        },
-        {
-          id: 'ppdb-3',
-          student_name: 'Fariq Ramadhan',
-          birth_date: '2020-11-12',
-          status: 'Verifikasi Berkas',
-          payment_status: 'Verified',
-          created_at: new Date(Date.now() - 3600000 * 24).toISOString()
-        },
-        {
-          id: 'ppdb-4',
-          student_name: 'Rania Amira',
-          birth_date: '2021-02-04',
-          status: 'Diterima',
-          payment_status: 'Verified',
-          created_at: new Date(Date.now() - 3600000 * 48).toISOString()
-        }
-      ])
+    try {
+      const res = await fetch('/api/admin/data?table=ppdb_tk&orderBy=created_at&ascending=false')
+      const result = await res.json()
+      setPpdbList(result.data || [])
+    } catch {
+      setPpdbList([])
     }
     setLoading(false)
   }
@@ -107,7 +71,7 @@ export default function AdminDashboard() {
           : app
       ))
     } else {
-      alert(result.error || 'Terjadi kesalahan.')
+      toast.error(result.error || 'Terjadi kesalahan.')
     }
   }
 

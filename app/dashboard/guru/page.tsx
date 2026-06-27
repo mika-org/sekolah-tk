@@ -56,7 +56,7 @@ export default function GuruDashboard() {
       .select('*, students_tk(nama)')
       .order('id', { ascending: false })
 
-    if (studentData && studentData.length > 0) {
+    if (studentData) {
       setStudents(studentData)
       
       // Load existing attendance states
@@ -71,29 +71,14 @@ export default function GuruDashboard() {
       }
       setAttendance(attMap)
     } else {
-      // Mock data for sandbox
-      const mockStudents = [
-        { id: 'stud-1', nama: 'Althaf Syahputra', nik: '647101...', kelas_id: 'class-1', status: 'active' },
-        { id: 'stud-2', nama: 'Kayla Ramadhani', nik: '647102...', kelas_id: 'class-1', status: 'active' },
-        { id: 'stud-3', nama: 'Fariq Ramadhan', nik: '647103...', kelas_id: 'class-1', status: 'active' },
-        { id: 'stud-4', nama: 'Rania Amira', nik: '647104...', kelas_id: 'class-2', status: 'active' }
-      ]
-      setStudents(mockStudents)
-      
-      const attMap: Record<string, string> = {}
-      mockStudents.forEach(s => {
-        attMap[s.id] = 'Hadir'
-      })
-      setAttendance(attMap)
+      setStudents([])
+      setAttendance({})
     }
 
     if (gradeData) {
       setGrades(gradeData)
     } else {
-      setGrades([
-        { id: 'g-1', student_id: 'stud-1', subject: 'Hafalan & Doa', score: 90, description: 'Lancar melafalkan Surah Al-Humazah dan doa harian.', students_tk: { nama: 'Althaf Syahputra' } },
-        { id: 'g-2', student_id: 'stud-2', subject: 'Calistung', score: 85, description: 'Sangat baik dalam mengeja kata beranggotakan 4 huruf.', students_tk: { nama: 'Kayla Ramadhani' } }
-      ])
+      setGrades([])
     }
     setLoading(false)
   }
@@ -130,7 +115,7 @@ export default function GuruDashboard() {
         }
       }
       toast.success('Absensi hari ini berhasil disimpan!')
-      alert('Absensi TK hari ini berhasil disimpan di database (table: attendance_tk)!')
+      toast.success('Absensi TK hari ini berhasil disimpan di database (table: attendance_tk)!')
     } catch (e: any) {
       toast.error('Gagal menyimpan absensi: ' + e.message)
     }
@@ -139,7 +124,7 @@ export default function GuruDashboard() {
   const handleSaveGrade = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedStudent || !score) {
-      alert('Mohon pilih murid dan masukkan nilai.')
+      toast.error('Mohon pilih murid dan masukkan nilai.')
       return
     }
 
@@ -158,7 +143,7 @@ export default function GuruDashboard() {
       
       // Update local state
       const newGrade = {
-        id: data?.[0]?.id || 'mock-id-' + Date.now(),
+        id: data?.[0]?.id || crypto.randomUUID(),
         student_id: selectedStudent,
         subject,
         score: parseFloat(score),
@@ -170,9 +155,9 @@ export default function GuruDashboard() {
       // Reset Form
       setScore('')
       setDescription('')
-      alert(`Nilai ${subject} untuk ${studentName} berhasil disimpan!`)
+      toast.success(`Nilai ${subject} untuk ${studentName} berhasil disimpan!`)
     } catch (err: any) {
-      alert('Gagal menginput nilai: ' + err.message)
+      toast.error('Gagal menginput nilai: ' + err.message)
     }
   }
 

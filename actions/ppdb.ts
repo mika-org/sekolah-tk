@@ -1,11 +1,22 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+
+const s3Client = new S3Client({
+  endpoint: process.env.SUPABASE_S3_ENDPOINT,
+  region: process.env.SUPABASE_S3_REGION || 'ap-southeast-1',
+  credentials: {
+    accessKeyId: process.env.SUPABASE_S3_ACCESS_KEY_ID || '',
+    secretAccessKey: process.env.SUPABASE_S3_SECRET_ACCESS_KEY || '',
+  },
+  forcePathStyle: true,
+})
 
 export async function submitPPDB(prevState: any, formData: FormData) {
   try {
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     // 1. Gather child data
     const student_name = formData.get('student_name') as string
@@ -62,26 +73,30 @@ export async function submitPPDB(prevState: any, formData: FormData) {
 
     const ppdbId = ppdbData.id
 
-    // Helper to upload file to supabase storage
+    // Helper to upload file to S3
     const uploadFile = async (file: File, bucket: string, path: string) => {
       if (!file || file.size === 0) return null
-      const buffer = await file.arrayBuffer()
-      const { data, error } = await supabase.storage
-        .from(bucket)
-        .upload(path, buffer, {
-          contentType: file.type,
-          upsert: true
-        })
-      if (error) {
-        // Return a mock url if storage is not set up yet
-        console.warn(`Storage upload failed: ${error.message}. Fallback to mock url.`)
-        return `https://mock-supabase-storage.url/${bucket}/${path}`
+      const arrayBuffer = await file.arrayBuffer()
+      const buffer = Buffer.from(arrayBuffer)
+
+      const command = new PutObjectCommand({
+        Bucket: bucket,
+        Key: path,
+        Body: buffer,
+        ContentType: file.type,
+      })
+
+      try {
+        await s3Client.send(command)
+
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+        const match = supabaseUrl.match(/https:\/\/(.*?)\.supabase/)
+        const projectId = match ? match[1] : 'rgccflnozdvdmmxnshqv'
+        return `https://${projectId}.supabase.co/storage/v1/object/public/${bucket}/${path}`
+      } catch (error: any) {
+        console.error(`S3 upload failed for bucket ${bucket}:`, error)
+        throw new Error(`Gagal mengunggah berkas ${file.name}: ${error.message}`)
       }
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage
-        .from(bucket)
-        .getPublicUrl(path)
-      return publicUrlData.publicUrl
     }
 
     // Document types to process
@@ -124,11 +139,16 @@ export async function submitPPDB(prevState: any, formData: FormData) {
 
     // Insert payment record
     if (payment_method) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+      const match = supabaseUrl.match(/https:\/\/(.*?)\.supabase/)
+      const projectId = match ? match[1] : 'rgccflnozdvdmmxnshqv'
+      const fallbackProof = `https://${projectId}.supabase.co/storage/v1/object/public/payment-proof/mock_proof.jpg`
+
       await supabase.from('payments_tk').insert({
         ppdb_id: ppdbId,
         method: payment_method,
         amount: payment_amount || 250000, // PPDB registration fee
-        proof: proofUrl || 'https://mock-supabase-storage.url/payment-proof/mock_proof.jpg',
+        proof: proofUrl || fallbackProof,
         status: 'Pending'
       })
     }
