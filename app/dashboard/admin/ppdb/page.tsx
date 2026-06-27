@@ -420,7 +420,7 @@ export default function AdminPPDBPage() {
                       </div>
                       <div className="grid grid-cols-3 gap-1">
                         <span className="text-gray-400 font-semibold">Pekerjaan:</span>
-                        <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.parent?.pekerjaan_ayah || '-'}</span>
+                        <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.parent?.pekerjaan?.split('/')?.[0]?.trim() || '-'}</span>
                       </div>
                     </div>
                     {/* IBU */}
@@ -432,23 +432,23 @@ export default function AdminPPDBPage() {
                       </div>
                       <div className="grid grid-cols-3 gap-1">
                         <span className="text-gray-400 font-semibold">Pekerjaan:</span>
-                        <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.parent?.pekerjaan_ibu || '-'}</span>
+                        <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.parent?.pekerjaan?.split('/')?.[1]?.trim() || '-'}</span>
                       </div>
                     </div>
                     {/* CONTACT */}
                     <div className="space-y-2 pt-3 border-t border-gray-200/60">
                       <div className="font-extrabold text-primary-blue flex items-center gap-1.5">📞 Kontak & Alamat</div>
                       <div className="grid grid-cols-3 gap-1">
-                        <span className="text-gray-400 font-semibold">No. HP / WA Ayah:</span>
-                        <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.parent?.hp_ayah || '-'}</span>
+                        <span className="text-gray-400 font-semibold">No. HP / WA:</span>
+                        <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.parent?.hp || '-'}</span>
                       </div>
                       <div className="grid grid-cols-3 gap-1">
-                        <span className="text-gray-400 font-semibold">No. HP / WA Ibu:</span>
-                        <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.parent?.hp_ibu || '-'}</span>
+                        <span className="text-gray-400 font-semibold">Email:</span>
+                        <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.parent?.email || '-'}</span>
                       </div>
                       <div className="grid grid-cols-3 gap-1">
                         <span className="text-gray-400 font-semibold">Alamat Orang Tua:</span>
-                        <span className="col-span-2 font-semibold text-primary-blue leading-relaxed">{selectedDetails.parent?.alamat_ayah || selectedDetails.parent?.alamat_ibu || '-'}</span>
+                        <span className="col-span-2 font-semibold text-primary-blue leading-relaxed">{selectedDetails.parent?.alamat || '-'}</span>
                       </div>
                     </div>
                   </div>
