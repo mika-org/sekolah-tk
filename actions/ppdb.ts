@@ -14,6 +14,30 @@ const s3Client = new S3Client({
   forcePathStyle: true,
 })
 
+async function ensureBucketExists(bucket: string) {
+  try {
+    const supabase = createAdminClient()
+    const { data: buckets, error } = await supabase.storage.listBuckets()
+    if (error) {
+      console.error(`Failed to list buckets: ${error.message}`)
+      return
+    }
+    const exists = buckets?.some(b => b.id === bucket)
+    if (!exists) {
+      const { error: createError } = await supabase.storage.createBucket(bucket, {
+        public: true
+      })
+      if (createError) {
+        console.error(`Failed to create bucket ${bucket}: ${createError.message}`)
+      } else {
+        console.log(`Bucket ${bucket} created successfully.`)
+      }
+    }
+  } catch (err) {
+    console.error(`Failed to ensure bucket ${bucket} exists:`, err)
+  }
+}
+
 export async function submitPPDB(prevState: any, formData: FormData) {
   try {
     const supabase = createAdminClient()
@@ -49,6 +73,12 @@ export async function submitPPDB(prevState: any, formData: FormData) {
     const payment_method = formData.get('payment_method') as string
     const payment_amount = parseFloat(formData.get('payment_amount') as string || '0')
 
+    // Validate current step
+    const current_step = formData.get('current_step') as string
+    if (current_step && current_step !== '3') {
+      return { success: false, error: 'Formulir belum lengkap. Mohon ikuti semua langkah hingga Langkah 3 sebelum mengirim.', ppdbId: '' }
+    }
+
     // Validate main required fields
     if (!student_name || !birth_date) {
       return { success: false, error: 'Nama Lengkap dan Tanggal Lahir anak wajib diisi.', ppdbId: '' }
@@ -76,6 +106,10 @@ export async function submitPPDB(prevState: any, formData: FormData) {
     // Helper to upload file to S3
     const uploadFile = async (file: File, bucket: string, path: string) => {
       if (!file || file.size === 0) return null
+      
+      // Ensure bucket exists in Supabase Storage
+      await ensureBucketExists(bucket)
+      
       const arrayBuffer = await file.arrayBuffer()
       const buffer = Buffer.from(arrayBuffer)
 

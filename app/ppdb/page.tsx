@@ -120,6 +120,17 @@ export default function PPDBPage() {
     }
   }
 
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    if (step !== 3) {
+      e.preventDefault()
+      return
+    }
+    const confirmSend = window.confirm('Apakah Anda yakin data yang diisi sudah benar dan ingin mengirim pendaftaran?')
+    if (!confirmSend) {
+      e.preventDefault()
+    }
+  }
+
   const handleCopy = (text: string, label: string) => {
     navigator.clipboard.writeText(text)
     setCopiedBank(text)
@@ -386,7 +397,8 @@ export default function PPDBPage() {
                 </div>
               </div>
 
-              <form action={formAction} ref={formRef} onKeyDown={handleKeyDown}>
+              <form action={formAction} ref={formRef} onKeyDown={handleKeyDown} onSubmit={handleSubmit}>
+                <input type="hidden" name="current_step" value={step} />
                 {isPending && (
                   <div className="absolute inset-0 bg-white/70 backdrop-blur-[1px] z-50 flex flex-col items-center justify-center gap-3">
                     <div className="w-12 h-12 rounded-full border-4 border-gray-200 border-t-[#07A363] animate-spin" />
@@ -815,6 +827,7 @@ export default function PPDBPage() {
                 <div className="flex justify-between items-center px-8 py-5 border-t border-gray-100 bg-gray-50/50">
                   {step > 1 ? (
                     <button
+                      key="prev-btn"
                       type="button"
                       onClick={prevStep}
                       disabled={isPending}
@@ -832,6 +845,7 @@ export default function PPDBPage() {
 
                   {step < 3 ? (
                     <button
+                      key="next-btn"
                       type="button"
                       onClick={nextStep}
                       className={cn(
@@ -844,6 +858,7 @@ export default function PPDBPage() {
                     </button>
                   ) : (
                     <button
+                      key="submit-btn"
                       type="submit"
                       disabled={isPending}
                       className={cn(
