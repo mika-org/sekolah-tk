@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/supabase/client'
-import { approvePPDB } from '@/actions/admin'
+import { approvePPDB, resendCredentialsEmail } from '@/actions/admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -184,6 +184,18 @@ export default function AdminPPDBPage() {
     setConfirmOpen(true)
   }
 
+  const handleResendCreds = async (id: string) => {
+    setActionPendingId(id)
+    const result = await resendCredentialsEmail(id)
+    setActionPendingId(null)
+
+    if (result.success) {
+      toast.success('Kredensial login berhasil dikirim ulang ke email orang tua!')
+    } else {
+      toast.error(result.error || 'Gagal mengirim ulang kredensial.')
+    }
+  }
+
   const getStatusBadge = (status: string) => {
     switch (status) {
       case 'Submitted': return <Badge className="bg-blue-100 text-blue-800 border-none rounded-full px-3 py-1 font-bold">Baru</Badge>
@@ -277,7 +289,17 @@ export default function AdminPPDBPage() {
                           </>
                         )}
                         {app.status === 'Diterima' && (
-                          <Badge className="bg-emerald-50 text-emerald-600 border-none font-bold mr-2">Terdaftar</Badge>
+                          <>
+                            <Badge className="bg-emerald-50 text-emerald-600 border-none font-bold mr-2">Terdaftar</Badge>
+                            <Button
+                              onClick={() => handleResendCreds(app.id)}
+                              disabled={actionPendingId === app.id}
+                              variant="outline"
+                              className="border-blue-200 text-blue-650 hover:bg-blue-50 rounded-lg text-xs py-1.5 px-3 h-auto cursor-pointer mr-2"
+                            >
+                              {actionPendingId === app.id ? 'Mengirim...' : 'Kirim Ulang Akun'}
+                            </Button>
+                          </>
                         )}
                         {app.status === 'Ditolak' && (
                           <Badge className="bg-rose-50 text-rose-600 border-none font-bold mr-2">Ditolak</Badge>
@@ -563,6 +585,15 @@ export default function AdminPPDBPage() {
                   Tolak Pendaftaran
                 </Button>
               </>
+            )}
+            {selectedApp && selectedApp.status === 'Diterima' && (
+              <Button
+                onClick={() => handleResendCreds(selectedApp.id)}
+                disabled={actionPendingId === selectedApp.id}
+                className="bg-primary-blue hover:bg-primary-blue/90 text-white font-extrabold rounded-xl text-xs py-2.5 px-4 cursor-pointer"
+              >
+                {actionPendingId === selectedApp.id ? 'Mengirim...' : 'Kirim Ulang Kredensial'}
+              </Button>
             )}
             <Button onClick={() => setDetailsModalOpen(false)} variant="outline" className="border-gray-200 hover:border-gray-300 font-bold rounded-xl text-xs py-2.5 px-5 cursor-pointer">
               Tutup

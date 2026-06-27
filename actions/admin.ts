@@ -439,3 +439,91 @@ export async function deleteTestimonial(id: string, photoUrl?: string | null) {
     return { error: err.message }
   }
 }
+
+export async function resendCredentialsEmail(ppdbId: string) {
+  try {
+    const supabase = createAdminClient()
+
+    // 1. Get PPDB record
+    const { data: ppdb, error: ppdbError } = await supabase
+      .from('ppdb_tk')
+      .select('*')
+      .eq('id', ppdbId)
+      .maybeSingle()
+
+    if (ppdbError || !ppdb) {
+      return { success: false, error: 'Pendaftaran tidak ditemukan.' }
+    }
+
+    if (ppdb.status !== 'Diterima') {
+      return { success: false, error: 'Pendaftaran belum diterima. Kredensial belum dibuat.' }
+    }
+
+    // 2. Get student & parent
+    const { data: student } = await supabase
+      .from('students_tk')
+      .select('id')
+      .eq('nama', ppdb.student_name)
+      .eq('tanggal_lahir', ppdb.birth_date)
+      .maybeSingle()
+
+    if (!student) {
+      return { success: false, error: 'Data siswa tidak ditemukan.' }
+    }
+
+    const { data: parent } = await supabase
+      .from('parents_tk')
+      .select('*')
+      .eq('student_id', student.id)
+      .maybeSingle()
+
+    if (!parent) {
+      return { success: false, error: 'Data orang tua tidak ditemukan.' }
+    }
+
+    // 3. Get username from users_tk using parent.user_id
+    if (!parent.user_id) {
+      return { success: false, error: 'Akun orang tua belum terbuat di sistem.' }
+    }
+
+    const { data: userRecord } = await supabase
+      .from('users_tk')
+      .select('username, email')
+      .eq('id', parent.user_id)
+      .maybeSingle()
+
+    if (!userRecord) {
+      return { success: false, error: 'Akun user tidak ditemukan.' }
+    }
+
+    // 4. Reconstruct temporary password from birth date (DDMMYYYY)
+    const dateObj = new Date(ppdb.birth_date)
+    const dd = String(dateObj.getDate()).padStart(2, '0')
+    const mm = String(dateObj.getMonth() + 1).padStart(2, '0')
+    const yyyy = dateObj.getFullYear()
+    const passwordStr = `${dd}${mm}${yyyy}`
+
+    const parentEmail = parent.email || userRecord.email
+
+    if (!parentEmail) {
+      return { success: false, error: 'Email orang tua tidak ditemukan.' }
+    }
+
+    // 5. Send credential email
+    const emailResult = await sendCredentialEmail(
+      parentEmail,
+      ppdb.student_name,
+      userRecord.username,
+      passwordStr
+    )
+
+    if (!emailResult.success) {
+      return { success: false, error: 'Gagal mengirim email.' }
+    }
+
+    return { success: true }
+  } catch (err: any) {
+    console.error(err)
+    return { success: false, error: 'Terjadi kesalahan: ' + err.message }
+  }
+}

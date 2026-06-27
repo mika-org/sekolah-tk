@@ -1,23 +1,19 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { toast } from 'sonner'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   CalendarDays,
-  FileSpreadsheet,
+  FileText,
   GraduationCap,
   Sparkles,
-  FileText,
   CreditCard,
   Bell,
-  UploadCloud,
-  CheckCircle2
+  ArrowRight
 } from 'lucide-react'
 
 export default function OrangTuaDashboard() {
@@ -25,11 +21,8 @@ export default function OrangTuaDashboard() {
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([])
   const [gradeLogs, setGradeLogs] = useState<any[]>([])
   const [announcements, setAnnouncements] = useState<any[]>([])
+  const [ppdbData, setPpdbData] = useState<any>(null)
   const [loading, setLoading] = useState(true)
-
-  const [paymentFile, setPaymentFile] = useState<File | null>(null)
-  const [paymentPending, setPaymentPending] = useState(false)
-  const [paymentSuccess, setPaymentSuccess] = useState(false)
 
   const supabase = createClient()
 
@@ -64,36 +57,81 @@ export default function OrangTuaDashboard() {
       user = authUser
     }
     
-    let studentName = ''
     let studentId = ''
 
     if (user) {
-      studentName = user.user_metadata?.student_name || ''
-      // Query database for student details
-      const { data: stud } = await supabase
-        .from('students_tk')
-        .select('*')
-        .eq('nama', studentName)
+      // 1. First, try to query parents_tk by user_id to get linked student_id
+      const { data: parent } = await supabase
+        .from('parents_tk')
+        .select('student_id')
+        .eq('user_id', user.id)
         .maybeSingle()
-      if (stud) {
-        setStudentData(stud)
-        studentId = stud.id
+
+      if (parent && parent.student_id) {
+        studentId = parent.student_id
+        const { data: stud } = await supabase
+          .from('students_tk')
+          .select('*')
+          .eq('id', studentId)
+          .maybeSingle()
+        if (stud) {
+          setStudentData(stud)
+          
+          // Query PPDB status
+          const { data: ppdb } = await supabase
+            .from('ppdb_tk')
+            .select('*')
+            .eq('student_name', stud.nama)
+            .eq('birth_date', stud.tanggal_lahir)
+            .maybeSingle()
+          if (ppdb) {
+            setPpdbData(ppdb)
+          }
+        }
+      } else {
+        // 2. Fallback to name-based match for mock/seeded logins
+        const studentName = user.user_metadata?.student_name || (user.user_metadata?.username === 'orangtua' ? 'Althaf Syahputra' : '')
+        if (studentName) {
+          const { data: stud } = await supabase
+            .from('students_tk')
+            .select('*')
+            .eq('nama', studentName)
+            .maybeSingle()
+          if (stud) {
+            setStudentData(stud)
+            studentId = stud.id
+
+            // Query PPDB status
+            const { data: ppdb } = await supabase
+              .from('ppdb_tk')
+              .select('*')
+              .eq('student_name', stud.nama)
+              .eq('birth_date', stud.tanggal_lahir)
+              .maybeSingle()
+            if (ppdb) {
+              setPpdbData(ppdb)
+            }
+          }
+        }
       }
     }
 
-    // Fetch attendance logs from attendance_tk table
-    const { data: att } = await supabase
-      .from('attendance_tk')
-      .select('*')
-      .eq('student_id', studentId)
-      .order('date', { ascending: false })
+    // Fetch logs only if studentId is valid
+    if (studentId) {
+      const { data: att } = await supabase
+        .from('attendance_tk')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('date', { ascending: false })
+      if (att) setAttendanceLogs(att)
 
-    // Fetch grade logs from grades table
-    const { data: grd } = await supabase
-      .from('grades_tk')
-      .select('*')
-      .eq('student_id', studentId)
-      .order('id', { ascending: false })
+      const { data: grd } = await supabase
+        .from('grades_tk')
+        .select('*')
+        .eq('student_id', studentId)
+        .order('id', { ascending: false })
+      if (grd) setGradeLogs(grd)
+    }
 
     // Fetch announcements
     const { data: ann } = await supabase
@@ -103,14 +141,7 @@ export default function OrangTuaDashboard() {
       .in('target', ['Semua', 'Orang Tua'])
       .order('id', { ascending: false })
 
-    if (att) setAttendanceLogs(att)
-    else setAttendanceLogs([])
-
-    if (grd) setGradeLogs(grd)
-    else setGradeLogs([])
-
     if (ann) setAnnouncements(ann)
-    else setAnnouncements([])
 
     setLoading(false)
   }
@@ -118,45 +149,6 @@ export default function OrangTuaDashboard() {
   useEffect(() => {
     loadData()
   }, [])
-
-  const handleUploadPayment = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!paymentFile) {
-      toast.error('Pilih berkas bukti pembayaran terlebih dahulu.')
-      return
-    }
-
-    setPaymentPending(true)
-    try {
-      // Upload bukti ke Supabase Storage (bucket: payment-proofs)
-      const fileExt = paymentFile.name.split('.').pop()
-      const filePath = `proofs/${Date.now()}.${fileExt}`
-      const { error: uploadError } = await supabase.storage
-        .from('payment-proofs')
-        .upload(filePath, paymentFile)
-
-      if (uploadError) throw uploadError
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('payment-proofs')
-        .getPublicUrl(filePath)
-
-      // Save proof record to payments_tk
-      await supabase.from('payments_tk').insert({
-        method: 'Transfer',
-        amount: 250000,
-        proof: publicUrl,
-        status: 'Pending'
-      })
-
-      setPaymentSuccess(true)
-      toast.success('Bukti pembayaran berhasil diunggah! Status: Menunggu Verifikasi Admin.')
-    } catch (err: any) {
-      toast.error('Gagal mengunggah: ' + (err.message || 'Unknown error'))
-    } finally {
-      setPaymentPending(false)
-    }
-  }
 
   if (loading) {
     return <div className="p-8 text-center text-gray-400">Memuat dashboard orang tua...</div>
@@ -166,6 +158,7 @@ export default function OrangTuaDashboard() {
   const presentCount = attendanceLogs.filter(a => a.status === 'Hadir').length
   const totalDays = attendanceLogs.length
   const presenceRate = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 100
+  const latestGrade = gradeLogs[0]
 
   return (
     <div className="space-y-8">
@@ -178,182 +171,138 @@ export default function OrangTuaDashboard() {
             <Sparkles size={12} className="text-amber-400" />
             <span>Portal Orang Tua</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black">Ayah / Bunda dari {studentData?.nama}</h1>
-          <p className="text-gray-300 font-medium text-xs">Akses nilai, presensi, dan tagihan sekolah anak Anda dalam satu pintu.</p>
+          <h1 className="text-2xl sm:text-3xl font-black">Ayah / Bunda dari {studentData?.nama || 'Calon Murid'}</h1>
+          <p className="text-gray-300 font-medium text-xs">Selamat datang kembali! Berikut adalah ringkasan perkembangan belajar dan administrasi anak Anda.</p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
-        {/* Academic Performance (grades) */}
-        <div className="lg:col-span-8 space-y-6">
-          
-          {/* Nilai Rapor Card */}
-          <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-            <CardHeader className="p-8 border-b border-gray-50 flex flex-row items-center justify-between">
-              <div>
-                <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
-                  <GraduationCap className="text-primary-green" />
-                  Perkembangan Akademik (Nilai Harian)
-                </CardTitle>
-                <CardDescription className="text-xs text-gray-400 font-semibold">Update nilai kompetensi teranyar anak Anda.</CardDescription>
-              </div>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-gray-100">
-                {gradeLogs.map((grade) => (
-                  <div key={grade.id} className="p-6 flex justify-between items-start gap-4 hover:bg-gray-50/20 transition-colors">
-                    <div className="space-y-1">
-                      <div className="font-extrabold text-sm text-primary-blue">{grade.subject}</div>
-                      <div className="text-xs text-gray-500 font-medium leading-relaxed">"{grade.description}"</div>
-                    </div>
-                    <Badge className="bg-primary-green text-white hover:bg-primary-green border-none font-bold text-xs rounded-xl px-3 py-1">
-                      Nilai: {grade.score}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+      {/* Menu Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Card 1: PPDB Status */}
+        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300">
+          <CardHeader className="pb-4">
+            <div className="w-10 h-10 bg-blue-50 text-primary-blue rounded-2xl flex items-center justify-center mb-2">
+              <FileText size={20} />
+            </div>
+            <CardTitle className="text-sm font-black text-primary-blue">Status PPDB</CardTitle>
+            <CardDescription className="text-[10px] font-semibold text-gray-400">Pendaftaran & registrasi berkas.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-4">
+            <div className="py-2.5 px-3 bg-[#F8F6F2] rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
+              <span>Status:</span>
+              <Badge className={ppdbData?.status === 'Diterima' ? 'bg-emerald-100 text-emerald-800 border-none' : 'bg-blue-100 text-blue-800 border-none'}>
+                {ppdbData?.status || 'Submitted'}
+              </Badge>
+            </div>
+            <Link href="/dashboard/orang-tua/ppdb-status" className="w-full">
+              <Button variant="outline" className="w-full justify-between border-gray-100 hover:border-gray-200 text-primary-blue text-xs font-bold py-2 h-auto rounded-xl">
+                <span>Lihat Detail PPDB</span>
+                <ArrowRight size={14} />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
 
-          {/* Attendance logs Card */}
-          <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-            <CardHeader className="p-8 border-b border-gray-50">
-              <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
-                <CalendarDays className="text-primary-green" />
-                Histori Presensi Anak (attendance_tk)
-              </CardTitle>
-              <CardDescription className="text-xs text-gray-400 font-semibold">Daftar riwayat kehadiran siswa di kelas.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-gray-100">
-                {attendanceLogs.map((log) => (
-                  <div key={log.id} className="p-4 flex justify-between items-center px-8">
-                    <div className="text-xs font-bold text-gray-600">
-                      {new Date(log.date).toLocaleDateString('id-ID', {
-                        day: 'numeric',
-                        month: 'long',
-                        year: 'numeric'
-                      })}
-                    </div>
-                    <Badge className={`border-none font-bold rounded-lg px-2.5 py-0.5 text-[10px] ${
-                      log.status === 'Hadir' 
-                        ? 'bg-emerald-100 text-emerald-800' 
-                        : log.status === 'Sakit' 
-                          ? 'bg-amber-100 text-amber-800' 
-                          : log.status === 'Izin' 
-                            ? 'bg-blue-100 text-blue-800' 
-                            : 'bg-rose-100 text-rose-800'
-                    }`}>
-                      {log.status}
-                    </Badge>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
+        {/* Card 2: Attendance */}
+        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300">
+          <CardHeader className="pb-4">
+            <div className="w-10 h-10 bg-emerald-50 text-primary-green rounded-2xl flex items-center justify-center mb-2">
+              <CalendarDays size={20} />
+            </div>
+            <CardTitle className="text-sm font-black text-primary-blue">Absensi Anak</CardTitle>
+            <CardDescription className="text-[10px] font-semibold text-gray-400">Rasio kehadiran harian kelas.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-4">
+            <div className="py-2.5 px-3 bg-[#F8F6F2] rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
+              <span>Rasio Masuk:</span>
+              <span className="text-primary-green font-extrabold">{presenceRate}%</span>
+            </div>
+            <Link href="/dashboard/orang-tua/attendance" className="w-full">
+              <Button variant="outline" className="w-full justify-between border-gray-100 hover:border-gray-200 text-primary-blue text-xs font-bold py-2 h-auto rounded-xl">
+                <span>Histori Kehadiran</span>
+                <ArrowRight size={14} />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
 
-        </div>
+        {/* Card 3: Grades */}
+        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300">
+          <CardHeader className="pb-4">
+            <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-2">
+              <GraduationCap size={20} />
+            </div>
+            <CardTitle className="text-sm font-black text-primary-blue">Nilai & Rapor</CardTitle>
+            <CardDescription className="text-[10px] font-semibold text-gray-400">Update hasil belajar teranyar.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-4">
+            <div className="py-2.5 px-3 bg-[#F8F6F2] rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
+              <span>Nilai Terakhir:</span>
+              <span className="text-purple-600 font-extrabold">{latestGrade ? `${latestGrade.subject} (${latestGrade.score})` : '-'}</span>
+            </div>
+            <Link href="/dashboard/orang-tua/grades" className="w-full">
+              <Button variant="outline" className="w-full justify-between border-gray-100 hover:border-gray-200 text-primary-blue text-xs font-bold py-2 h-auto rounded-xl">
+                <span>Rapor Lengkap</span>
+                <ArrowRight size={14} />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
 
-        {/* Sidebar panels */}
-        <div className="lg:col-span-4 space-y-6">
-          
-          {/* Child Quick Profile */}
-          <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-            <CardHeader className="p-6 bg-[#F8F6F2] border-b border-gray-150">
-              <CardTitle className="text-sm font-black text-primary-blue">Profil Calon Siswa</CardTitle>
-            </CardHeader>
-            <CardContent className="p-6 space-y-3 text-xs text-gray-500 font-semibold">
-              <div className="flex justify-between">
-                <span>Nama:</span>
-                <span className="text-primary-blue font-extrabold">{studentData?.nama}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tempat Lahir:</span>
-                <span className="text-primary-blue font-bold">{studentData?.tempat_lahir}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Tanggal Lahir:</span>
-                <span className="text-primary-blue font-bold">{studentData?.tanggal_lahir}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Alamat:</span>
-                <span className="text-primary-blue font-bold text-right max-w-[150px] truncate">{studentData?.alamat}</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-gray-100">
-                <span>Rasio Kehadiran:</span>
-                <span className="text-primary-green font-extrabold">{presenceRate}% ({presentCount}/{totalDays} Hari)</span>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Billing & Payments Panel */}
-          <Card className="bg-white rounded-[32px] shadow-sm border-none">
-            <CardHeader className="p-6">
-              <CardTitle className="text-sm font-black text-primary-blue flex items-center gap-2">
-                <CreditCard size={18} className="text-primary-green" />
-                Administrasi & Uang SPP
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="p-4 bg-emerald-50 rounded-2xl border border-emerald-100 flex justify-between items-center text-xs">
-                <div>
-                  <div className="font-extrabold text-primary-blue">Tagihan SPP Juli 2026</div>
-                  <div className="text-[10px] text-gray-400 mt-0.5">Uang SPP bulanan TK.</div>
-                </div>
-                <div className="font-black text-primary-green text-sm">LUNAS</div>
-              </div>
-
-              {/* Upload payment receipt form */}
-              <form onSubmit={handleUploadPayment} className="space-y-3 pt-2">
-                <Label className="text-[10px] font-extrabold text-primary-blue">Kirim Bukti Bayar Baru (Jika Ada)</Label>
-                
-                {paymentSuccess ? (
-                  <div className="p-3 bg-emerald-50 text-emerald-800 text-[11px] font-bold rounded-xl flex items-center gap-2">
-                    <CheckCircle2 size={16} />
-                    Bukti berhasil diunggah!
-                  </div>
-                ) : (
-                  <>
-                    <Input 
-                      type="file" 
-                      onChange={(e) => setPaymentFile(e.target.files?.[0] || null)}
-                      className="bg-[#F8F6F2] border-transparent text-xs rounded-lg cursor-pointer" 
-                    />
-                    <Button 
-                      type="submit" 
-                      disabled={paymentPending}
-                      className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white rounded-xl text-xs py-2 h-auto cursor-pointer"
-                    >
-                      {paymentPending ? 'Mengunggah...' : 'Unggah Bukti Bayar'}
-                    </Button>
-                  </>
-                )}
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Announcements Feed */}
-          <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-            <CardHeader className="p-6 border-b border-gray-50">
-              <CardTitle className="text-sm font-black text-primary-blue flex items-center gap-2">
-                <Bell size={18} className="text-primary-green" />
-                Pengumuman Sekolah
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-4 space-y-4">
-              {announcements.map((a) => (
-                <div key={a.id} className="space-y-1">
-                  <div className="font-extrabold text-xs text-primary-blue leading-tight">{a.title}</div>
-                  <p className="text-[11px] text-gray-500 font-medium leading-relaxed">{a.content}</p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-        </div>
-
+        {/* Card 4: Billing */}
+        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300">
+          <CardHeader className="pb-4">
+            <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-2">
+              <CreditCard size={20} />
+            </div>
+            <CardTitle className="text-sm font-black text-primary-blue">Tagihan & SPP</CardTitle>
+            <CardDescription className="text-[10px] font-semibold text-gray-400">Status keuangan & pembayaran.</CardDescription>
+          </CardHeader>
+          <CardContent className="pt-0 space-y-4">
+            <div className="py-2.5 px-3 bg-[#F8F6F2] rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
+              <span>SPP Juli:</span>
+              <span className="text-primary-green font-extrabold">LUNAS</span>
+            </div>
+            <Link href="/dashboard/orang-tua/billing" className="w-full">
+              <Button variant="outline" className="w-full justify-between border-gray-100 hover:border-gray-200 text-primary-blue text-xs font-bold py-2 h-auto rounded-xl">
+                <span>Bayar & Upload</span>
+                <ArrowRight size={14} />
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
       </div>
+
+      {/* Announcements Full-Width Card */}
+      <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
+        <CardHeader className="p-8 border-b border-gray-50">
+          <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
+            <Bell className="text-primary-green" />
+            Pengumuman Sekolah
+          </CardTitle>
+          <CardDescription className="text-xs text-gray-400 font-semibold">Informasi dan agenda teranyar dari KB & TK Istiqamah.</CardDescription>
+        </CardHeader>
+        <CardContent className="p-8 space-y-6">
+          {announcements.length === 0 ? (
+            <div className="text-center py-6 text-gray-400 font-semibold text-xs">Belum ada pengumuman baru untuk orang tua.</div>
+          ) : (
+            announcements.map((a) => (
+              <div key={a.id} className="space-y-2 pb-4 border-b border-gray-50 last:border-none last:pb-0">
+                <div className="flex items-center gap-2">
+                  <Badge className="bg-emerald-50 text-[#07A363] border-none font-extrabold text-[9px] px-2.5 py-0.5 rounded-md">
+                    Pengumuman
+                  </Badge>
+                  <span className="text-[10px] text-gray-400 font-semibold">
+                    {new Date(a.created_at || Date.now()).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                </div>
+                <div className="font-extrabold text-sm text-primary-blue leading-tight">{a.title}</div>
+                <p className="text-xs text-gray-500 font-medium leading-relaxed max-w-4xl">{a.content}</p>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
     </div>
   )
