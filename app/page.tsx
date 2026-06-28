@@ -32,6 +32,12 @@ const slideVariants = {
   })
 }
 
+const heroVariants = {
+  enter: { opacity: 0 },
+  center: { opacity: 1 },
+  exit: { opacity: 0 }
+}
+
 const PROGRAMS = [
   {
     title: 'Lorem Ipsum',
@@ -75,6 +81,8 @@ export default function LandingPage() {
   const [visibleItems, setVisibleItems] = useState(5)
 
   const [testimonials, setTestimonials] = useState<any[]>([])
+  const [heroBanners, setHeroBanners] = useState<any[]>([])
+  const [currentHero, setCurrentHero] = useState(0)
 
   const supabase = createClient()
 
@@ -111,6 +119,16 @@ export default function LandingPage() {
     })
   }, [galleryItems.length, visibleItems])
 
+  const nextHero = useCallback(() => {
+    if (heroBanners.length <= 1) return
+    setCurrentHero(prev => (prev + 1) % heroBanners.length)
+  }, [heroBanners.length])
+
+  const prevHero = useCallback(() => {
+    if (heroBanners.length <= 1) return
+    setCurrentHero(prev => (prev - 1 + heroBanners.length) % heroBanners.length)
+  }, [heroBanners.length])
+
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 50)
     window.addEventListener('scroll', handleScroll)
@@ -122,10 +140,34 @@ export default function LandingPage() {
       const { data, error } = await supabase
         .from('galleries_tk')
         .select('id, title, image, category')
+        .neq('category', 'Hero Banner')
         .order('created_at', { ascending: false })
         .limit(10)
       if (!error && data && data.length > 0) {
         setGalleryItems(data)
+      }
+    }
+    async function loadHeroBanners() {
+      const { data, error } = await supabase
+        .from('galleries_tk')
+        .select('id, title, image, category')
+        .eq('category', 'Hero Banner')
+        .order('created_at', { ascending: false })
+      if (!error && data && data.length > 0) {
+        setHeroBanners(data)
+      } else {
+        setHeroBanners([
+          {
+            id: 'default-1',
+            image: '/images/Cover.png',
+            title: JSON.stringify({ buttonText: 'Daftar PPDB Sekarang', buttonLink: '/ppdb' })
+          },
+          {
+            id: 'default-2',
+            image: '/images/ChatGPT Image Jun 17, 2026, 10_17_44 PM (2).png',
+            title: JSON.stringify({ buttonText: 'Lihat Program', buttonLink: '#program' })
+          }
+        ])
       }
     }
     async function loadTestimonials() {
@@ -138,6 +180,7 @@ export default function LandingPage() {
       if (!error && data) setTestimonials(data)
     }
     loadGallery()
+    loadHeroBanners()
     loadTestimonials()
   }, [])
 
@@ -148,13 +191,21 @@ export default function LandingPage() {
     return () => clearInterval(t)
   }, [galleryItems, visibleItems, nextGallery])
 
+  // Auto-advance hero banner slider
+  useEffect(() => {
+    if (heroBanners.length <= 1) return
+    const t = setInterval(() => nextHero(), 6000)
+    return () => clearInterval(t)
+  }, [heroBanners, nextHero])
+
+
   const scrollToSection = (id: string) => {
     setMobileMenuOpen(false)
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' })
   }
 
   return (
-    <div className="min-h-[90vh] bg-[#F8F6F2] font-sans antialiased text-[#07265F] overflow-x-hidden">
+    <div className="h-screen bg-[#F8F6F2] font-sans antialiased text-[#07265F] overflow-x-hidden">
 
       {/* ─── NAVBAR ─────────────────────────────── */}
       <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled
@@ -225,51 +276,106 @@ export default function LandingPage() {
         )}
       </nav>
 
-      {/* ─── HERO ───────────────────────────────── */}
-      <section id="beranda" className="relative pt-28 pb-0 md:pt-36 overflow-hidden bg-[#F8F6F2]">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-end">
+      {/* ─── HERO SLIDER ───────────────────────── */}
+      <section id="beranda" className="relative w-full h-[65vh] sm:h-[75vh] lg:h-[100vh] min-h-[500px] overflow-hidden bg-primary-blue group">
 
-            {/* Left */}
-            <div className="space-y-6 pb-16 lg:pb-20">
-              <h1 className="text-4xl sm:text-[46px] lg:text-[52px] font-black leading-[1.1]">
-                <span className="text-[#07A363]">Lorem Ipsum</span><br />
-                <span className="text-[#07265F]">Dolor Sit Amet Sed</span><br />
-                <span className="text-[#07A363]">Adipiscing Elit</span>
-              </h1>
-              <p className="text-[#07265F]/80 text-sm sm:text-base font-medium max-w-md leading-relaxed">
-                Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam nonummy nibh euismod tincidunt ut laoreet dolore magna
-              </p>
-              <div className="flex flex-wrap gap-4 pt-2">
-                <button onClick={() => scrollToSection('program')}
-                  className="px-8 py-3.5 bg-[#07A363] hover:bg-[#07A363]/90 text-white font-extrabold text-xs tracking-wider uppercase rounded-full transition-all cursor-pointer shadow-md">
-                  Lihat Program
-                </button>
-                <button onClick={() => scrollToSection('kontak')}
-                  className="px-8 py-3.5 bg-[#07265F] hover:bg-[#07265F]/90 text-white font-extrabold text-xs tracking-wider uppercase rounded-full transition-all cursor-pointer shadow-md">
-                  Lorem Ipsum
-                </button>
-              </div>
-            </div>
+        {/* Banner Images Slider */}
+        <div className="absolute inset-0 z-0">
+          <AnimatePresence mode="wait">
+            {heroBanners.length > 0 && (
+              <motion.div
+                key={currentHero}
+                variants={heroVariants}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.8, ease: 'easeInOut' }}
+                className="absolute inset-0 w-full h-full"
+              >
+                <Image
+                  src={heroBanners[currentHero]?.image}
+                  alt="Banner Hero"
+                  fill
+                  priority
+                  className="object-cover w-full h-full"
+                />
 
-            {/* Right: kids image flush to bottom */}
-            <div className="relative flex justify-center lg:justify-end">
-              {/* Dashed curve behind kids */}
-              <div className="absolute bottom-0 left-0 right-0 h-[120px] pointer-events-none z-0 opacity-70">
-                <Image src="/images/Asset 11.png" alt="Curve" fill className="object-contain object-bottom" />
-              </div>
-              {/* Floating star */}
-              <div className="absolute top-8 right-4 text-amber-400 z-20">
-                <Star fill="currentColor" size={22} />
-              </div>
-              {/* Kids photo — flush bottom, taller */}
-              <div className="relative w-full max-w-[460px] h-[320px] sm:h-[380px] lg:h-[400px] z-10">
-                <Image src="/images/hero_kids.png" alt="KB & TK Istiqamah Pupils" fill className="object-contain object-bottom" priority />
-              </div>
-            </div>
-
-          </div>
+                {/* Gradient Overlay */}
+                <div className="absolute inset-0 bg-black/35 z-10" />
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+
+        {/* Buttons Overlay */}
+        {heroBanners.length > 0 && (() => {
+          const banner = heroBanners[currentHero]
+          let btnText = ''
+          let btnLink = ''
+          try {
+            const parsed = JSON.parse(banner.title)
+            btnText = parsed.buttonText || ''
+            btnLink = parsed.buttonLink || ''
+          } catch {
+            btnText = banner.title || ''
+            btnLink = '/ppdb'
+          }
+
+          if (!btnText) return null
+
+          const isAnchor = btnLink.startsWith('#')
+          const btnClass = "px-10 py-4 bg-[#07A363] hover:bg-[#07A363]/90 text-white font-extrabold text-xs sm:text-sm tracking-wider uppercase rounded-full transition-all cursor-pointer shadow-xl hover:scale-105 z-20"
+
+          return (
+            <div className="absolute inset-0 flex flex-col justify-end items-center pb-16 sm:pb-24 lg:pb-32 z-20">
+              {isAnchor ? (
+                <button
+                  onClick={() => scrollToSection(btnLink.replace('#', ''))}
+                  className={btnClass}
+                >
+                  {btnText}
+                </button>
+              ) : (
+                <Link href={btnLink || '/ppdb'} className={btnClass}>
+                  {btnText}
+                </Link>
+              )}
+            </div>
+          )
+        })()}
+
+        {/* Navigation Arrows */}
+        {heroBanners.length > 1 && (
+          <>
+            <button
+              onClick={prevHero}
+              className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-3 rounded-full transition-all cursor-pointer shadow-md z-30 opacity-0 group-hover:opacity-100 duration-300"
+            >
+              <ChevronLeft size={24} />
+            </button>
+            <button
+              onClick={nextHero}
+              className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-3 rounded-full transition-all cursor-pointer shadow-md z-30 opacity-0 group-hover:opacity-100 duration-300"
+            >
+              <ChevronRight size={24} />
+            </button>
+          </>
+        )}
+
+        {/* Dot Indicators */}
+        {heroBanners.length > 1 && (
+          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-30">
+            {heroBanners.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentHero(idx)}
+                className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${idx === currentHero ? 'bg-white scale-125' : 'bg-white/40 hover:bg-white/60'
+                  }`}
+              />
+            ))}
+          </div>
+        )}
+
       </section>
 
       {/* ─── WHY CHOOSE US (Asset 3 background) ── */}
@@ -279,7 +385,7 @@ export default function LandingPage() {
       */}
       <section
         id="tentang-kami"
-        className="relative bg-cover bg-top pt-[20%] py-24 z-20 w-[101vw] right-[10px]"
+        className="relative bottom-[22%] bg-cover bg-top pt-[20%] py-24 z-20 w-[101vw] right-[10px] bg-transparent"
         style={{ backgroundImage: "url('/images/Asset 3.png')" }}
       >
         {/* Small cloud decorations */}
@@ -319,7 +425,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── PROGRAM UNGGULAN ───────────────────── */}
-      <section id="program" className="py-20 bg-[##f9f4ed]">
+      <section id="program" className="pb-20">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
           <div className="text-center mb-20">
             <h2 className="text-2xl sm:text-3xl font-black text-[#07265F]">Program Unggulan Kami</h2>
@@ -362,7 +468,7 @@ export default function LandingPage() {
           <Image src="/images/Asset 10.png" alt="" fill className="object-cover" />
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-16 relative z-10 h-[101vh]">
+        <div className="max-w-10xl mx-auto px-6 sm:px-8 lg:px-12 pb-16 pt-[10%] relative z-10 lg:h-[140vh]">
           <div className="text-center mb-10">
             <h2 className="text-2xl sm:text-3xl font-black text-white">Galeri Kami</h2>
             <p className="text-white/70 text-sm font-semibold mt-2">Momen berharga KB &amp; TK Istiqamah</p>
@@ -436,16 +542,6 @@ export default function LandingPage() {
             </div>
           )}
         </div>
-
-        {/* Mobile: Asset 9/10 shown stacked below contact */}
-        <div className="lg:hidden relative h-[280px] overflow-hidden">
-          <div className="absolute left-0 bottom-0 w-[260px] h-[260px]">
-            <Image src="/images/Asset 10.png" alt="Green blob" fill className="object-contain object-bottom-left" />
-          </div>
-          <div className="absolute right-6 bottom-0 w-[160px] h-[260px]">
-            <Image src="/images/Asset 9.png" alt="Student" fill className="object-contain object-bottom" />
-          </div>
-        </div>
       </section>
 
       {/*
@@ -455,12 +551,12 @@ export default function LandingPage() {
           Right (lg:col-span-5): Asset 10 blob (fills full height) + Asset 9 boy on top
         The right column is a self-contained relative container — no cross-section hacks.
       */}
-      <section id="aktivitas" className="bg-transparent pt-20 pb-0 relative bottom-120 h-[60%]">
+      <section id="aktivitas" className="bg-transparent pt-[2rem] pb-0 relative lg:bottom-120 h-[60%]">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-0 lg:gap-25 items-stretch">
 
             {/* ── LEFT COLUMN: Testimonial + Contact ── */}
-            <div className="lg:col-span-6 flex flex-col gap-8 py-4 pb-16">
+            <div className="lg:col-span-6 flex flex-col gap-8 py-4">
 
               {/* Testimonial heading + slider */}
               <div>
@@ -547,9 +643,9 @@ export default function LandingPage() {
             </div>
 
             {/* ── RIGHT COLUMN: Asset 10 blob as background + Asset 9 boy on top ── */}
-            <div className="hidden lg:block lg:col-span-5 relative" style={{ minHeight: '560px' }}>
+            <div className="hidden lg:block lg:col-span-5 relative left-[40%]" style={{ minHeight: '560px' }}>
               {/* Asset 9: standing boy anchored bottom-right, on top of blob */}
-              <div className="absolute bottom-0 right-0 w-[260px] h-[520px] z-10">
+              <div className="absolute bottom-0 right-0 w-[360px] h-[620px] z-10">
                 <Image
                   src="/images/Asset 9.png"
                   alt="Student drawing"
@@ -564,7 +660,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── FOOTER ─────────────────────────────── */}
-      <footer className="bg-[#07265F] text-white py-10">
+      <footer className="bg-[#07265F] text-white py-10 mt-[4rem]">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 text-center">
           <p className="text-xs font-bold text-white/70 tracking-wide">
             &copy; 2026 KB &amp; TK Istiqamah. Hak Cipta Dilindungi.

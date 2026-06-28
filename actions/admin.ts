@@ -527,3 +527,93 @@ export async function resendCredentialsEmail(ppdbId: string) {
     return { success: false, error: 'Terjadi kesalahan: ' + err.message }
   }
 }
+
+export async function uploadHeroBanner(formData: FormData) {
+  try {
+    const file = formData.get('file') as File
+    const buttonText = formData.get('buttonText') as string || ''
+    const buttonLink = formData.get('buttonLink') as string || ''
+
+    if (!file) {
+      return { error: 'File gambar wajib diisi.' }
+    }
+
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+
+    const ext = file.name.split('.').pop()
+    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+    const filePath = `hero/${fileName}`
+
+    const bucketName = 'bucket_tk'
+
+    const command = new PutObjectCommand({
+      Bucket: bucketName,
+      Key: filePath,
+      Body: buffer,
+      ContentType: file.type,
+    })
+
+    await s3Client.send(command)
+
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+    const match = supabaseUrl.match(/https:\/\/(.*?)\.supabase/)
+    const projectId = match ? match[1] : 'rgccflnozdvdmmxnshqv'
+    const publicUrl = `https://${projectId}.supabase.co/storage/v1/object/public/${bucketName}/${filePath}`
+
+    // Encode button configuration as JSON string in the title column
+    const titleJson = JSON.stringify({ buttonText, buttonLink })
+
+    const supabaseAdmin = createAdminClient()
+    const { data, error: dbError } = await supabaseAdmin
+      .from('galleries_tk')
+      .insert({ title: titleJson, category: 'Hero Banner', image: publicUrl })
+      .select()
+      .single()
+
+    if (dbError) {
+      return { error: 'Gagal menyimpan ke database: ' + dbError.message }
+    }
+
+    revalidatePath('/')
+    revalidatePath('/dashboard/admin/hero')
+    return { success: true, data }
+  } catch (err: any) {
+    console.error('Upload hero banner error:', err)
+    return { error: 'Gagal mengunggah banner: ' + err.message }
+  }
+}
+
+export async function deleteHeroBanner(id: string, imageUrl: string) {
+  try {
+    const supabaseAdmin = createAdminClient()
+    const bucketName = 'bucket_tk'
+    const urlParts = imageUrl?.split(`/${bucketName}/`)
+    const storagePath = urlParts?.[1]
+
+    if (storagePath) {
+      const command = new DeleteObjectCommand({
+        Bucket: bucketName,
+        Key: storagePath,
+      })
+      await s3Client.send(command)
+    }
+
+    const { error } = await supabaseAdmin
+      .from('galleries_tk')
+      .delete()
+      .eq('id', id)
+
+    if (error) {
+      return { error: 'Gagal menghapus dari database: ' + error.message }
+    }
+
+    revalidatePath('/')
+    revalidatePath('/dashboard/admin/hero')
+    return { success: true }
+  } catch (err: any) {
+    console.error('Delete hero banner error:', err)
+    return { error: 'Gagal menghapus banner: ' + err.message }
+  }
+}
+

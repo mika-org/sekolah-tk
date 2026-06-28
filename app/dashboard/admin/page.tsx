@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { approvePPDB } from '@/actions/admin'
 import { Button } from '@/components/ui/button'
@@ -19,7 +20,8 @@ import {
   Eye,
   Mail,
   Camera,
-  Megaphone
+  Megaphone,
+  Layers
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -273,14 +275,24 @@ export default function AdminDashboard() {
               <CardTitle className="text-sm font-black text-primary-blue">Shortcut Pengelola</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue border-none font-bold rounded-xl justify-start space-x-3 text-xs">
-                <Camera size={16} className="text-primary-green" />
-                <span>Upload Foto Galeri</span>
-              </Button>
-              <Button className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue border-none font-bold rounded-xl justify-start space-x-3 text-xs">
-                <Megaphone size={16} className="text-primary-green" />
-                <span>Buat Pengumuman Baru</span>
-              </Button>
+              <Link href="/dashboard/admin/hero" className="block w-full">
+                <Button className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue border-none font-bold rounded-xl justify-start space-x-3 text-xs cursor-pointer">
+                  <Layers size={16} className="text-primary-green" />
+                  <span>Kelola Banner Hero</span>
+                </Button>
+              </Link>
+              <Link href="/dashboard/admin/gallery" className="block w-full">
+                <Button className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue border-none font-bold rounded-xl justify-start space-x-3 text-xs cursor-pointer">
+                  <Camera size={16} className="text-primary-green" />
+                  <span>Upload Foto Galeri</span>
+                </Button>
+              </Link>
+              <Link href="/dashboard/admin/announcements" className="block w-full">
+                <Button className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue border-none font-bold rounded-xl justify-start space-x-3 text-xs cursor-pointer">
+                  <Megaphone size={16} className="text-primary-green" />
+                  <span>Buat Pengumuman Baru</span>
+                </Button>
+              </Link>
             </CardContent>
           </Card>
 

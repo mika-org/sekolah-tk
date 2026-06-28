@@ -14,19 +14,21 @@ import {
   Upload,
   ImagePlus,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Layers,
+  ExternalLink
 } from 'lucide-react'
-import { uploadGalleryPhoto, deleteGalleryPhoto } from '@/actions/admin'
+import { uploadHeroBanner, deleteHeroBanner } from '@/actions/admin'
 
-export default function AdminGalleryPage() {
-  const [galleryList, setGalleryList] = useState<any[]>([])
+export default function AdminHeroPage() {
+  const [bannerList, setBannerList] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [currentSlide, setCurrentSlide] = useState(0)
 
   // Form states
-  const [title, setTitle] = useState('')
-  const [category, setCategory] = useState('Kegiatan')
+  const [buttonText, setButtonText] = useState('')
+  const [buttonLink, setButtonLink] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -38,25 +40,24 @@ export default function AdminGalleryPage() {
     const { data, error } = await supabase
       .from('galleries_tk')
       .select('*')
-      .neq('category', 'Hero Banner')
+      .eq('category', 'Hero Banner')
       .order('created_at', { ascending: false })
 
     if (!error && data) {
-      setGalleryList(data)
+      setBannerList(data)
     } else {
-      setGalleryList([])
+      setBannerList([])
     }
     setLoading(false)
   }
 
   useEffect(() => { loadData() }, [])
 
-  // Reset slide index if out of bounds after deletion
   useEffect(() => {
-    if (galleryList.length > 0 && currentSlide >= galleryList.length) {
-      setCurrentSlide(galleryList.length - 1)
+    if (bannerList.length > 0 && currentSlide >= bannerList.length) {
+      setCurrentSlide(bannerList.length - 1)
     }
-  }, [galleryList, currentSlide])
+  }, [bannerList, currentSlide])
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -67,30 +68,29 @@ export default function AdminGalleryPage() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!title) { toast.error('Judul wajib diisi.'); return }
-    if (!imageFile) { toast.error('Pilih file foto terlebih dahulu.'); return }
+    if (!imageFile) { toast.error('Pilih file gambar banner terlebih dahulu.'); return }
 
     setUploading(true)
     try {
       const formData = new FormData()
       formData.append('file', imageFile)
-      formData.append('title', title)
-      formData.append('category', category)
+      formData.append('buttonText', buttonText)
+      formData.append('buttonLink', buttonLink)
 
-      const result = await uploadGalleryPhoto(formData)
+      const result = await uploadHeroBanner(formData)
 
       if (result.error) {
         throw new Error(result.error)
       }
 
-      setGalleryList(prev => [result.data, ...prev])
+      setBannerList(prev => [result.data, ...prev])
       setCurrentSlide(0)
-      setTitle('')
-      setCategory('Kegiatan')
+      setButtonText('')
+      setButtonLink('')
       setImageFile(null)
       setPreviewUrl(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
-      toast.success('Foto galeri berhasil ditambahkan!')
+      toast.success('Banner hero berhasil ditambahkan!')
     } catch (err: any) {
       toast.error('Gagal mengunggah: ' + err.message)
     } finally {
@@ -99,19 +99,39 @@ export default function AdminGalleryPage() {
   }
 
   const handleDelete = async (item: any) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus foto galeri ini?')) return
+    if (!confirm('Apakah Anda yakin ingin menghapus banner hero ini?')) return
 
-    const result = await deleteGalleryPhoto(item.id, item.image)
+    const result = await deleteHeroBanner(item.id, item.image)
 
     if (result.error) {
-      toast.error('Gagal menghapus galeri: ' + result.error)
+      toast.error('Gagal menghapus: ' + result.error)
     } else {
-      setGalleryList(prev => prev.filter(g => g.id !== item.id))
+      setBannerList(prev => prev.filter(g => g.id !== item.id))
+      toast.success('Banner hero berhasil dihapus!')
     }
   }
 
-  const prevSlide = () => setCurrentSlide(i => (i - 1 + galleryList.length) % galleryList.length)
-  const nextSlide = () => setCurrentSlide(i => (i + 1) % galleryList.length)
+  const prevSlide = () => setCurrentSlide(i => (i - 1 + bannerList.length) % bannerList.length)
+  const nextSlide = () => setCurrentSlide(i => (i + 1) % bannerList.length)
+
+  // Parse button config safely from title
+  const getButtonConfig = (title: string) => {
+    try {
+      const parsed = JSON.parse(title)
+      return {
+        text: parsed.buttonText || '',
+        link: parsed.buttonLink || ''
+      }
+    } catch (e) {
+      return {
+        text: title || '',
+        link: ''
+      }
+    }
+  }
+
+  const activeBanner = bannerList[currentSlide]
+  const activeBtnConfig = activeBanner ? getButtonConfig(activeBanner.title) : { text: '', link: '' }
 
   return (
     <div className="space-y-8">
@@ -119,8 +139,8 @@ export default function AdminGalleryPage() {
       {/* Page Title */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-primary-blue">Kelola Galeri</h1>
-          <p className="text-gray-500 font-semibold text-xs mt-1">Unggah foto kegiatan, sarana prasarana, dan prestasi sekolah ke portal.</p>
+          <h1 className="text-3xl font-black text-primary-blue">Kelola Banner Hero</h1>
+          <p className="text-gray-500 font-semibold text-xs mt-1">Unggah dan kelola gambar banner slider untuk section beranda (hero) website.</p>
         </div>
       </div>
 
@@ -132,10 +152,10 @@ export default function AdminGalleryPage() {
             <CardHeader>
               <CardTitle className="text-base font-black text-primary-blue flex items-center gap-2">
                 <Plus size={18} className="text-primary-green" />
-                Tambah Foto Baru
+                Tambah Banner Baru
               </CardTitle>
               <CardDescription className="text-xs font-semibold text-gray-400">
-                Upload langsung ke bucket penyimpanan sekolah.
+                Upload foto banner slider ke bucket penyimpanan.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -143,7 +163,7 @@ export default function AdminGalleryPage() {
 
                 {/* Image Picker */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-primary-blue">File Foto</Label>
+                  <Label className="text-xs font-bold text-primary-blue">Gambar Banner</Label>
                   <div
                     onClick={() => fileInputRef.current?.click()}
                     className="relative cursor-pointer border-2 border-dashed border-gray-200 hover:border-primary-green rounded-2xl transition-colors overflow-hidden aspect-video flex items-center justify-center bg-[#F8F6F2]"
@@ -154,7 +174,7 @@ export default function AdminGalleryPage() {
                     ) : (
                       <div className="text-center space-y-2 text-gray-400 pointer-events-none">
                         <ImagePlus size={28} className="mx-auto" />
-                        <p className="text-xs font-semibold">Klik untuk pilih foto</p>
+                        <p className="text-xs font-semibold">Klik untuk pilih gambar</p>
                         <p className="text-[10px]">PNG, JPG, WEBP — maks 5 MB</p>
                       </div>
                     )}
@@ -169,29 +189,25 @@ export default function AdminGalleryPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="title" className="text-xs font-bold text-primary-blue">Judul Foto</Label>
+                  <Label htmlFor="buttonText" className="text-xs font-bold text-primary-blue">Teks Tombol (Opsional)</Label>
                   <Input
-                    id="title"
-                    value={title}
-                    onChange={e => setTitle(e.target.value)}
-                    placeholder="Contoh: Kunjungan Edukatif Damkar"
+                    id="buttonText"
+                    value={buttonText}
+                    onChange={e => setButtonText(e.target.value)}
+                    placeholder="Contoh: Daftar Sekarang"
                     className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10"
-                    required
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label htmlFor="category" className="text-xs font-bold text-primary-blue">Kategori</Label>
-                  <select
-                    id="category"
-                    value={category}
-                    onChange={e => setCategory(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium outline-none"
-                  >
-                    <option value="Kegiatan">Kegiatan Belajar / Acara</option>
-                    <option value="Sarana">Sarana &amp; Prasarana</option>
-                    <option value="Prestasi">Prestasi &amp; Penghargaan</option>
-                  </select>
+                  <Label htmlFor="buttonLink" className="text-xs font-bold text-primary-blue">Link/Tujuan Tombol (Opsional)</Label>
+                  <Input
+                    id="buttonLink"
+                    value={buttonLink}
+                    onChange={e => setButtonLink(e.target.value)}
+                    placeholder="Contoh: /ppdb atau #kontak"
+                    className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10"
+                  />
                 </div>
 
                 <Button
@@ -208,57 +224,64 @@ export default function AdminGalleryPage() {
           </Card>
         </div>
 
-        {/* Gallery Slider */}
+        {/* Banner Catalog */}
         <div className="lg:col-span-8 space-y-6">
           <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
             <CardHeader className="flex flex-row items-center justify-between p-6 pb-4">
               <div>
-                <CardTitle className="text-lg font-black text-primary-blue">Katalog Foto</CardTitle>
+                <CardTitle className="text-lg font-black text-primary-blue">Katalog Banner</CardTitle>
                 <CardDescription className="text-xs font-semibold text-gray-400">
-                  {galleryList.length} foto tersimpan · gunakan panah untuk menelusuri
+                  {bannerList.length} banner aktif · gunakan panah untuk menelusuri
                 </CardDescription>
               </div>
-              <Camera className="text-primary-green" />
+              <Layers className="text-primary-green" />
             </CardHeader>
             <CardContent className="p-6 pt-0">
               {loading ? (
-                <div className="text-center p-16 text-gray-400 text-xs">Memuat katalog galeri...</div>
-              ) : galleryList.length === 0 ? (
-                <div className="text-center p-16 text-gray-400 text-xs">Belum ada foto galeri. Tambahkan foto pertama!</div>
+                <div className="text-center p-16 text-gray-400 text-xs">Memuat katalog banner...</div>
+              ) : bannerList.length === 0 ? (
+                <div className="text-center p-16 text-gray-400 text-xs">Belum ada banner hero. Silakan unggah banner pertama!</div>
               ) : (
                 <div className="space-y-4">
-                  {/* Main Slider */}
-                  <div className="relative rounded-2xl overflow-hidden bg-gray-100 aspect-video">
+                  {/* Main Slider Preview */}
+                  <div className="relative rounded-2xl overflow-hidden bg-gray-100 aspect-video group">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      key={galleryList[currentSlide]?.id}
-                      src={galleryList[currentSlide]?.image}
-                      alt={galleryList[currentSlide]?.title}
+                      key={activeBanner?.id}
+                      src={activeBanner?.image}
+                      alt="Banner Hero Preview"
                       className="w-full h-full object-cover transition-all duration-300"
                     />
-                    {/* Category badge */}
-                    <span className="absolute top-3 left-3 bg-primary-blue/90 text-white text-[9px] uppercase font-bold px-2.5 py-1 rounded-full">
-                      {galleryList[currentSlide]?.category}
-                    </span>
+
+                    {/* Button overlay preview if configured */}
+                    {activeBtnConfig.text && (
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none">
+                        <span className="px-5 py-2 bg-primary-green text-white font-extrabold text-[10px] sm:text-xs uppercase rounded-full tracking-wider shadow-md">
+                          {activeBtnConfig.text}
+                        </span>
+                      </div>
+                    )}
+
                     {/* Delete button */}
                     <button
-                      onClick={() => handleDelete(galleryList[currentSlide])}
-                      className="absolute top-3 right-3 bg-red-500/90 hover:bg-red-600 text-white p-2 rounded-xl transition-all cursor-pointer"
+                      onClick={() => handleDelete(activeBanner)}
+                      className="absolute top-3 right-3 bg-red-500/90 hover:bg-red-600 text-white p-2 rounded-xl transition-all cursor-pointer z-10 shadow"
                     >
                       <Trash2 size={14} />
                     </button>
+
                     {/* Nav Arrows */}
-                    {galleryList.length > 1 && (
+                    {bannerList.length > 1 && (
                       <>
                         <button
                           onClick={prevSlide}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-primary-blue p-2 rounded-xl shadow transition-all cursor-pointer"
+                          className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/85 hover:bg-white text-primary-blue p-2 rounded-xl shadow transition-all cursor-pointer z-10"
                         >
                           <ChevronLeft size={18} />
                         </button>
                         <button
                           onClick={nextSlide}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white text-primary-blue p-2 rounded-xl shadow transition-all cursor-pointer"
+                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/85 hover:bg-white text-primary-blue p-2 rounded-xl shadow transition-all cursor-pointer z-10"
                         >
                           <ChevronRight size={18} />
                         </button>
@@ -266,18 +289,42 @@ export default function AdminGalleryPage() {
                     )}
                     {/* Counter */}
                     <div className="absolute bottom-3 right-3 bg-black/50 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
-                      {currentSlide + 1} / {galleryList.length}
+                      {currentSlide + 1} / {bannerList.length}
                     </div>
                   </div>
 
-                  {/* Title */}
-                  <div className="flex items-center justify-between px-1">
-                    <h4 className="font-black text-sm text-primary-blue">{galleryList[currentSlide]?.title}</h4>
+                  {/* Banner Info */}
+                  <div className="bg-[#F8F6F2] rounded-2xl p-4 space-y-2 text-xs">
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-400 font-semibold">Teks Tombol:</span>
+                      <span className="font-bold text-primary-blue">{activeBtnConfig.text || 'Tidak Ada Tombol'}</span>
+                    </div>
+                    {activeBtnConfig.text && (
+                      <div className="flex justify-between items-center">
+                        <span className="text-gray-400 font-semibold">Link Tombol:</span>
+                        <span className="font-bold text-primary-green flex items-center gap-1 font-mono">
+                          {activeBtnConfig.link || '/ (Default)'}
+                          <ExternalLink size={10} />
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex justify-between items-center pt-2 border-t border-gray-200/50">
+                      <span className="text-gray-400 font-semibold">Diunggah Pada:</span>
+                      <span className="font-bold text-gray-500">
+                        {new Date(activeBanner.created_at).toLocaleDateString('id-ID', {
+                          day: 'numeric',
+                          month: 'long',
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </span>
+                    </div>
                   </div>
 
                   {/* Thumbnail Strip */}
                   <div className="flex gap-2 overflow-x-auto pb-1">
-                    {galleryList.map((item, idx) => (
+                    {bannerList.map((item, idx) => (
                       <button
                         key={item.id}
                         onClick={() => setCurrentSlide(idx)}
@@ -286,7 +333,7 @@ export default function AdminGalleryPage() {
                         }`}
                       >
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item.image} alt={item.title} className="w-full h-full object-cover" />
+                        <img src={item.image} alt="thumbnail" className="w-full h-full object-cover" />
                       </button>
                     ))}
                   </div>
