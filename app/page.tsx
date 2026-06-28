@@ -40,28 +40,28 @@ const heroVariants = {
 
 const PROGRAMS = [
   {
-    title: 'Lorem Ipsum',
-    desc: 'Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam',
+    title: 'Calistung Dasar',
+    desc: 'Membantu anak siap membaca, menulis, dan berhitung.',
     image: '/images/Cover.png'
   },
   {
-    title: 'Lorem Ipsum',
-    desc: 'Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam',
+    title: 'Akhlak Islami',
+    desc: 'Membentuk kebiasaan baik sejak usia dini.',
     image: '/images/ChatGPT Image Jun 17, 2026, 10_17_44 PM (2).png'
   },
   {
-    title: 'Lorem Ipsum',
-    desc: 'Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam',
+    title: 'Metode Tilawati',
+    desc: 'Mengenalkan Al-Qur\'an bertahap dengan lagu Rost agar mudah dihafal.',
     image: '/images/ChatGPT Image Jun 17, 2026, 10_17_46 PM (3).png'
   },
   {
-    title: 'Lorem Ipsum',
-    desc: 'Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam',
+    title: 'Seni & Kreativitas',
+    desc: 'Meningkatkan kebebasan berekspresi dan berani berkarya.',
     image: '/images/ChatGPT Image Jun 17, 2026, 10_17_46 PM (4).png'
   },
   {
-    title: 'Lorem Ipsum',
-    desc: 'Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam',
+    title: 'Eksplorasi Dunia',
+    desc: 'Melatih rasa ingin tahu melalui berbagai kegiatan.',
     image: '/images/ChatGPT Image Jun 17, 2026, 10_17_48 PM (5).png'
   }
 ]
@@ -205,7 +205,7 @@ export default function LandingPage() {
   }
 
   return (
-    <div className="h-screen bg-[#F8F6F2] font-sans antialiased text-[#07265F] overflow-x-hidden">
+    <div className="h-screen bg-[#F9F4ED] font-sans antialiased text-[#07265F] overflow-x-hidden">
 
       {/* ─── NAVBAR ─────────────────────────────── */}
       <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled
@@ -277,7 +277,7 @@ export default function LandingPage() {
       </nav>
 
       {/* ─── HERO SLIDER ───────────────────────── */}
-      <section id="beranda" className="relative w-full h-[65vh] sm:h-[75vh] lg:h-[100vh] min-h-[500px] overflow-hidden bg-primary-blue group">
+      <section id="beranda" className="relative w-full h-[65vh] sm:h-[75vh] lg:h-[90vh] min-h-[500px] overflow-hidden bg-primary-blue group">
 
         {/* Banner Images Slider */}
         <div className="absolute inset-0 z-0">
@@ -399,7 +399,7 @@ export default function LandingPage() {
         <div className="absolute left-[12%] bottom-[22%] text-amber-400"><Star fill="currentColor" size={14} /></div>
         <div className="absolute right-[18%] bottom-[30%] text-amber-400"><Star fill="currentColor" size={12} /></div>
 
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 relative z-10">
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 pt-[10rem] lg:px-12 relative z-10">
           <div className="text-center mb-14 relative inline-block w-full">
             <h2 className="text-2xl sm:text-3xl font-black text-[#07265F]">Mengapa Memilih Istiqamah</h2>
             <div className="absolute -top-5 right-[22%] text-amber-400"><Star fill="currentColor" size={18} /></div>
@@ -407,16 +407,19 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-4">
             {[
-              { icon: '/images/Asset 6.png', alt: 'House' },
-              { icon: '/images/Asset 5.png', alt: 'Rocket' },
-              { icon: '/images/Asset 4.png', alt: 'ABC' },
+              { icon: '/images/Asset 6.png', alt: 'Bermain Kreatif', title: 'Bermain Kreatif', desc: 'Mengasah imajinasi melalui aktivitas bermain yang kreatif.' },
+              { icon: '/images/Asset 5.png', alt: 'Berakhlak Sejak Dini', title: 'Berakhlak Sejak Dini', desc: 'Pembiasaan sikap baik setiap hari di sekolah maupun rumah.' },
+              { icon: '/images/Asset 4.png', alt: 'Kurikulum Islami Terarah', title: 'Kurikulum Islami Terarah', desc: 'Pembelajaran Islami sesuai tahap usia anak secara menyenangkan.' },
             ].map((card, i) => (
-              <div key={i} className="bg-white rounded-[28px] p-8 shadow-sm hover:shadow-md transition-all border border-gray-100 flex flex-col items-center text-center gap-5">
+              <div key={i} className="bg-white rounded-[28px] p-8 shadow-sm hover:shadow-md transition-all border border-gray-100 flex flex-col items-center text-center gap-4">
                 <div className="relative w-16 h-16">
                   <Image src={card.icon} alt={card.alt} fill className="object-contain" />
                 </div>
-                <p className="text-sm font-semibold text-[#07265F]/85 leading-relaxed">
-                  Lorem ipsum dolor sit amet, consectetuer adipiscing elit, sed diam
+                <h3 className="font-extrabold text-[#07265F] text-base">
+                  {card.title}
+                </h3>
+                <p className="text-sm font-semibold text-[#07265F]/80 leading-relaxed">
+                  {card.desc}
                 </p>
               </div>
             ))}
@@ -425,7 +428,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── PROGRAM UNGGULAN ───────────────────── */}
-      <section id="program" className="pb-20">
+      <section id="program" className="pb-20 bg-[#F9F4ED] relative bottom-[15%]">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
           <div className="text-center mb-20">
             <h2 className="text-2xl sm:text-3xl font-black text-[#07265F]">Program Unggulan Kami</h2>
@@ -660,7 +663,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── FOOTER ─────────────────────────────── */}
-      <footer className="bg-[#07265F] text-white py-10 mt-[4rem]">
+      <footer className="bg-[#07265F] text-white py-10 mt-[25%] lg:mt-0">
         <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 text-center">
           <p className="text-xs font-bold text-white/70 tracking-wide">
             &copy; 2026 KB &amp; TK Istiqamah. Hak Cipta Dilindungi.
