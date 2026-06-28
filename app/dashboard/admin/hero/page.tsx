@@ -19,6 +19,7 @@ import {
   ExternalLink
 } from 'lucide-react'
 import { uploadHeroBanner, deleteHeroBanner } from '@/actions/admin'
+import { compressImage } from '@/lib/utils'
 
 export default function AdminHeroPage() {
   const [bannerList, setBannerList] = useState<any[]>([])
@@ -72,8 +73,10 @@ export default function AdminHeroPage() {
 
     setUploading(true)
     try {
+      const compressedFile = await compressImage(imageFile, 0.8, 1920)
+
       const formData = new FormData()
-      formData.append('file', imageFile)
+      formData.append('file', compressedFile)
       formData.append('buttonText', buttonText)
       formData.append('buttonLink', buttonLink)
 

@@ -17,6 +17,7 @@ import {
   ChevronRight
 } from 'lucide-react'
 import { uploadGalleryPhoto, deleteGalleryPhoto } from '@/actions/admin'
+import { compressImage } from '@/lib/utils'
 
 export default function AdminGalleryPage() {
   const [galleryList, setGalleryList] = useState<any[]>([])
@@ -72,8 +73,10 @@ export default function AdminGalleryPage() {
 
     setUploading(true)
     try {
+      const compressedFile = await compressImage(imageFile, 0.8, 1920)
+
       const formData = new FormData()
-      formData.append('file', imageFile)
+      formData.append('file', compressedFile)
       formData.append('title', title)
       formData.append('category', category)
 
