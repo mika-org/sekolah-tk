@@ -179,7 +179,7 @@ npm run db:seed
 ```
 
 ### 3. Akun Uji Coba Default (Seeded Accounts)
-Setelah menjalankan perintah `npm run db:seed`, Anda dapat menggunakan akun berikut untuk masuk ke portal sekolah di halaman `/login`:
+Setelah menjalankan perintah `npm run db:seed`, Anda dapat menggunakan akun berikut untuk masuk to portal sekolah di halaman `/login`:
 
 - **Super Admin**
   - Username: `superadmin`

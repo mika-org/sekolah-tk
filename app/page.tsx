@@ -207,6 +207,36 @@ export default function LandingPage() {
   return (
     <div className="h-screen bg-[#F9F4ED] font-sans antialiased text-[#07265F] overflow-x-hidden">
 
+      {/* JSON-LD Structured Data for Local Business / School */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "School",
+            "name": "KB & TK Istiqamah Bandung",
+            "url": "https://tkistiqamah.sch.id",
+            "logo": "https://tkistiqamah.sch.id/images/school_logo.png",
+            "image": "https://tkistiqamah.sch.id/images/Cover.png",
+            "description": "Website Resmi KB & TK Istiqamah Bandung. Mengembangkan potensi buah hati melalui bermain kreatif, pengenalan akhlak mulia sejak dini, dan kurikulum Islami terarah.",
+            "address": {
+              "@type": "PostalAddress",
+              "streetAddress": "Jl. Taman Citarum, Kec. Bandung Wetan",
+              "addressLocality": "Bandung",
+              "addressRegion": "Jawa Barat",
+              "postalCode": "40115",
+              "addressCountry": "ID"
+            },
+            "telephone": "022-4241799",
+            "email": "info@tkistiqamah.sch.id",
+            "sameAs": [
+              "https://www.instagram.com/kbtkistiqamah",
+              "https://www.facebook.com/TK-Istiqamah-Bandung"
+            ]
+          })
+        }}
+      />
+
       {/* ─── NAVBAR ─────────────────────────────── */}
       <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${scrolled
         ? 'bg-white/95 backdrop-blur-md shadow-md py-2 border-b border-gray-100'

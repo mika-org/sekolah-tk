@@ -13,7 +13,9 @@ import {
   Trash2,
   Edit,
   ShieldCheck,
-  RefreshCw
+  RefreshCw,
+  Eye,
+  EyeOff
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -48,6 +50,8 @@ export default function AdminUsersPage() {
   // Delete confirm
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showEditPassword, setShowEditPassword] = useState(false)
 
   const loadUsers = async () => {
     setLoading(true)
@@ -305,9 +309,18 @@ export default function AdminUsersPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-bold text-primary-blue">Password Awal</Label>
-              <Input type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)}
-                placeholder="Min. 8 karakter" required minLength={8}
-                className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10" />
+              <div className="relative">
+                <Input type={showNewPassword ? 'text' : 'password'} value={newPassword} onChange={e => setNewPassword(e.target.value)}
+                  placeholder="Min. 8 karakter" required minLength={8}
+                  className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10 w-full pr-10" />
+                <button
+                  type="button"
+                  onClick={() => setShowNewPassword(!showNewPassword)}
+                  className="absolute right-3 top-2.5 text-gray-400 hover:text-primary-blue transition-colors cursor-pointer focus:outline-none"
+                >
+                  {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-bold text-primary-blue">Role / Peran</Label>
@@ -357,9 +370,18 @@ export default function AdminUsersPage() {
             </div>
             <div className="space-y-1.5">
               <Label className="text-xs font-bold text-primary-blue">Reset Password <span className="text-gray-400 font-medium">(kosongkan jika tidak diubah)</span></Label>
-              <Input type="password" value={editPassword} onChange={e => setEditPassword(e.target.value)}
-                placeholder="Password baru (min. 8 karakter)" minLength={editPassword ? 8 : 0}
-                className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10" />
+              <div className="relative">
+                <Input type={showEditPassword ? 'text' : 'password'} value={editPassword} onChange={e => setEditPassword(e.target.value)}
+                  placeholder="Password baru (min. 8 karakter)" minLength={editPassword ? 8 : 0}
+                  className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10 w-full pr-10" />
+                <button
+                  type="button"
+                  onClick={() => setShowEditPassword(!showEditPassword)}
+                  className="absolute right-3 top-2.5 text-gray-400 hover:text-primary-blue transition-colors cursor-pointer focus:outline-none"
+                >
+                  {showEditPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                </button>
+              </div>
             </div>
             <div className="pt-2 flex gap-3">
               <Button type="button" variant="outline" onClick={() => setEditOpen(false)}

@@ -22,6 +22,8 @@ export default function OrangTuaDashboard() {
   const [gradeLogs, setGradeLogs] = useState<any[]>([])
   const [announcements, setAnnouncements] = useState<any[]>([])
   const [ppdbData, setPpdbData] = useState<any>(null)
+  const [schedules, setSchedules] = useState<any[]>([])
+  const [activeDay, setActiveDay] = useState('Senin')
   const [loading, setLoading] = useState(true)
 
   const supabase = createClient()
@@ -131,6 +133,21 @@ export default function OrangTuaDashboard() {
         .eq('student_id', studentId)
         .order('id', { ascending: false })
       if (grd) setGradeLogs(grd)
+
+      // Fetch schedules if class_id is available
+      const { data: stud } = await supabase
+        .from('students_tk')
+        .select('kelas_id')
+        .eq('id', studentId)
+        .maybeSingle()
+      if (stud?.kelas_id) {
+        const { data: sched } = await supabase
+          .from('schedules_tk')
+          .select('*')
+          .eq('class_id', stud.kelas_id)
+          .order('start_time')
+        if (sched && sched.length > 0) setSchedules(sched)
+      }
     }
 
     // Fetch announcements
@@ -159,6 +176,48 @@ export default function OrangTuaDashboard() {
   const totalDays = attendanceLogs.length
   const presenceRate = totalDays > 0 ? Math.round((presentCount / totalDays) * 100) : 100
   const latestGrade = gradeLogs[0]
+
+  const DEFAULT_SCHEDULE: Record<string, Array<{ time: string; subject: string }>> = {
+    'Senin': [
+      { time: '08:00 - 09:30', subject: 'Hafalan & Doa Harian' },
+      { time: '09:30 - 10:30', subject: 'Calistung Dasar' },
+      { time: '10:30 - 11:00', subject: 'Istirahat / Bermain Bebas' }
+    ],
+    'Selasa': [
+      { time: '08:00 - 09:30', subject: 'Karakter & Sikap Islami' },
+      { time: '09:30 - 10:30', subject: 'Seni Mewarnai & Menggambar' },
+      { time: '10:30 - 11:00', subject: 'Istirahat / Bermain' }
+    ],
+    'Rabu': [
+      { time: '08:00 - 09:30', subject: 'Metode Tilawati / Mengaji' },
+      { time: '09:30 - 10:30', subject: 'Eksplorasi Alam & Sains Sederhana' },
+      { time: '10:30 - 11:00', subject: 'Istirahat' }
+    ],
+    'Kamis': [
+      { time: '08:00 - 09:30', subject: 'Tahfidz Qur\'an Juz 30' },
+      { time: '09:30 - 10:30', subject: 'Motorik & Olahraga Ceria' },
+      { time: '10:30 - 11:00', subject: 'Istirahat' }
+    ],
+    'Jumat': [
+      { time: '08:00 - 09:30', subject: 'Kisah Nabi & Rasul' },
+      { time: '09:30 - 10:30', subject: 'Kreativitas & Prakarya Tangan' },
+      { time: '10:30 - 11:00', subject: 'Istirahat' }
+    ]
+  }
+
+  const getDaySchedule = () => {
+    if (schedules && schedules.length > 0) {
+      return schedules
+        .filter(s => s.day === activeDay)
+        .map(s => ({
+          time: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)}`,
+          subject: s.subject
+        }))
+    }
+    return DEFAULT_SCHEDULE[activeDay] || []
+  }
+
+  const daySched = getDaySchedule()
 
   return (
     <div className="space-y-8">
@@ -303,6 +362,63 @@ export default function OrangTuaDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Weekly Schedule Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Schedule Selector */}
+        <Card className="bg-white rounded-[32px] shadow-sm border-none lg:col-span-1 overflow-hidden">
+          <CardHeader className="p-6 bg-[#F8F6F2] border-b border-gray-150">
+            <CardTitle className="text-sm font-black text-primary-blue">Hari Belajar</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 space-y-2">
+            {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'].map(day => {
+              const active = activeDay === day
+              return (
+                <button
+                  key={day}
+                  onClick={() => setActiveDay(day)}
+                  className={`w-full p-3.5 rounded-2xl text-xs font-bold transition-all text-left cursor-pointer ${
+                    active ? 'bg-primary-blue text-white shadow-md' : 'bg-[#F8F6F2] hover:bg-gray-100 text-gray-650'
+                  }`}
+                >
+                  {day}
+                </button>
+              )
+            })}
+          </CardContent>
+        </Card>
+
+        {/* Right Schedule Details */}
+        <Card className="bg-white rounded-[32px] shadow-sm border-none lg:col-span-2 overflow-hidden">
+          <CardHeader className="p-8 border-b border-gray-50">
+            <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
+              <Sparkles className="text-primary-green" size={18} />
+              Jadwal Pelajaran Hari {activeDay}
+            </CardTitle>
+            <CardDescription className="text-xs text-gray-400 font-semibold">
+              Rincian agenda kegiatan belajar mengajar (KBM) kelas ananda.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-8 pt-6">
+            {daySched.length === 0 ? (
+              <div className="text-center py-6 text-gray-400 font-semibold text-xs">Tidak ada KBM hari ini. Libur sekolah.</div>
+            ) : (
+              <div className="relative border-l border-gray-200 pl-4 ml-2 space-y-6">
+                {daySched.map((item, idx) => (
+                  <div key={idx} className="relative">
+                    {/* Circle marker */}
+                    <div className="absolute -left-[21px] top-1.5 w-3.5 h-3.5 rounded-full bg-primary-green ring-4 ring-emerald-50" />
+                    <div>
+                      <span className="text-[10px] text-gray-400 font-extrabold font-mono">{item.time}</span>
+                      <h4 className="font-extrabold text-sm text-primary-blue mt-0.5">{item.subject}</h4>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
 
     </div>
   )

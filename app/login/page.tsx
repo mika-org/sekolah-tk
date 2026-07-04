@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useActionState } from 'react'
+import React, { useActionState, useState } from 'react'
 import Link from 'next/link'
-import { ArrowLeft, Lock, User } from 'lucide-react'
+import { ArrowLeft, Lock, User, Eye, EyeOff } from 'lucide-react'
 import { login } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -14,6 +14,7 @@ const initialState = {
 
 export default function LoginPage() {
   const [state, formAction, isPending] = useActionState(login, initialState)
+  const [showPassword, setShowPassword] = useState(false)
 
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-[#F8F6F2]">
@@ -110,11 +111,18 @@ export default function LoginPage() {
                   <Input
                     id="password"
                     name="password"
-                    type="password"
+                    type={showPassword ? 'text' : 'password'}
                     required
                     placeholder="••••••••"
-                    className="pl-11 h-12 bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium"
+                    className="pl-11 pr-11 h-12 bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium"
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 top-3 text-gray-450 hover:text-primary-blue transition-colors cursor-pointer focus:outline-none"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
                 </div>
               </div>
 

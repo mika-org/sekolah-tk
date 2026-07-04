@@ -4,6 +4,7 @@ import React, { useState, useActionState, useEffect } from 'react'
 import Link from 'next/link'
 import { motion } from 'framer-motion'
 import { submitPPDB } from '@/actions/ppdb'
+import { getSettings } from '@/actions/settings'
 import { Button, buttonVariants } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -91,6 +92,17 @@ export default function PPDBPage() {
   const [copiedBank, setCopiedBank] = useState<string | null>(null)
   const formRef = React.useRef<HTMLFormElement>(null)
   const [selectedFiles, setSelectedFiles] = useState<Record<string, string>>({})
+  const [dbSettings, setDbSettings] = useState<any>(null)
+
+  useEffect(() => {
+    async function loadWebSettings() {
+      const res = await getSettings()
+      if (res.success && res.settings) {
+        setDbSettings(res.settings)
+      }
+    }
+    loadWebSettings()
+  }, [])
 
   useEffect(() => {
     if (state?.error) {
@@ -732,16 +744,23 @@ export default function PPDBPage() {
                     {/* Transfer Info */}
                     {paymentMethod === 'Transfer' && (
                       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="space-y-3 mt-2">
-                        <div className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Rekening Tujuan Yayasan Istiqamah</div>
+                        <div className="text-[10px] font-extrabold text-gray-400 uppercase tracking-widest">Rekening Tujuan Pembayaran</div>
                         {[
-                          { bank: 'BSI Syariah', norek: '711 0023 234', raw: '7110023234', color: 'text-[#07A363]', bg: 'bg-[#07A363]/5', border: 'border-[#07A363]/20' },
-                          { bank: 'Bank Mandiri', norek: '149 00 12345 678', raw: '1490012345678', color: 'text-[#07265F]', bg: 'bg-[#07265F]/5', border: 'border-[#07265F]/20' },
+                          { 
+                            bank: dbSettings?.payment_bank_name || 'Bank Mandiri', 
+                            norek: dbSettings?.payment_account_number || '131-00-1234567-8', 
+                            raw: (dbSettings?.payment_account_number || '131-00-1234567-8').replace(/-/g, '').replace(/\s/g, ''), 
+                            owner: dbSettings?.payment_account_name || 'Yayasan Istiqamah Bandung',
+                            color: 'text-[#07265F]', 
+                            bg: 'bg-[#07265F]/5', 
+                            border: 'border-[#07265F]/20' 
+                          },
                         ].map(bk => (
                           <div key={bk.bank} className={cn("flex items-center justify-between p-4 rounded-2xl border", bk.bg, bk.border)}>
                             <div className="space-y-0.5">
                               <div className={cn("text-[10px] font-extrabold uppercase tracking-wider", bk.color)}>{bk.bank}</div>
                               <div className="font-mono font-extrabold text-lg text-[#07265F] tracking-widest">{bk.norek}</div>
-                              <div className="text-[10px] text-gray-400 font-medium">a.n. Yayasan Istiqamah Balikpapan</div>
+                              <div className="text-[10px] text-gray-400 font-medium">a.n. {bk.owner}</div>
                             </div>
                             <button
                               type="button"

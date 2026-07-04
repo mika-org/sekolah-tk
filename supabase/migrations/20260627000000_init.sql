@@ -356,3 +356,112 @@ create policy "Allow view to admins"
     using (
         public.get_user_role(auth.uid()) in ('super_admin', 'admin')
     );
+
+-- =========================================================================
+-- SUPABASE MIGRATION: CHATS, MATERIALS, SCHEDULES
+-- =========================================================================
+
+-- 1. CHATS_TK TABLE
+create table if not exists public.chats_tk (
+    id uuid primary key default gen_random_uuid(),
+    sender_id uuid references public.users_tk(id) on delete cascade,
+    receiver_id uuid references public.users_tk(id) on delete cascade,
+    message text not null,
+    created_at timestamptz not null default now()
+);
+
+alter table public.chats_tk enable row level security;
+
+-- 2. MATERIALS_TK TABLE
+create table if not exists public.materials_tk (
+    id uuid primary key default gen_random_uuid(),
+    title text not null,
+    description text,
+    file_url text not null,
+    class_id uuid references public.classes_tk(id) on delete cascade,
+    teacher_id uuid references public.teachers_tk(id) on delete set null,
+    created_at timestamptz not null default now()
+);
+
+alter table public.materials_tk enable row level security;
+
+-- 3. SCHEDULES_TK TABLE
+create table if not exists public.schedules_tk (
+    id uuid primary key default gen_random_uuid(),
+    class_id uuid references public.classes_tk(id) on delete cascade,
+    day text not null check (day in ('Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu')),
+    subject text not null,
+    start_time time not null,
+    end_time time not null
+);
+
+alter table public.schedules_tk enable row level security;
+
+
+-- =========================================================================
+-- ROW LEVEL SECURITY (RLS) POLICIES
+-- =========================================================================
+
+-- CHATS_TK POLICIES
+create policy "Allow participants to read chats"
+    on public.chats_tk for select
+    using (auth.uid() = sender_id or auth.uid() = receiver_id);
+
+create policy "Allow participants to insert chats"
+    on public.chats_tk for insert
+    with check (auth.uid() = sender_id);
+
+-- MATERIALS_TK POLICIES
+create policy "Allow authenticated to view materials"
+    on public.materials_tk for select
+    using (auth.role() = 'authenticated');
+
+create policy "Allow teachers and admins to manage materials"
+    on public.materials_tk for all
+    using (public.get_user_role(auth.uid()) in ('super_admin', 'admin', 'guru'));
+
+-- SCHEDULES_TK POLICIES
+create policy "Allow authenticated to view schedules"
+    on public.schedules_tk for select
+    using (auth.role() = 'authenticated');
+
+create policy "Allow admins to manage schedules"
+    on public.schedules_tk for all
+    using (public.get_user_role(auth.uid()) in ('super_admin', 'admin'));
+
+
+-- =========================================================================
+-- SUPABASE MIGRATION: WEB SETTINGS
+-- =========================================================================
+
+create table if not exists public.settings_tk (
+    key text primary key,
+    value text not null,
+    updated_at timestamptz not null default now()
+);
+
+alter table public.settings_tk enable row level security;
+
+create policy "Allow read settings to all"
+    on public.settings_tk for select
+    using (true);
+
+create policy "Allow write settings to super_admin and admin"
+    on public.settings_tk for all
+    using (public.get_user_role(auth.uid()) in ('super_admin', 'admin'));
+
+-- Seed default settings
+insert into public.settings_tk (key, value) values
+('school_name', 'KB & TK Istiqamah'),
+('school_tagline', 'Membangun Generasi Islami yang Cerdas dan Berakhlak'),
+('school_address', 'Jl. Taman Citarum, Kec. Bandung Wetan, Kota Bandung'),
+('school_phone', '022 - 4241799 / 0811 2198 853'),
+('school_email', 'info@tkistiqamah.sch.id'),
+('social_instagram', '@kbtkistiqamah'),
+('social_facebook', 'TK Istiqamah Bandung'),
+('academic_year', '2026/2027'),
+('ppdb_fee', '250000'),
+('payment_bank_name', 'Bank Mandiri'),
+('payment_account_number', '131-00-1234567-8'),
+('payment_account_name', 'Yayasan Istiqamah Bandung')
+on conflict (key) do update set value = excluded.value;

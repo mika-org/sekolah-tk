@@ -123,6 +123,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { name: 'Absensi TK', href: '/dashboard/guru/attendance', icon: ClipboardList },
           { name: 'Input Nilai', href: '/dashboard/guru/grades', icon: BookOpen },
           { name: 'Chat Orang Tua', href: '/dashboard/guru/chat', icon: MessageSquare },
+          { name: 'Materi Belajar', href: '/dashboard/guru/materials', icon: BookOpen },
         ]
       case 'orang_tua':
         return [
@@ -131,6 +132,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           { name: 'Absensi Anak', href: '/dashboard/orang-tua/attendance', icon: ClipboardList },
           { name: 'Nilai & Rapor', href: '/dashboard/orang-tua/grades', icon: GraduationCap },
           { name: 'Tagihan & Bayar', href: '/dashboard/orang-tua/billing', icon: DollarSign },
+          { name: 'Chat Wali Kelas', href: '/dashboard/orang-tua/chat', icon: MessageSquare },
+          { name: 'Materi Belajar', href: '/dashboard/orang-tua/materials', icon: BookOpen },
         ]
       default:
         return []

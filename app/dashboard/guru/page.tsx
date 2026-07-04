@@ -1,84 +1,103 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Calendar } from '@/components/ui/calendar'
-import { toast } from 'sonner'
 import {
   ClipboardList,
   BookOpen,
+  MessageSquare,
+  Sparkles,
+  Users,
   CalendarDays,
-  UserCheck,
-  CheckCircle,
-  AlertCircle,
-  Plus
+  ArrowRight,
+  Megaphone
 } from 'lucide-react'
 
-export default function GuruDashboard() {
-  const [students, setStudents] = useState<any[]>([])
-  const [attendance, setAttendance] = useState<Record<string, string>>({})
-  const [grades, setGrades] = useState<any[]>([])
+export default function GuruDashboardLanding() {
+  const [studentCount, setStudentCount] = useState(0)
+  const [announcements, setAnnouncements] = useState<any[]>([])
+  const [schedules, setSchedules] = useState<any[]>([])
+  const [activeDay, setActiveDay] = useState('Senin')
   const [loading, setLoading] = useState(true)
-  
-  // Grade form state
-  const [selectedStudent, setSelectedStudent] = useState('')
-  const [subject, setSubject] = useState('Hafalan & Doa')
-  const [score, setScore] = useState('')
-  const [description, setDescription] = useState('')
 
   const supabase = createClient()
-  const today = new Date().toISOString().split('T')[0]
+  const today = new Date().toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  })
 
   const loadData = async () => {
     setLoading(true)
-    
-    // Fetch students
-    const { data: studentData } = await supabase
-      .from('students_tk')
-      .select('*')
-      .eq('status', 'active')
+    try {
+      // 1. Get active student count
+      const { count } = await supabase
+        .from('students_tk')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'active')
 
-    // Fetch today's attendance records from attendance_tk
-    const { data: attendanceData } = await supabase
-      .from('attendance_tk')
-      .select('*')
-      .eq('date', today)
+      setStudentCount(count || 0)
 
-    // Fetch recent grades
-    const { data: gradeData } = await supabase
-      .from('grades_tk')
-      .select('*, students_tk(nama)')
-      .order('id', { ascending: false })
+      // 2. Get announcements for Guru
+      const { data: ann } = await supabase
+        .from('announcements_tk')
+        .select('*')
+        .eq('published', true)
+        .in('target', ['Semua', 'Guru'])
+        .order('id', { ascending: false })
+        .limit(5)
 
-    if (studentData) {
-      setStudents(studentData)
-      
-      // Load existing attendance states
-      const attMap: Record<string, string> = {}
-      studentData.forEach(s => {
-        attMap[s.id] = 'Hadir' // default
-      })
-      if (attendanceData) {
-        attendanceData.forEach(a => {
-          attMap[a.student_id] = a.status
-        })
+      if (ann) setAnnouncements(ann)
+
+      // 3. Get current logged-in user profile to fetch class schedule
+      let user = null
+      const match = document.cookie.match(new RegExp('(^| )sekolah_tk_token=([^;]+)'))
+      if (match) {
+        try {
+          const token = match[2]
+          const parts = token.split('.')
+          const payloadJson = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
+          const payload = JSON.parse(payloadJson)
+          user = { id: payload.id }
+        } catch {}
       }
-      setAttendance(attMap)
-    } else {
-      setStudents([])
-      setAttendance({})
-    }
 
-    if (gradeData) {
-      setGrades(gradeData)
-    } else {
-      setGrades([])
+      if (!user) {
+        const { data: { user: authUser } } = await supabase.auth.getUser()
+        user = authUser
+      }
+
+      if (user) {
+        const { data: teacher } = await supabase
+          .from('teachers_tk')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle()
+
+        if (teacher) {
+          const { data: classes } = await supabase
+            .from('classes_tk')
+            .select('id')
+            .eq('guru_id', teacher.id)
+
+          if (classes && classes.length > 0) {
+            const classIds = classes.map(c => c.id)
+            const { data: sched } = await supabase
+              .from('schedules_tk')
+              .select('*')
+              .in('class_id', classIds)
+              .order('start_time')
+            if (sched && sched.length > 0) setSchedules(sched)
+          }
+        }
+      }
+    } catch (e) {
+      console.error(e)
     }
     setLoading(false)
   }
@@ -87,143 +106,166 @@ export default function GuruDashboard() {
     loadData()
   }, [])
 
-  const handleSaveAttendance = async () => {
-    try {
-      // Save all attendance states to public.attendance_tk
-      for (const [studentId, status] of Object.entries(attendance)) {
-        // Upsert based on date and student_id
-        const { data: existing } = await supabase
-          .from('attendance_tk')
-          .select('id')
-          .eq('student_id', studentId)
-          .eq('date', today)
-          .maybeSingle()
-
-        if (existing) {
-          await supabase
-            .from('attendance_tk')
-            .update({ status })
-            .eq('id', existing.id)
-        } else {
-          await supabase
-            .from('attendance_tk')
-            .insert({
-              student_id: studentId,
-              date: today,
-              status
-            })
-        }
-      }
-      toast.success('Absensi hari ini berhasil disimpan!')
-      toast.success('Absensi TK hari ini berhasil disimpan di database (table: attendance_tk)!')
-    } catch (e: any) {
-      toast.error('Gagal menyimpan absensi: ' + e.message)
-    }
+  const DEFAULT_SCHEDULE: Record<string, Array<{ time: string; subject: string }>> = {
+    'Senin': [
+      { time: '08:00 - 09:30', subject: 'Hafalan & Doa Harian (TK-A)' },
+      { time: '09:30 - 10:30', subject: 'Calistung Dasar (TK-A)' },
+      { time: '10:30 - 11:00', subject: 'Istirahat / Pengawasan Bermain' }
+    ],
+    'Selasa': [
+      { time: '08:00 - 09:30', subject: 'Karakter & Sikap Islami (TK-A)' },
+      { time: '09:30 - 10:30', subject: 'Seni Mewarnai & Menggambar (TK-A)' },
+      { time: '10:30 - 11:00', subject: 'Istirahat' }
+    ],
+    'Rabu': [
+      { time: '08:00 - 09:30', subject: 'Metode Tilawati / Mengaji (TK-A)' },
+      { time: '09:30 - 10:30', subject: 'Eksplorasi Alam & Sains (TK-A)' },
+      { time: '10:30 - 11:00', subject: 'Istirahat' }
+    ],
+    'Kamis': [
+      { time: '08:00 - 09:30', subject: 'Tahfidz Qur\'an Juz 30 (TK-A)' },
+      { time: '09:30 - 10:30', subject: 'Motorik & Olahraga Ceria (TK-A)' },
+      { time: '10:30 - 11:00', subject: 'Istirahat' }
+    ],
+    'Jumat': [
+      { time: '08:00 - 09:30', subject: 'Kisah Nabi & Rasul (TK-A)' },
+      { time: '09:30 - 10:30', subject: 'Kreativitas & Prakarya Tangan (TK-A)' },
+      { time: '10:30 - 11:00', subject: 'Istirahat' }
+    ]
   }
 
-  const handleSaveGrade = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!selectedStudent || !score) {
-      toast.error('Mohon pilih murid dan masukkan nilai.')
-      return
+  const getDaySchedule = () => {
+    if (schedules && schedules.length > 0) {
+      return schedules
+        .filter(s => s.day === activeDay)
+        .map(s => ({
+          time: `${s.start_time.substring(0, 5)} - ${s.end_time.substring(0, 5)}`,
+          subject: s.subject
+        }))
     }
-
-    try {
-      const { data, error } = await supabase
-        .from('grades_tk')
-        .insert({
-          student_id: selectedStudent,
-          subject,
-          score: parseFloat(score),
-          description
-        })
-        .select()
-
-      const studentName = students.find(s => s.id === selectedStudent)?.nama || ''
-      
-      // Update local state
-      const newGrade = {
-        id: data?.[0]?.id || crypto.randomUUID(),
-        student_id: selectedStudent,
-        subject,
-        score: parseFloat(score),
-        description,
-        students_tk: { nama: studentName }
-      }
-      setGrades(prev => [newGrade, ...prev])
-      
-      // Reset Form
-      setScore('')
-      setDescription('')
-      toast.success(`Nilai ${subject} untuk ${studentName} berhasil disimpan!`)
-    } catch (err: any) {
-      toast.error('Gagal menginput nilai: ' + err.message)
-    }
+    return DEFAULT_SCHEDULE[activeDay] || []
   }
+
+  const daySched = getDaySchedule()
 
   return (
     <div className="space-y-8">
-      
-      {/* Title */}
-      <div>
-        <h1 className="text-3xl font-black text-primary-blue">Dashboard Guru</h1>
-        <p className="text-gray-500 font-semibold text-xs mt-1">Mengelola absensi harian dan penilaian akademik ananda.</p>
+      {/* Welcome Banner */}
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-gradient-to-r from-primary-blue to-blue-900 text-white p-8 sm:p-10 rounded-[32px] shadow-xl relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-primary-green/10 rounded-full blur-3xl" />
+        <div className="relative z-10 space-y-2">
+          <div className="inline-flex items-center space-x-2 bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+            <Sparkles size={12} className="text-amber-400" />
+            <span>Portal Guru Pengajar</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black">Selamat Datang, Ustadz / Ustadzah</h1>
+          <p className="text-gray-300 font-medium text-xs">Hari ini adalah {today}. Siapkan administrasi kelas dengan mudah melalui panel di bawah.</p>
+        </div>
       </div>
 
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+        <Card className="bg-white rounded-3xl shadow-sm border-none">
+          <CardContent className="p-6 flex items-center space-x-4">
+            <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center">
+              <Users size={24} />
+            </div>
+            <div>
+              <div className="text-[10px] uppercase font-bold text-gray-400">Murid Didik Aktif</div>
+              <div className="text-2xl font-black text-primary-blue">{studentCount} Anak</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white rounded-3xl shadow-sm border-none">
+          <CardContent className="p-6 flex items-center space-x-4">
+            <div className="w-12 h-12 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center">
+              <CalendarDays size={24} />
+            </div>
+            <div>
+              <div className="text-[10px] uppercase font-bold text-gray-400">Tahun Ajaran</div>
+              <div className="text-base font-black text-primary-blue mt-1">2026/2027</div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-white rounded-3xl shadow-sm border-none">
+          <CardContent className="p-6 flex items-center space-x-4">
+            <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center">
+              <Megaphone size={24} />
+            </div>
+            <div>
+              <div className="text-[10px] uppercase font-bold text-gray-400">Pengumuman Aktif</div>
+              <div className="text-2xl font-black text-primary-blue">{announcements.length} Berita</div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Shortcuts & Announcements Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* Attendance (attendance_tk) section */}
+        {/* Quick Menu Shortcuts */}
+        <div className="lg:col-span-5 space-y-6">
+          <Card className="bg-white rounded-[32px] shadow-sm border-none">
+            <CardHeader className="p-6 pb-2">
+              <CardTitle className="text-base font-black text-primary-blue">Shortcut Administrasi</CardTitle>
+              <CardDescription className="text-xs font-semibold text-gray-400">Akses cepat menu pengelolaan kelas Anda.</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 pt-0 space-y-3">
+              {[
+                { title: 'Absensi TK', desc: 'Isi kehadiran murid hari ini', href: '/dashboard/guru/attendance', icon: ClipboardList, color: 'bg-emerald-50 text-primary-green' },
+                { title: 'Input Nilai Harian', desc: 'Catat perkembangan nilai anak', href: '/dashboard/guru/grades', icon: BookOpen, color: 'bg-blue-50 text-primary-blue' },
+                { title: 'Chat Orang Tua', desc: 'Komunikasi langsung dengan wali murid', href: '/dashboard/guru/chat', icon: MessageSquare, color: 'bg-purple-50 text-purple-650' },
+                { title: 'Materi Belajar', desc: 'Unggah modul & silabus mengajar', href: '/dashboard/guru/materials', icon: BookOpen, color: 'bg-amber-50 text-amber-700' },
+              ].map((item, idx) => (
+                <Link href={item.href} key={idx} className="block w-full group">
+                  <div className="p-4 bg-[#F8F6F2] hover:bg-[#F8F6F2]/70 border border-transparent hover:border-gray-200/50 rounded-2xl flex items-center justify-between transition-all">
+                    <div className="flex items-center space-x-3.5">
+                      <div className={`w-10 h-10 ${item.color} rounded-xl flex items-center justify-center flex-shrink-0 font-bold transition-all`}>
+                        <item.icon size={20} />
+                      </div>
+                      <div className="text-left">
+                        <div className="text-xs font-black text-primary-blue">{item.title}</div>
+                        <div className="text-[10px] text-gray-400 font-semibold mt-0.5">{item.desc}</div>
+                      </div>
+                    </div>
+                    <ArrowRight size={16} className="text-gray-400 group-hover:translate-x-1 transition-transform" />
+                  </div>
+                </Link>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Announcements List */}
         <div className="lg:col-span-7 space-y-6">
           <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-            <CardHeader className="p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <CardHeader className="p-8 border-b border-gray-50 flex items-center justify-between">
               <div>
                 <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
-                  <ClipboardList className="text-primary-green" />
-                  Presensi Kelas Hari Ini
+                  <Megaphone className="text-primary-green" size={20} />
+                  Pengumuman Terkini
                 </CardTitle>
-                <CardDescription className="text-xs font-semibold text-gray-400">Pilih status kehadiran anak pada hari ini ({today}).</CardDescription>
+                <CardDescription className="text-xs font-semibold text-gray-400">Siaran informasi penting untuk para guru.</CardDescription>
               </div>
-              <Button onClick={handleSaveAttendance} className="bg-primary-green hover:bg-primary-green/90 text-white font-extrabold rounded-xl text-xs cursor-pointer shadow-md shadow-primary-green/10">
-                Simpan Presensi
-              </Button>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-6">
               {loading ? (
-                <div className="p-12 text-center text-gray-400">Memuat data murid...</div>
+                <div className="text-center p-6 text-gray-400 text-xs">Memuat pengumuman...</div>
+              ) : announcements.length === 0 ? (
+                <div className="text-center p-6 text-gray-400 text-xs">Belum ada pengumuman untuk Anda saat ini.</div>
               ) : (
-                <div className="divide-y divide-gray-150">
-                  {students.map((student) => (
-                    <div key={student.id} className="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 hover:bg-gray-50/50 transition-colors">
-                      <div>
-                        <div className="font-bold text-primary-blue">{student.nama}</div>
-                        <div className="text-[10px] text-gray-400 font-semibold mt-0.5">NIS: {student.id.substring(0, 8)}</div>
+                <div className="space-y-4">
+                  {announcements.map((item) => (
+                    <div key={item.id} className="p-5 bg-[#F8F6F2] rounded-2xl border border-gray-100 space-y-2">
+                      <div className="flex items-center justify-between flex-wrap gap-2">
+                        <h4 className="font-extrabold text-sm text-primary-blue">{item.title}</h4>
+                        <Badge className="bg-primary-blue/10 text-primary-blue border-none font-bold text-[9px]">
+                          Target: {item.target}
+                        </Badge>
                       </div>
-                      
-                      {/* Attendance Options */}
-                      <div className="flex gap-2">
-                        {['Hadir', 'Sakit', 'Izin', 'Alfa'].map((opt) => {
-                          const active = attendance[student.id] === opt
-                          return (
-                            <button
-                              key={opt}
-                              onClick={() => setAttendance(prev => ({ ...prev, [student.id]: opt }))}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                                active
-                                  ? opt === 'Hadir'
-                                    ? 'bg-emerald-100 text-emerald-800 ring-2 ring-emerald-500/20'
-                                    : opt === 'Sakit'
-                                      ? 'bg-amber-100 text-amber-800 ring-2 ring-amber-500/20'
-                                      : opt === 'Izin'
-                                        ? 'bg-blue-100 text-blue-800 ring-2 ring-blue-500/20'
-                                        : 'bg-rose-100 text-rose-800 ring-2 ring-rose-500/20'
-                                  : 'bg-[#F8F6F2] hover:bg-gray-100 text-gray-500'
-                              }`}
-                            >
-                              {opt}
-                            </button>
-                          )
-                        })}
-                      </div>
+                      <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">{item.content}</p>
                     </div>
                   ))}
                 </div>
@@ -232,109 +274,63 @@ export default function GuruDashboard() {
           </Card>
         </div>
 
-        {/* Input Grades Section */}
-        <div className="lg:col-span-5 space-y-6">
-          
-          {/* Add Grade Form */}
-          <Card className="bg-white rounded-[32px] shadow-sm border-none">
-            <CardHeader className="p-6">
-              <CardTitle className="text-base font-black text-primary-blue flex items-center gap-2">
-                <BookOpen size={20} className="text-primary-green" />
-                Input Nilai Harian
-              </CardTitle>
-              <CardDescription className="text-xs text-gray-400 font-semibold">Berikan penilaian keterampilan atau sikap murid.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSaveGrade} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="student" className="text-xs font-bold text-primary-blue">Nama Murid *</Label>
-                  <Select onValueChange={(val) => setSelectedStudent(val as string)}>
-                    <SelectTrigger className="bg-[#F8F6F2] border-transparent rounded-xl text-sm font-medium">
-                      <SelectValue placeholder="Pilih Murid" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-xl">
-                      {students.map((student) => (
-                        <SelectItem key={student.id} value={student.id}>{student.nama}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+      </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="subject" className="text-xs font-bold text-primary-blue">Kategori Bidang *</Label>
-                    <Select onValueChange={(val) => setSubject(val as string)} defaultValue={subject}>
-                      <SelectTrigger className="bg-[#F8F6F2] border-transparent rounded-xl text-sm font-medium">
-                        <SelectValue placeholder="Pilih Bidang" />
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl">
-                        <SelectItem value="Hafalan & Doa">Hafalan & Doa</SelectItem>
-                        <SelectItem value="Calistung">Calistung</SelectItem>
-                        <SelectItem value="Seni & Mewarnai">Seni & Mewarnai</SelectItem>
-                        <SelectItem value="Karakter & Sikap">Karakter & Sikap</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+      {/* Weekly Schedule Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {/* Left Schedule Selector */}
+        <Card className="bg-white rounded-[32px] shadow-sm border-none lg:col-span-1 overflow-hidden">
+          <CardHeader className="p-6 bg-[#F8F6F2] border-b border-gray-150">
+            <CardTitle className="text-sm font-black text-primary-blue">Hari Mengajar</CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 space-y-2">
+            {['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'].map(day => {
+              const active = activeDay === day
+              return (
+                <button
+                  key={day}
+                  onClick={() => setActiveDay(day)}
+                  className={`w-full p-3.5 rounded-2xl text-xs font-bold transition-all text-left cursor-pointer ${
+                    active ? 'bg-primary-blue text-white shadow-md' : 'bg-[#F8F6F2] hover:bg-gray-100 text-gray-650'
+                  }`}
+                >
+                  {day}
+                </button>
+              )
+            })}
+          </CardContent>
+        </Card>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="score" className="text-xs font-bold text-primary-blue">Nilai Angka (1-100) *</Label>
-                    <Input
-                      id="score"
-                      type="number"
-                      min={1}
-                      max={100}
-                      value={score}
-                      onChange={(e) => setScore(e.target.value)}
-                      placeholder="Contoh: 85"
-                      className="bg-[#F8F6F2] border-transparent focus:bg-white rounded-xl text-sm font-medium"
-                    />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="desc" className="text-xs font-bold text-primary-blue">Catatan Guru (Kualitatif)</Label>
-                  <Input
-                    id="desc"
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Contoh: Sangat baik dalam menghafal Surah Al-Humazah..."
-                    className="bg-[#F8F6F2] border-transparent focus:bg-white rounded-xl text-sm font-medium"
-                  />
-                </div>
-
-                <Button type="submit" className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white font-extrabold rounded-xl text-xs py-3 h-auto cursor-pointer shadow-md shadow-primary-blue/10">
-                  <Plus size={16} className="mr-1" />
-                  Simpan Nilai Anak
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
-
-          {/* Recent Grades List */}
-          <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-            <CardHeader className="p-6 border-b border-gray-50">
-              <CardTitle className="text-sm font-black text-primary-blue">Input Nilai Terbaru</CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              <div className="divide-y divide-gray-100">
-                {grades.slice(0, 3).map((g) => (
-                  <div key={g.id} className="p-4 flex justify-between items-start gap-4">
+        {/* Right Schedule Details */}
+        <Card className="bg-white rounded-[32px] shadow-sm border-none lg:col-span-2 overflow-hidden">
+          <CardHeader className="p-8 border-b border-gray-50">
+            <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
+              <Sparkles className="text-primary-green" size={18} />
+              Jadwal Mengajar Hari {activeDay}
+            </CardTitle>
+            <CardDescription className="text-xs text-gray-400 font-semibold">
+              Rencana jadwal KBM kelas yang Anda ampu.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-8 pt-6">
+            {daySched.length === 0 ? (
+              <div className="text-center py-6 text-gray-400 font-semibold text-xs">Tidak ada jadwal mengajar hari ini.</div>
+            ) : (
+              <div className="relative border-l border-gray-200 pl-4 ml-2 space-y-6">
+                {daySched.map((item, idx) => (
+                  <div key={idx} className="relative">
+                    {/* Circle marker */}
+                    <div className="absolute -left-[21px] top-1.5 w-3.5 h-3.5 rounded-full bg-primary-green ring-4 ring-emerald-50" />
                     <div>
-                      <div className="font-bold text-xs text-primary-blue">{g.students_tk?.nama}</div>
-                      <div className="text-[10px] text-gray-400 font-semibold mt-0.5">{g.subject}</div>
-                      <div className="text-[11px] text-gray-500 italic mt-1 font-medium">"{g.description}"</div>
+                      <span className="text-[10px] text-gray-400 font-extrabold font-mono">{item.time}</span>
+                      <h4 className="font-extrabold text-sm text-primary-blue mt-0.5">{item.subject}</h4>
                     </div>
-                    <Badge className="bg-primary-green/10 text-primary-green hover:bg-primary-green/10 border-none font-bold rounded-lg px-2 py-0.5">
-                      {g.score}
-                    </Badge>
                   </div>
                 ))}
               </div>
-            </CardContent>
-          </Card>
-
-        </div>
-
+            )}
+          </CardContent>
+        </Card>
       </div>
 
     </div>
