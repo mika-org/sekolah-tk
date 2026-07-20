@@ -11,6 +11,15 @@ export async function POST(req: NextRequest) {
 
     const supabase = createAdminClient()
 
+    // Delete from auth.users if possible
+    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      try {
+        await supabase.auth.admin.deleteUser(id)
+      } catch (e) {
+        console.warn('Auth user deletion warning:', e)
+      }
+    }
+
     // Delete from users_tk
     const { error } = await supabase
       .from('users_tk')
@@ -26,3 +35,4 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
+
