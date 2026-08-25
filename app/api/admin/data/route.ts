@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/database/server'
+import { requestHasRole } from '@/lib/auth/request'
 
 // Generic admin data fetch endpoint
 // Query param: table = the table name to query
@@ -8,6 +9,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET(req: NextRequest) {
   try {
+    if (!await requestHasRole(req, ['super_admin', 'admin'])) {
+      return NextResponse.json({ error: 'Tidak memiliki izin.' }, { status: 403 })
+    }
     const { searchParams } = new URL(req.url)
     const table = searchParams.get('table')
     const limit = parseInt(searchParams.get('limit') || '200')

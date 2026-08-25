@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/database/client'
 import { Quote, MessageSquare, Compass, Sun, Heart, Smile } from 'lucide-react'
 
 const STATIC_ACTIVITIES = [

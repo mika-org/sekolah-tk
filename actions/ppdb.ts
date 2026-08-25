@@ -1,225 +1,237 @@
 'use server'
 
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/database/server'
+import {
+  allFields,
+  CHILD_FORM_SECTIONS,
+  FATHER_FORM_SECTIONS,
+  HEALTH_FORM_SECTIONS,
+  MOTHER_FORM_SECTIONS,
+  type PPDBFormSection,
+} from '@/lib/ppdb/form-definition'
+import { saveStoredFile } from '@/lib/storage'
 import { revalidatePath } from 'next/cache'
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
 
-const s3Client = new S3Client({
-  endpoint: process.env.SUPABASE_S3_ENDPOINT,
-  region: process.env.SUPABASE_S3_REGION || 'ap-southeast-1',
-  credentials: {
-    accessKeyId: process.env.SUPABASE_S3_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.SUPABASE_S3_SECRET_ACCESS_KEY || '',
-  },
-  forcePathStyle: true,
-})
+const MAX_FILE_SIZE = 2 * 1024 * 1024
+const ALLOWED_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'application/pdf'])
+const ALLOWED_FILE_EXTENSION = /\.(jpe?g|png|pdf)$/i
 
-async function ensureBucketExists(bucket: string) {
-  try {
-    const supabase = createAdminClient()
-    const { data: buckets, error } = await supabase.storage.listBuckets()
-    if (error) {
-      console.error(`Failed to list buckets: ${error.message}`)
-      return
-    }
-    const exists = buckets?.some(b => b.id === bucket)
-    if (!exists) {
-      const { error: createError } = await supabase.storage.createBucket(bucket, {
-        public: true
-      })
-      if (createError) {
-        console.error(`Failed to create bucket ${bucket}: ${createError.message}`)
-      } else {
-        console.log(`Bucket ${bucket} created successfully.`)
-      }
-    }
-  } catch (err) {
-    console.error(`Failed to ensure bucket ${bucket} exists:`, err)
-  }
+type PPDBActionState = {
+  success: boolean
+  error: string
+  ppdbId: string
+  errorStep?: number
 }
 
-export async function submitPPDB(prevState: any, formData: FormData) {
+type FormSnapshot = Record<string, string>
+
+function failure(error: string, errorStep: number): PPDBActionState {
+  return { success: false, error, ppdbId: '', errorStep }
+}
+
+function formText(formData: FormData, name: string) {
+  const value = formData.get(name)
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function collectSnapshot(formData: FormData, sections: PPDBFormSection[]): FormSnapshot {
+  return Object.fromEntries(allFields(sections).map((field) => {
+    let value = formText(formData, field.name)
+    if (field.uppercase) value = value.toLocaleUpperCase('id-ID')
+    if (field.type === 'email') value = value.toLocaleLowerCase('id-ID')
+    return [field.name, value]
+  }))
+}
+
+function firstMissingRequired(snapshot: FormSnapshot, sections: PPDBFormSection[]) {
+  return allFields(sections).find((field) => field.required && !snapshot[field.name])
+}
+
+function getUpload(formData: FormData, name: string) {
+  const value = formData.get(name)
+  return value instanceof File && value.size > 0 ? value : null
+}
+
+function validateUpload(file: File | null, label: string) {
+  if (!file) return null
+  if (file.size > MAX_FILE_SIZE) return `${label} melebihi ukuran maksimum 2 MB.`
+  if (!ALLOWED_FILE_TYPES.has(file.type) && !ALLOWED_FILE_EXTENSION.test(file.name)) {
+    return `${label} harus berformat JPG, PNG, atau PDF.`
+  }
+  return null
+}
+
+export async function submitPPDB(_prevState: PPDBActionState, formData: FormData): Promise<PPDBActionState> {
   try {
-    const supabase = createAdminClient()
-
-    // 1. Gather child data
-    const student_name = formData.get('student_name') as string
-    const birth_date = formData.get('birth_date') as string
-    const nik = formData.get('nik') as string
-    const nisn = formData.get('nisn') as string
-    const tempat_lahir = formData.get('tempat_lahir') as string
-    const jenis_kelamin = formData.get('jenis_kelamin') as string
-    const agama = formData.get('agama') as string
-    const alamat = formData.get('alamat') as string
-    const anak_ke = formData.get('anak_ke') as string
-    const jml_saudara = formData.get('jml_saudara') as string
-
-    // 2. Gather parent data
-    const nama_ayah = formData.get('nama_ayah') as string
-    const pekerjaan_ayah = formData.get('pekerjaan_ayah') as string
-    const hp_ayah = formData.get('hp_ayah') as string
-    const email_ayah = formData.get('email_ayah') as string
-    const penghasilan_ayah = formData.get('penghasilan_ayah') as string
-    const alamat_ayah = formData.get('alamat_ayah') as string
-
-    const nama_ibu = formData.get('nama_ibu') as string
-    const pekerjaan_ibu = formData.get('pekerjaan_ibu') as string
-    const hp_ibu = formData.get('hp_ibu') as string
-    const email_ibu = formData.get('email_ibu') as string
-    const penghasilan_ibu = formData.get('penghasilan_ibu') as string
-    const alamat_ibu = formData.get('alamat_ibu') as string
-
-    // 3. Gather payment method
-    const payment_method = formData.get('payment_method') as string
-    const payment_amount = parseFloat(formData.get('payment_amount') as string || '0')
-
-    // Validate current step
-    const current_step = formData.get('current_step') as string
-    if (current_step && current_step !== '3') {
-      return { success: false, error: 'Formulir belum lengkap. Mohon ikuti semua langkah hingga Langkah 3 sebelum mengirim.', ppdbId: '' }
+    const currentStep = formText(formData, 'current_step')
+    if (currentStep !== '4') {
+      return failure('Formulir belum lengkap. Ikuti semua langkah hingga Langkah 4 sebelum mengirim.', 4)
     }
 
-    // Validate main required fields
-    if (!student_name || !birth_date) {
-      return { success: false, error: 'Nama Lengkap dan Tanggal Lahir anak wajib diisi.', ppdbId: '' }
+    const childDetails = collectSnapshot(formData, CHILD_FORM_SECTIONS)
+    const fatherDetails = collectSnapshot(formData, FATHER_FORM_SECTIONS)
+    const motherDetails = collectSnapshot(formData, MOTHER_FORM_SECTIONS)
+    const developmentHealth = collectSnapshot(formData, HEALTH_FORM_SECTIONS)
+
+    const missingChildField = firstMissingRequired(childDetails, CHILD_FORM_SECTIONS)
+    if (missingChildField) {
+      return failure(`${missingChildField.label} wajib diisi.`, 1)
     }
 
-    // Insert PPDB Application
-    const { data: ppdbData, error: ppdbError } = await supabase
+    const fatherName = fatherDetails.nama_ayah
+    const motherName = motherDetails.nama_ibu
+    if (!fatherName && !motherName) {
+      return failure('Isi minimal satu identitas orang tua/wali.', 2)
+    }
+    if (fatherName && !fatherDetails.hp_ayah) {
+      return failure('No. Telepon/HP Ayah wajib diisi bila identitas ayah diisi.', 2)
+    }
+    if (motherName && !motherDetails.hp_ibu) {
+      return failure('No. Telepon/HP Ibu wajib diisi bila identitas ibu diisi.', 2)
+    }
+
+    if (formText(formData, 'pernyataan_kebenaran') !== 'setuju') {
+      return failure('Centang pernyataan kebenaran dan kelengkapan data sebelum mengirim.', 4)
+    }
+
+    const documentDefinitions = [
+      { name: 'kk', label: 'Kartu Keluarga', required: true },
+      { name: 'akta', label: 'Akta Kelahiran', required: true },
+      { name: 'foto_anak', label: 'Foto Anak', required: false },
+      { name: 'ktp_ayah', label: 'KTP Ayah', required: false },
+      { name: 'ktp_ibu', label: 'KTP Ibu', required: false },
+      {
+        name: 'surat_mutasi',
+        label: 'Surat Mutasi',
+        required: childDetails.status_pendaftaran === 'Siswa pindahan',
+      },
+      {
+        name: 'surat_lulus_kb',
+        label: 'Surat Keterangan Lulus Daycare/KB',
+        required: ['Daycare', 'Kelompok Bermain (KB)'].includes(childDetails.riwayat_pendidikan),
+      },
+    ] as const
+
+    const documents = documentDefinitions.map((definition) => ({
+      ...definition,
+      file: getUpload(formData, definition.name),
+    }))
+    for (const document of documents) {
+      if (document.required && !document.file) {
+        return failure(`${document.label} wajib dilampirkan.`, 4)
+      }
+      const uploadError = validateUpload(document.file, document.label)
+      if (uploadError) return failure(uploadError, 4)
+    }
+
+    const paymentMethod = formText(formData, 'payment_method') || 'Transfer'
+    if (!['Transfer', 'QRIS', 'Cash'].includes(paymentMethod)) {
+      return failure('Metode pembayaran tidak valid.', 4)
+    }
+    const proofFile = getUpload(formData, 'bukti_pembayaran')
+    const proofError = validateUpload(proofFile, 'Bukti pembayaran')
+    if (proofError) return failure(proofError, 4)
+
+    const database = createAdminClient()
+    const { data: ppdbData, error: ppdbError } = await database
       .from('ppdb_tk')
       .insert({
-        student_name,
-        birth_date,
+        student_name: childDetails.student_name,
+        birth_date: childDetails.birth_date,
+        child_details: childDetails,
+        father_details: fatherDetails,
+        mother_details: motherDetails,
+        development_health: developmentHealth,
         status: 'Submitted',
-        payment_status: 'Pending'
+        payment_status: 'Pending',
       })
       .select()
       .single()
 
     if (ppdbError || !ppdbData) {
-      console.error('PPDB Insertion Error:', ppdbError)
-      return { success: false, error: 'Gagal menyimpan data pendaftaran: ' + ppdbError?.message, ppdbId: '' }
+      console.error('PPDB insertion error:', ppdbError)
+      return failure(`Gagal menyimpan data pendaftaran: ${ppdbError?.message || 'data tidak ditemukan'}`, 4)
     }
 
     const ppdbId = ppdbData.id
-
-    // Helper to upload file to S3
-    const uploadFile = async (file: File, bucket: string, path: string) => {
-      if (!file || file.size === 0) return null
-      
-      // Ensure bucket exists in Supabase Storage
-      await ensureBucketExists(bucket)
-      
-      const arrayBuffer = await file.arrayBuffer()
-      const buffer = Buffer.from(arrayBuffer)
-
-      const command = new PutObjectCommand({
-        Bucket: bucket,
-        Key: path,
-        Body: buffer,
-        ContentType: file.type,
-      })
-
-      try {
-        await s3Client.send(command)
-
-        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-        const match = supabaseUrl.match(/https:\/\/(.*?)\.supabase/)
-        const projectId = match ? match[1] : 'rgccflnozdvdmmxnshqv'
-        return `https://${projectId}.supabase.co/storage/v1/object/public/${bucket}/${path}`
-      } catch (error: any) {
-        console.error(`S3 upload failed for bucket ${bucket}:`, error)
-        throw new Error(`Gagal mengunggah berkas ${file.name}: ${error.message}`)
-      }
+    const uploadedDocuments: Array<{ type: string; file_url: string }> = []
+    for (const document of documents) {
+      if (!document.file) continue
+      const fileExtension = document.file.name.split('.').pop()?.toLowerCase() || 'pdf'
+      const objectPath = `${ppdbId}/${document.name}_${Date.now()}.${fileExtension}`
+      const fileUrl = await saveStoredFile(
+        'ppdb-documents',
+        objectPath,
+        Buffer.from(await document.file.arrayBuffer()),
+      )
+      uploadedDocuments.push({ type: document.name, file_url: fileUrl })
     }
 
-    // Document types to process
-    const docTypes = ['kk', 'akta', 'foto_anak', 'ktp_ayah', 'ktp_ibu']
-    for (const type of docTypes) {
-      const file = formData.get(type) as File
-      if (file && file.size > 0) {
-        const fileExtension = file.name.split('.').pop() || 'pdf'
-        const path = `${ppdbId}/${type}_${Date.now()}.${fileExtension}`
-        try {
-          const fileUrl = await uploadFile(file, 'ppdb-documents', path)
-          if (fileUrl) {
-            await supabase.from('ppdb_documents_tk').insert({
-              ppdb_id: ppdbId,
-              type: type.toUpperCase(),
-              file_url: fileUrl
-            })
-          }
-        } catch (e: any) {
-          console.error(e)
-        }
-      }
-    }
-
-    // Process payment proof
-    const proofFile = formData.get('bukti_pembayaran') as File
-    let proofUrl = ''
-    if (proofFile && proofFile.size > 0) {
-      const fileExtension = proofFile.name.split('.').pop() || 'jpg'
-      const path = `${ppdbId}/proof_${Date.now()}.${fileExtension}`
-      try {
-        const fileUrl = await uploadFile(proofFile, 'payment-proof', path)
-        if (fileUrl) {
-          proofUrl = fileUrl
-        }
-      } catch (e: any) {
-        console.error(e)
-      }
-    }
-
-    // Insert payment record
-    if (payment_method) {
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-      const match = supabaseUrl.match(/https:\/\/(.*?)\.supabase/)
-      const projectId = match ? match[1] : 'rgccflnozdvdmmxnshqv'
-      const fallbackProof = `https://${projectId}.supabase.co/storage/v1/object/public/payment-proof/mock_proof.jpg`
-
-      await supabase.from('payments_tk').insert({
+    for (const document of uploadedDocuments) {
+      const { error } = await database.from('ppdb_documents_tk').insert({
         ppdb_id: ppdbId,
-        method: payment_method,
-        amount: payment_amount || 250000, // PPDB registration fee
-        proof: proofUrl || fallbackProof,
-        status: 'Pending'
+        type: document.type,
+        file_url: document.file_url,
       })
+      if (error) throw new Error(`Gagal mencatat dokumen ${document.type}: ${error.message}`)
     }
 
-    // Save associated student and parent structure as inactive
-    const { data: studentData } = await supabase
+    let proofUrl: string | null = null
+    if (proofFile) {
+      const fileExtension = proofFile.name.split('.').pop()?.toLowerCase() || 'jpg'
+      proofUrl = await saveStoredFile(
+        'payment-proof',
+        `${ppdbId}/proof_${Date.now()}.${fileExtension}`,
+        Buffer.from(await proofFile.arrayBuffer()),
+      )
+    }
+
+    const { error: paymentError } = await database.from('payments_tk').insert({
+      ppdb_id: ppdbId,
+      method: paymentMethod,
+      amount: 250000,
+      proof: proofUrl,
+      status: 'Pending',
+    })
+    if (paymentError) throw new Error(`Gagal menyimpan pembayaran: ${paymentError.message}`)
+
+    const { data: studentData, error: studentError } = await database
       .from('students_tk')
       .insert({
-        nama: student_name,
-        nik,
-        nisn,
-        tempat_lahir,
-        tanggal_lahir: birth_date,
-        jenis_kelamin: jenis_kelamin || 'L',
-        agama,
-        alamat,
-        status: 'inactive'
+        nama: childDetails.student_name,
+        nik: childDetails.nik || null,
+        nisn: null,
+        tempat_lahir: childDetails.tempat_lahir || null,
+        tanggal_lahir: childDetails.birth_date,
+        jenis_kelamin: childDetails.jenis_kelamin || null,
+        agama: childDetails.agama || null,
+        alamat: childDetails.alamat || null,
+        status: 'inactive',
       })
       .select()
       .single()
 
-    if (studentData) {
-      await supabase.from('parents_tk').insert({
+    if (studentError) {
+      console.error('Student snapshot insertion error:', studentError)
+    } else if (studentData) {
+      const { error: parentError } = await database.from('parents_tk').insert({
         student_id: studentData.id,
-        nama_ayah,
-        nama_ibu,
-        hp: hp_ayah || hp_ibu,
-        email: email_ayah || email_ibu,
-        alamat: alamat_ayah || alamat_ibu || alamat,
-        pekerjaan: `${pekerjaan_ayah || ''} / ${pekerjaan_ibu || ''}`
+        nama_ayah: fatherName || null,
+        nama_ibu: motherName || null,
+        hp: fatherDetails.hp_ayah || motherDetails.hp_ibu || null,
+        email: fatherDetails.email_ayah || motherDetails.email_ibu || null,
+        alamat: fatherDetails.alamat_ayah || motherDetails.alamat_ibu || childDetails.alamat || null,
+        pekerjaan: `${fatherDetails.pekerjaan_ayah || ''} / ${motherDetails.pekerjaan_ibu || ''}`,
       })
+      if (parentError) console.error('Parent snapshot insertion error:', parentError)
     }
 
     revalidatePath('/dashboard/admin')
+    revalidatePath('/dashboard/admin/ppdb')
     return { success: true, error: '', ppdbId }
-  } catch (e: any) {
-    console.error(e)
-    return { success: false, error: 'Terjadi kesalahan sistem: ' + e.message, ppdbId: '' }
+  } catch (error: unknown) {
+    console.error(error)
+    const message = error instanceof Error ? error.message : 'Kesalahan tidak diketahui.'
+    return failure(`Terjadi kesalahan sistem: ${message}`, 4)
   }
 }

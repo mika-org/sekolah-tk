@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react'
 import { uploadMaterial, deleteMaterial, getMaterialsList } from '@/actions/materials'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/database/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'

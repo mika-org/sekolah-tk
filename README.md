@@ -1,6 +1,6 @@
 # 🏫 Portal Akademik & PPDB Online KB & TK Istiqamah
 
-Aplikasi portal akademik sekolah, manajemen pendaftaran siswa baru (PPDB), dan Content Management System (CMS) untuk **KB & TK Istiqamah**. Dibangun menggunakan **Next.js 15 (App Router)**, **TypeScript**, **TailwindCSS**, dan **Supabase** (Auth, Database, Storage RLS).
+Aplikasi portal akademik sekolah, manajemen pendaftaran siswa baru (PPDB), dan Content Management System (CMS) untuk **KB & TK Istiqamah**. Dibangun menggunakan **Next.js 15 (App Router)**, **TypeScript**, **TailwindCSS**, **PostgreSQL**, dan **Prisma ORM**.
 
 ---
 
@@ -9,8 +9,9 @@ Aplikasi portal akademik sekolah, manajemen pendaftaran siswa baru (PPDB), dan C
 - **Framework**: Next.js 15.5 (App Router)
 - **Bahasa**: TypeScript
 - **Styling**: TailwindCSS & PostCSS v4
-- **Database & Auth**: Supabase (PostgreSQL + Supabase Auth)
-- **Penyimpanan Berkas (Storage)**: Supabase Storage via S3 API (`@aws-sdk/client-s3`)
+- **Database**: PostgreSQL 16 melalui Prisma ORM 7
+- **Auth**: Password bcrypt dan JWT bertanda tangan dalam cookie `httpOnly`
+- **Penyimpanan Berkas (Storage)**: Direktori `STORAGE_PATH`, dilayani melalui `/api/uploads`
 - **State Management & Form**: React Hook Form, Zod Validation, TanStack Query
 - **Animasi & UI**: Framer Motion, Lucide React, Shadcn/UI (Button, Input, Select, Dialog, Table, Tabs, Badge, sonner)
 - **Email Service**: Nodemailer (SMTP/Gmail)
@@ -45,11 +46,11 @@ Berikut adalah tabel audit lengkap seluruh fitur yang diminta di dalam requireme
 ### 2. Autentikasi & Keamanan (Auth)
 | Fitur | Status | Deskripsi |
 | :--- | :---: | :--- |
-| **Supabase Auth Integration** | `✅ Done` | Menggunakan autentikasi Supabase untuk sinkronisasi hak akses dengan role di tabel database. |
+| **Autentikasi Lokal** | `✅ Done` | Menggunakan data `users_tk`, bcrypt, JWT HS256, cookie `httpOnly`, dan pemeriksaan role di server. |
 | **Role-Based Access Control** | `✅ Done` | Pembagian akses menu untuk **Super Admin**, **Admin**, **Guru**, dan **Orang Tua** yang diamankan melalui Next.js `middleware.ts`. |
 | **Login dengan Username** | `✅ Done` | Login menggunakan *Username* dan *Password* (bukan email). Query pencarian username dipetakan ke email terdaftar di auth. |
 | **Password Hashing** | `✅ Done` | Menggunakan `bcryptjs` untuk enkripsi hash kata sandi pengguna sebelum disimpan ke database publik. |
-| **Row Level Security (RLS)** | `✅ Done` | Kebijakan RLS SQL lengkap telah diaktifkan pada seluruh tabel `_tk` di Supabase untuk menjaga integritas data berdasarkan sesi autentikasi. |
+| **Otorisasi Server** | `✅ Done` | Akses baca/tulis dilindungi pada API dan server action berdasarkan sesi serta role pengguna. |
 
 ---
 
@@ -74,7 +75,7 @@ Berikut adalah tabel audit lengkap seluruh fitur yang diminta di dalam requireme
 | :--- | :---: | :--- |
 | **Manajemen PPDB** | `✅ Done` | Tinjau aplikasi pendaftar baru, verifikasi berkas/pembayaran, terima pendaftaran, tolak pendaftaran, atau hapus data secara permanen. |
 | **Verifikasi Pembayaran** | `✅ Done` | Verifikasi berkas bukti transfer biaya pendaftaran Rp 250.000, menyinkronkan status tagihan pendaftar menjadi Verified. |
-| **Pembuatan Akun Otomatis** | `✅ Done` | Menekan tombol "Terima PPDB" otomatis memicu pembuatan akun Orang Tua di Supabase Auth & tabel `users_tk`, mengaktifkan profil murid, dan mengaitkan ID orang tua. |
+| **Pembuatan Akun Otomatis** | `✅ Done` | Menekan tombol "Terima PPDB" membuat akun Orang Tua di `users_tk`, mengaktifkan profil murid, dan mengaitkan ID orang tua. |
 | **Format Kredensial Otomatis** | `✅ Done` | *Username*: nama anak huruf kecil tanpa spasi (ditambah angka jika duplikat). *Password*: tanggal lahir anak format `DDMMYYYY`. |
 | **Notifikasi Email Otomatis** | `✅ Done` | Mengirim email HTML berisi kredensial akun portal orang tua setelah admin menyetujui pendaftaran. Berfungsi secara dinamis menggunakan SMTP Gmail atau mode simulasi log jika belum dikonfigurasi. |
 | **Hero Banner CMS** | `✅ Done` | Dashboard khusus untuk mengunggah gambar banner baru, kustomisasi teks tombol aksi, kustomisasi tautan redirect tombol, dan hapus banner. |
@@ -90,8 +91,8 @@ Berikut adalah tabel audit lengkap seluruh fitur yang diminta di dalam requireme
 | **Presensi Kelas Harian** | `✅ Done` | Input kehadiran seluruh murid pada tanggal berjalan dengan opsi: *Hadir*, *Sakit*, *Izin*, *Alfa*. Data disimpan/diperbarui di tabel `attendance_tk`. |
 | **Input Nilai Harian** | `✅ Done` | Form pemberian nilai angka (1-100) dan deskripsi kualitatif per kategori bidang (Calistung, Hafalan & Doa, Seni, Karakter) ke tabel `grades_tk`. |
 | **Jadwal Mengajar** | `✅ Done` | Tampilan jadwal mengajar guru mingguan dan fallback KBM. |
-| **Upload Materi & Silabus** | `✅ Done` | Mengunggah bahan ajar, tugas, dan RPP yang disimpan di Supabase Storage. |
-| **Komunikasi Orang Tua / Chat** | `✅ Done` | Chat real-time dua arah dengan Orang Tua murid menggunakan Supabase database. |
+| **Upload Materi & Silabus** | `✅ Done` | Mengunggah bahan ajar, tugas, dan RPP ke storage aplikasi. |
+| **Komunikasi Orang Tua / Chat** | `✅ Done` | Chat dua arah dengan Orang Tua murid menggunakan PostgreSQL melalui Prisma. |
 
 ---
 
@@ -112,16 +113,16 @@ Berikut adalah tabel audit lengkap seluruh fitur yang diminta di dalam requireme
 | Fitur | Status | Deskripsi |
 | :--- | :---: | :--- |
 | **Form Pendaftaran Lengkap** | `✅ Done` | Formulir interaktif 3 tahap pendaftaran calon murid baru: `Data Anak` -> `Data Orang Tua` -> `Berkas & Pembayaran`. |
-| **Upload Dokumen Pendukung** | `✅ Done` | Pengunggahan file KK, Akta Kelahiran, Foto Anak, KTP Ayah, dan KTP Ibu langsung ke bucket Supabase Storage via AWS S3 Client. |
+| **Upload Dokumen Pendukung** | `✅ Done` | Pengunggahan file KK, Akta Kelahiran, Foto Anak, KTP Ayah, dan KTP Ibu ke storage aplikasi. |
 | **Informasi Pembayaran Awal** | `✅ Done` | Informasi petunjuk transfer biaya administrasi PPDB dan formulir unggah gambar bukti transfer bank / QRIS. |
 
 ---
 
-## 📂 Struktur Database Supabase
+## 📂 Struktur Database PostgreSQL + Prisma
 
-Seluruh tabel database di skema `public` menggunakan akhiran `_tk` agar terorganisir dengan baik. Migrasi skema lengkap tersedia di file [20260627000000_init.sql](file:///d:/Projects/sekolah-tk/supabase/migrations/20260627000000_init.sql):
+Seluruh tabel database di skema `public` menggunakan akhiran `_tk`. Model berada di `prisma/schema.prisma` dan migrasi SQL berada di `prisma/migrations`.
 
-1. **`users_tk`**: Menyimpan profil dasar user terhubung dengan skema `auth.users` (id, username, email, password_hash, role, status).
+1. **`users_tk`**: Menyimpan akun lokal (id, username, email, password_hash, role, status).
 2. **`teachers_tk`**: Database profil guru pengajar (id, nama, nip, hp, alamat, user_id).
 3. **`classes_tk`**: Database rombongan belajar (id, nama, guru_id, tahun_ajaran).
 4. **`students_tk`**: Database siswa (id, nama, nik, nisn, tempat_lahir, tanggal_lahir, jenis_kelamin, agama, alamat, kelas_id, status).
@@ -140,19 +141,14 @@ Seluruh tabel database di skema `public` menggunakan akhiran `_tk` agar terorgan
 
 ## 🚀 Petunjuk Menjalankan Aplikasi
 
-### 1. Prasyarat Lingkungan (.env.local)
-Pastikan berkas [.env.local](file:///d:/Projects/sekolah-tk/.env.local) telah dikonfigurasi dengan kredensial API Supabase, S3 Storage, dan SMTP Mailer Anda:
+### 1. Prasyarat Lingkungan (.env)
+Salin `.env.example` menjadi `.env`, lalu isi PostgreSQL target, secret JWT, storage, dan SMTP bila digunakan:
 
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://<id-proyek>.supabase.co
-NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key-anda>
-SUPABASE_SERVICE_ROLE_KEY=<service-role-key-admin>
-
-# Supabase S3 Storage Configuration
-SUPABASE_S3_ENDPOINT=https://<id-proyek>.storage.supabase.co/storage/v1/s3
-SUPABASE_S3_ACCESS_KEY_ID=<access-key-id>
-SUPABASE_S3_SECRET_ACCESS_KEY=<secret-access-key>
-SUPABASE_S3_REGION=ap-northeast-2
+DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/DATABASE?schema=public"
+JWT_SECRET="secret-acak-minimal-32-karakter"
+STORAGE_PATH="./storage"
+NEXT_PUBLIC_STORAGE_URL="/api/uploads"
 
 # SMTP Configuration (Contoh: Gmail App Password)
 SMTP_HOST=smtp.gmail.com
@@ -164,40 +160,33 @@ SMTP_FROM="KB & TK Istiqamah Bandung" <tkistiqomahbandung@gmail.com>
 NEXT_PUBLIC_APP_URL=http://localhost:3200
 ```
 
-### 2. Jalankan Instalasi & Inisialisasi Database
-Jalankan langkah-langkah berikut di terminal untuk memasang paket dependensi, membuat bucket penyimpanan Supabase, dan membuat akun uji coba:
+### 2. Instalasi dan Migrasi Prisma
 
 ```bash
 # 1. Pasang dependensi
 npm install
 
-# 2. Buat bucket penyimpanan yang dibutuhkan sekolah di Supabase
-node scripts/create-buckets.js
-
-# 3. Seed akun default (Super Admin, Admin, Guru, Orang Tua) ke database
-npm run db:seed
+npm run db:generate
+npm run db:migrate
+npm run db:verify
 ```
 
-### 3. Akun Uji Coba Default (Seeded Accounts)
-Setelah menjalankan perintah `npm run db:seed`, Anda dapat menggunakan akun berikut untuk masuk ke portal sekolah di halaman `/login`:
+### 3. Impor Data Supabase Lama
 
-- **Super Admin**
-  - Username: `superadmin`
-  - Password: `adminpassword123`
-  
-- **Administrator**
-  - Username: `admin`
-  - Password: `adminpassword123`
-  
-- **Guru Pengajar**
-  - Username: `guru`
-  - Password: `gurupassword123`
-  
-- **Orang Tua Murid**
-  - Username: `orangtua`
-  - Password: `parentpassword123` (Murid terkait: *Althaf Syahputra*)
+Isi `NEXT_PUBLIC_SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY` sumber, jalankan dry-run, kemudian impor tabel dan objek Storage:
 
-### 4. Jalankan Server Pengembangan
+```bash
+npm run migrate:supabase:dry
+npm run migrate:supabase
+```
+
+Importer melakukan upsert menurut primary key dan memeriksa jumlah baris sumber/target. Bila sumber tidak tersedia, dry-run berhenti sebelum target diubah.
+
+### 4. Seed Super Admin Opsional
+
+Isi `SEED_ADMIN_USERNAME`, `SEED_ADMIN_EMAIL`, dan `SEED_ADMIN_PASSWORD` di environment, kemudian jalankan `npm run db:seed`. Tidak ada password default yang ditanam di source code.
+
+### 5. Jalankan Server Pengembangan
 Jalankan server Next.js lokal pada port 3200 (sesuai target redirect):
 
 ```bash

@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { getMaterialsList } from '@/actions/materials'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/database/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { BookOpen, FileText, Download, Sparkles } from 'lucide-react'

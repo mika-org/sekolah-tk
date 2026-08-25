@@ -1,8 +1,8 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
-import { createClient } from '@/lib/supabase/client'
+import { createClient } from '@/lib/database/client'
 import { approvePPDB, resendCredentialsEmail } from '@/actions/admin'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,27 +10,171 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import {
-  CheckCircle,
-  XCircle,
-  Clock,
+  CHILD_FORM_SECTIONS,
+  FATHER_FORM_SECTIONS,
+  HEALTH_FORM_SECTIONS,
+  MOTHER_FORM_SECTIONS,
+  type PPDBFieldDefinition,
+  type PPDBFormSection,
+} from '@/lib/ppdb/form-definition'
+import {
   TrendingUp,
   KeyRound,
   Mail,
   AlertCircle
 } from 'lucide-react'
 
+type SnapshotRecord = Record<string, unknown>
+
+interface PPDBApplication {
+  id: string
+  student_name: string
+  birth_date: string
+  status: string
+  payment_status: string
+  created_at: string
+  child_details?: SnapshotRecord | null
+  father_details?: SnapshotRecord | null
+  mother_details?: SnapshotRecord | null
+  development_health?: SnapshotRecord | null
+}
+
+interface GeneratedCredentials {
+  studentName?: string
+  username?: string
+  password?: string
+}
+
+interface RegistrationDocument {
+  id: string
+  type: string
+  file_url: string
+}
+
+interface RegistrationPayment {
+  method: string
+  amount: string | number
+  status: string
+  proof?: string | null
+}
+
+interface StudentDetails {
+  id: string
+  nama?: string | null
+  tempat_lahir?: string | null
+  tanggal_lahir?: string | null
+  jenis_kelamin?: string | null
+  agama?: string | null
+  nik?: string | null
+  nisn?: string | null
+  alamat?: string | null
+  anak_ke?: string | number | null
+  jml_saudara?: string | number | null
+}
+
+interface ParentDetails {
+  nama_ayah?: string | null
+  nama_ibu?: string | null
+  hp?: string | null
+  email?: string | null
+  alamat?: string | null
+  pekerjaan?: string | null
+}
+
+interface SelectedRegistrationDetails {
+  docs: RegistrationDocument[]
+  payment: RegistrationPayment | null
+  student: StudentDetails | null
+  parent: ParentDetails | null
+}
+
+const DOCUMENT_LABELS: Record<string, string> = {
+  kk: 'Kartu Keluarga',
+  akta: 'Akta Kelahiran',
+  foto_anak: 'Foto Anak',
+  ktp_ayah: 'KTP Ayah',
+  ktp_ibu: 'KTP Ibu',
+  surat_mutasi: 'Surat Mutasi',
+  surat_lulus_kb: 'Surat Keterangan Lulus KB/Daycare',
+}
+
+function documentLabel(type: string) {
+  const normalized = type.toLocaleLowerCase('id-ID')
+  return DOCUMENT_LABELS[normalized] || type
+}
+
+function displaySnapshotValue(value: unknown, field: PPDBFieldDefinition) {
+  if (value === null || value === undefined || value === '') return 'Belum diisi'
+  const text = String(value)
+  if (field.type === 'date') {
+    const date = new Date(`${text.slice(0, 10)}T00:00:00`)
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })
+    }
+  }
+  return field.options?.find((option) => option.value === text)?.label || text
+}
+
+function SnapshotGroup({
+  title,
+  sections,
+  data,
+  defaultOpen = false,
+}: {
+  title: string
+  sections: PPDBFormSection[]
+  data: Record<string, unknown> | null | undefined
+  defaultOpen?: boolean
+}) {
+  const snapshot = data && typeof data === 'object' ? data : {}
+  return (
+    <details open={defaultOpen} className="group rounded-2xl border border-gray-100 bg-[#F8F6F2]">
+      <summary className="cursor-pointer list-none px-5 py-4 text-xs font-extrabold uppercase tracking-wider text-primary-blue">
+        <span className="flex items-center justify-between gap-3">
+          {title}
+          <span className="text-[10px] text-gray-400 group-open:hidden">Buka detail</span>
+          <span className="hidden text-[10px] text-gray-400 group-open:inline">Tutup detail</span>
+        </span>
+      </summary>
+      <div className="space-y-6 border-t border-gray-100 bg-white px-5 py-5">
+        {sections.map((section) => (
+          <div key={section.title} className="space-y-3">
+            <h4 className="text-[11px] font-extrabold uppercase tracking-wider text-primary-green">{section.title}</h4>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              {section.fields.map((field) => {
+                const value = snapshot[field.name]
+                const empty = value === null || value === undefined || value === ''
+                return (
+                  <div key={field.name} className={cn('rounded-xl border border-gray-100 bg-gray-50 p-3', field.span === 2 && 'sm:col-span-2')}>
+                    <div className="text-[9px] font-extrabold uppercase tracking-wide text-gray-400">{field.label}</div>
+                    <div className={cn('mt-1 whitespace-pre-wrap text-xs font-semibold leading-relaxed text-primary-blue', empty && 'italic text-gray-400')}>
+                      {displaySnapshotValue(value, field)}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+    </details>
+  )
+}
+
+const supabase = createClient()
+
 export default function AdminPPDBPage() {
-  const [ppdbList, setPpdbList] = useState<any[]>([])
+  const [ppdbList, setPpdbList] = useState<PPDBApplication[]>([])
   const [loading, setLoading] = useState(true)
-  const [selectedApp, setSelectedApp] = useState<any>(null)
+  const [selectedApp, setSelectedApp] = useState<PPDBApplication | null>(null)
   
   // Credentials modal state
   const [credsModalOpen, setCredsModalOpen] = useState(false)
-  const [generatedCreds, setGeneratedCreds] = useState<any>(null)
+  const [generatedCreds, setGeneratedCreds] = useState<GeneratedCredentials | null>(null)
   const [actionPendingId, setActionPendingId] = useState<string | null>(null)
 
   // Details modal state
-  const [selectedDetails, setSelectedDetails] = useState<any>(null)
+  const [selectedDetails, setSelectedDetails] = useState<SelectedRegistrationDetails | null>(null)
   const [detailsModalOpen, setDetailsModalOpen] = useState(false)
   const [loadingDetails, setLoadingDetails] = useState(false)
 
@@ -40,9 +184,7 @@ export default function AdminPPDBPage() {
   const [confirmMessage, setConfirmMessage] = useState('')
   const [onConfirm, setOnConfirm] = useState<() => void>(() => {})
 
-  const supabase = createClient()
-
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     setLoading(true)
     const { data, error } = await supabase
       .from('ppdb_tk')
@@ -55,11 +197,11 @@ export default function AdminPPDBPage() {
       setPpdbList([])
     }
     setLoading(false)
-  }
+  }, [])
 
   useEffect(() => {
-    loadData()
-  }, [])
+    void loadData()
+  }, [loadData])
 
   useEffect(() => {
     if (detailsModalOpen || confirmOpen || credsModalOpen) {
@@ -96,7 +238,7 @@ export default function AdminPPDBPage() {
     }
   }
 
-  const handleViewDetails = async (app: any) => {
+  const handleViewDetails = async (app: PPDBApplication) => {
     setSelectedApp(app)
     setDetailsModalOpen(true)
     setLoadingDetails(true)
@@ -136,10 +278,10 @@ export default function AdminPPDBPage() {
       }
 
       setSelectedDetails({
-        docs: docs || [],
-        payment: payment || null,
-        student: student || null,
-        parent: parent || null
+        docs: (docs || []) as RegistrationDocument[],
+        payment: (payment || null) as RegistrationPayment | null,
+        student: (student || null) as StudentDetails | null,
+        parent: (parent || null) as ParentDetails | null
       })
     } catch (err) {
       console.error(err)
@@ -385,7 +527,8 @@ export default function AdminPPDBPage() {
           ) : !selectedDetails ? (
             <div className="py-20 text-center text-red-500 font-bold">Gagal memuat data. Silakan coba lagi.</div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6">
+            <div className="space-y-8 pt-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* LEFT COLUMN: STUDENT & PARENT DETAILS */}
               <div className="space-y-6">
                 {/* 1. DATA CALON SISWA */}
@@ -487,10 +630,10 @@ export default function AdminPPDBPage() {
                       <div className="text-center text-gray-400 py-4 font-semibold">Tidak ada berkas yang diunggah.</div>
                     ) : (
                       <div className="space-y-2.5">
-                        {selectedDetails.docs.map((doc: any) => (
+                        {selectedDetails.docs.map((doc) => (
                           <div key={doc.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm hover:border-[#07A363]/30 transition-all">
                             <div>
-                              <div className="font-bold text-primary-blue">{doc.type === 'kk' ? 'Kartu Keluarga' : doc.type === 'akta' ? 'Akta Kelahiran' : doc.type === 'foto_anak' ? 'Foto Anak' : doc.type === 'ktp_ayah' ? 'KTP Ayah' : doc.type === 'ktp_ibu' ? 'KTP Ibu' : doc.type}</div>
+                              <div className="font-bold text-primary-blue">{documentLabel(doc.type)}</div>
                               <div className="text-[10px] text-gray-400 font-medium">Dokumen PPDB</div>
                             </div>
                             <a
@@ -523,7 +666,7 @@ export default function AdminPPDBPage() {
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-400 font-semibold">Jumlah Biaya:</span>
-                            <span className="font-bold text-primary-blue">Rp {parseFloat(selectedDetails.payment.amount).toLocaleString('id-ID')}</span>
+                            <span className="font-bold text-primary-blue">Rp {parseFloat(String(selectedDetails.payment.amount)).toLocaleString('id-ID')}</span>
                           </div>
                           <div className="flex justify-between">
                             <span className="text-gray-400 font-semibold">Status:</span>
@@ -556,6 +699,18 @@ export default function AdminPPDBPage() {
                     )}
                   </div>
                 </div>
+              </div>
+            </div>
+
+              <div className="space-y-4 border-t border-gray-100 pt-6">
+                <div>
+                  <h3 className="text-sm font-black text-primary-blue">Formulir Pendaftaran Lengkap</h3>
+                  <p className="mt-1 text-[11px] font-medium text-gray-400">Snapshot jawaban yang dikirim orang tua/wali saat pendaftaran.</p>
+                </div>
+                <SnapshotGroup title="A. Keterangan Anak" sections={CHILD_FORM_SECTIONS} data={selectedApp?.child_details} defaultOpen />
+                <SnapshotGroup title="B. Identitas Ayah" sections={FATHER_FORM_SECTIONS} data={selectedApp?.father_details} />
+                <SnapshotGroup title="B. Identitas Ibu" sections={MOTHER_FORM_SECTIONS} data={selectedApp?.mother_details} />
+                <SnapshotGroup title="C. Perkembangan dan Kesehatan Anak" sections={HEALTH_FORM_SECTIONS} data={selectedApp?.development_health} />
               </div>
             </div>
           )}

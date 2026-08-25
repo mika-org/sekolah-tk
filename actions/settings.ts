@@ -1,7 +1,8 @@
 'use server'
 
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/database/server'
 import { revalidatePath } from 'next/cache'
+import { requireSessionRole } from '@/lib/auth/session'
 
 export async function getSettings() {
   try {
@@ -21,12 +22,13 @@ export async function getSettings() {
     return { success: true, settings: settingsRecord }
   } catch (e: any) {
     console.error('Error fetching settings:', e)
-    return { success: false, error: e.message, settings: {} }
+    return { success: false, error: e.message, settings: {} as Record<string, string> }
   }
 }
 
 export async function updateSettings(settings: Record<string, string>) {
   try {
+    await requireSessionRole(['super_admin', 'admin'])
     const supabase = createAdminClient()
 
     const upsertData = Object.entries(settings).map(([key, value]) => ({

@@ -140,8 +140,8 @@ Seluruh tabel database di skema `public` menggunakan akhiran `_tk` agar terorgan
 
 ## 🚀 Petunjuk Menjalankan Aplikasi
 
-### 1. Prasyarat Lingkungan (.env.local)
-Pastikan berkas [.env.local](file:///d:/Projects/sekolah-tk/.env.local) telah dikonfigurasi dengan kredensial API Supabase, S3 Storage, dan SMTP Mailer Anda:
+### 1. Prasyarat Lingkungan (.env)
+Pastikan berkas [.env](file:///d:/Projects/sekolah-tk/.env) telah dikonfigurasi dengan kredensial PostgreSQL, storage, dan SMTP Mailer Anda:
 
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://<id-proyek>.supabase.co

@@ -1,0 +1,258 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  username          String        @unique @db.Text
+  email             String        @unique @db.Text
+  password_hash     String        @db.Text
+  role              String        @db.Text
+  status            String        @default("active") @db.Text
+  created_at        DateTime      @default(now()) @db.Timestamptz(6)
+  teachers_tk       Teacher[]     @relation("TeacherUser")
+  students_tk       Student[]     @relation("StudentUser")
+  parents_tk        Parent[]      @relation("ParentUser")
+  activity_logs_tk  ActivityLog[]
+  sent_chats_tk     Chat[]        @relation("ChatSender")
+  received_chats_tk Chat[]        @relation("ChatReceiver")
+
+  @@map("users_tk")
+}
+
+model Teacher {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id      String?    @db.Uuid
+  nama         String     @db.Text
+  nip          String?    @unique @db.VarChar(18)
+  hp           String?    @db.Text
+  alamat       String?    @db.Text
+  users_tk     User?      @relation("TeacherUser", fields: [user_id], references: [id], onDelete: SetNull)
+  classes_tk   Class[]
+  grades_tk    Grade[]
+  materials_tk Material[]
+
+  @@index([user_id])
+  @@map("teachers_tk")
+}
+
+model Class {
+  id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  nama         String     @db.Text
+  guru_id      String?    @db.Uuid
+  tahun_ajaran String     @db.Text
+  teachers_tk  Teacher?   @relation(fields: [guru_id], references: [id], onDelete: SetNull)
+  students_tk  Student[]
+  materials_tk Material[]
+  schedules_tk Schedule[]
+
+  @@index([guru_id])
+  @@map("classes_tk")
+}
+
+model Student {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id       String?      @db.Uuid
+  nama          String       @db.Text
+  nik           String?      @unique @db.VarChar(16)
+  nisn          String?      @unique @db.VarChar(10)
+  tempat_lahir  String?      @db.Text
+  tanggal_lahir DateTime?    @db.Date
+  jenis_kelamin String?      @db.Text
+  agama         String?      @db.Text
+  alamat        String?      @db.Text
+  kelas_id      String?      @db.Uuid
+  status        String       @default("active") @db.Text
+  users_tk      User?        @relation("StudentUser", fields: [user_id], references: [id], onDelete: SetNull)
+  classes_tk    Class?       @relation(fields: [kelas_id], references: [id], onDelete: SetNull)
+  parents_tk    Parent[]
+  attendance_tk Attendance[]
+  grades_tk     Grade[]
+
+  @@index([user_id])
+  @@index([kelas_id])
+  @@map("students_tk")
+}
+
+model Parent {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id     String?  @db.Uuid
+  student_id  String?  @db.Uuid
+  nama_ayah   String?  @db.Text
+  nama_ibu    String?  @db.Text
+  hp          String?  @db.Text
+  email       String?  @db.Text
+  alamat      String?  @db.Text
+  pekerjaan   String?  @db.Text
+  users_tk    User?    @relation("ParentUser", fields: [user_id], references: [id], onDelete: SetNull)
+  students_tk Student? @relation(fields: [student_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([student_id])
+  @@map("parents_tk")
+}
+
+model Ppdb {
+  id                 String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  student_name       String         @db.Text
+  birth_date         DateTime       @db.Date
+  child_details      Json?          @db.JsonB
+  father_details     Json?          @db.JsonB
+  mother_details     Json?          @db.JsonB
+  development_health Json?          @db.JsonB
+  status             String         @default("Draft") @db.Text
+  payment_status     String         @default("Pending") @db.Text
+  created_at         DateTime       @default(now()) @db.Timestamptz(6)
+  ppdb_documents_tk  PpdbDocument[]
+  payments_tk        Payment[]
+
+  @@map("ppdb_tk")
+}
+
+model PpdbDocument {
+  id       String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ppdb_id  String? @db.Uuid
+  type     String  @db.Text
+  file_url String  @db.Text
+  ppdb_tk  Ppdb?   @relation(fields: [ppdb_id], references: [id], onDelete: Cascade)
+
+  @@index([ppdb_id])
+  @@map("ppdb_documents_tk")
+}
+
+model Gallery {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title      String   @db.Text
+  image      String   @db.Text
+  category   String   @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("galleries_tk")
+}
+
+model Testimonial {
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String  @db.Text
+  photo     String? @db.Text
+  job       String? @db.Text
+  content   String  @db.Text
+  published Boolean @default(false)
+
+  @@map("testimonials_tk")
+}
+
+model Announcement {
+  id        String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title     String  @db.Text
+  content   String  @db.Text
+  target    String  @db.Text
+  published Boolean @default(false)
+
+  @@map("announcements_tk")
+}
+
+model Payment {
+  id      String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ppdb_id String? @db.Uuid
+  method  String  @db.Text
+  amount  Decimal @db.Decimal
+  proof   String? @db.Text
+  status  String  @default("Pending") @db.Text
+  ppdb_tk Ppdb?   @relation(fields: [ppdb_id], references: [id], onDelete: Cascade)
+
+  @@index([ppdb_id])
+  @@map("payments_tk")
+}
+
+model Attendance {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  student_id  String?  @db.Uuid
+  date        DateTime @default(dbgenerated("CURRENT_DATE")) @db.Date
+  status      String   @db.Text
+  students_tk Student? @relation(fields: [student_id], references: [id], onDelete: Cascade)
+
+  @@index([student_id])
+  @@map("attendance_tk")
+}
+
+model Grade {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  student_id  String?  @db.Uuid
+  teacher_id  String?  @db.Uuid
+  subject     String   @db.Text
+  score       Decimal  @db.Decimal
+  description String?  @db.Text
+  students_tk Student? @relation(fields: [student_id], references: [id], onDelete: Cascade)
+  teachers_tk Teacher? @relation(fields: [teacher_id], references: [id], onDelete: SetNull)
+
+  @@index([student_id])
+  @@index([teacher_id])
+  @@map("grades_tk")
+}
+
+model ActivityLog {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  user_id    String?  @db.Uuid
+  activity   String   @db.Text
+  created_at DateTime @default(now()) @db.Timestamptz(6)
+  users_tk   User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@map("activity_logs_tk")
+}
+
+model Chat {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sender_id   String?  @db.Uuid
+  receiver_id String?  @db.Uuid
+  message     String   @db.Text
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  sender      User?    @relation("ChatSender", fields: [sender_id], references: [id], onDelete: Cascade)
+  receiver    User?    @relation("ChatReceiver", fields: [receiver_id], references: [id], onDelete: Cascade)
+
+  @@index([sender_id])
+  @@index([receiver_id])
+  @@map("chats_tk")
+}
+
+model Material {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String   @db.Text
+  description String?  @db.Text
+  file_url    String   @db.Text
+  class_id    String?  @db.Uuid
+  teacher_id  String?  @db.Uuid
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
+  classes_tk  Class?   @relation(fields: [class_id], references: [id], onDelete: Cascade)
+  teachers_tk Teacher? @relation(fields: [teacher_id], references: [id], onDelete: SetNull)
+
+  @@index([class_id])
+  @@index([teacher_id])
+  @@map("materials_tk")
+}
+
+model Schedule {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  class_id   String?  @db.Uuid
+  day        String   @db.Text
+  subject    String   @db.Text
+  start_time DateTime @db.Time(6)
+  end_time   DateTime @db.Time(6)
+  classes_tk Class?   @relation(fields: [class_id], references: [id], onDelete: Cascade)
+
+  @@index([class_id])
+  @@map("schedules_tk")
+}
+
+model Setting {
+  key        String   @id @db.Text
+  value      String   @db.Text
+  updated_at DateTime @default(now()) @db.Timestamptz(6)
+
+  @@map("settings_tk")
+}

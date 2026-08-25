@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/database/server'
 import bcrypt from 'bcryptjs'
+import { requestHasRole } from '@/lib/auth/request'
 
 export async function POST(req: NextRequest) {
   try {
+    if (!await requestHasRole(req, ['super_admin'])) {
+      return NextResponse.json({ error: 'Tidak memiliki izin.' }, { status: 403 })
+    }
     const { username, email, password, role } = await req.json()
 
     if (!username || !email || !password || !role) {
@@ -26,7 +30,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, id: data.id })
+    return NextResponse.json({ success: true, id: data!.id })
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 })
   }

@@ -3,7 +3,7 @@ import { decodeJWT, isJWTExpired } from '@/lib/jwt'
 
 export async function middleware(request: NextRequest) {
   const token = request.cookies.get('sekolah_tk_token')?.value
-  const user = token ? decodeJWT(token) : null
+  const user = token ? await decodeJWT(token) : null
 
   const url = request.nextUrl.clone()
 

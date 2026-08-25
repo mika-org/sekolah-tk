@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/database/server'
+import { requestHasRole } from '@/lib/auth/request'
 
 export async function POST(req: NextRequest) {
   try {
+    if (!await requestHasRole(req, ['super_admin'])) {
+      return NextResponse.json({ error: 'Tidak memiliki izin.' }, { status: 403 })
+    }
     const { id } = await req.json()
 
     if (!id) {

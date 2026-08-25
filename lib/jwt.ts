@@ -1,3 +1,5 @@
+import { jwtVerify, SignJWT } from 'jose'
+
 export interface JWTPayload {
   id: string;
   username: string;
@@ -6,35 +8,37 @@ export interface JWTPayload {
   exp: number;
 }
 
-export function generateJWT(user: { id: string; username: string; email: string; role: 'super_admin' | 'admin' | 'guru' | 'orang_tua' }): string {
-  const header = { alg: 'HS256', typ: 'JWT' };
-  const payload: JWTPayload = {
+function getSecret() {
+  const secret = process.env.JWT_SECRET
+  if (!secret || secret.length < 32) throw new Error('JWT_SECRET minimal 32 karakter wajib dikonfigurasi.')
+  return new TextEncoder().encode(secret)
+}
+
+export async function generateJWT(user: Omit<JWTPayload, 'exp'>): Promise<string> {
+  return new SignJWT({
     id: user.id,
     username: user.username,
     email: user.email,
     role: user.role,
-    exp: Date.now() + 2 * 60 * 60 * 1000 // 2 hours expiration
-  };
-
-  const base64Header = Buffer.from(JSON.stringify(header)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const base64Payload = Buffer.from(JSON.stringify(payload)).toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
-  const signature = 'sekolah_tk_sig_hash_client';
-
-  return `${base64Header}.${base64Payload}.${signature}`;
+  })
+    .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+    .setIssuedAt()
+    .setExpirationTime('2h')
+    .sign(getSecret())
 }
 
-export function decodeJWT(token: string): JWTPayload | null {
+export async function verifyJWT(token: string): Promise<JWTPayload | null> {
   try {
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    
-    const payloadJson = Buffer.from(parts[1].replace(/-/g, '+').replace(/_/g, '/'), 'base64').toString('utf-8');
-    return JSON.parse(payloadJson) as JWTPayload;
-  } catch (err) {
-    return null;
+    const { payload } = await jwtVerify(token, getSecret(), { algorithms: ['HS256'] })
+    if (!payload.id || !payload.username || !payload.email || !payload.role || !payload.exp) return null
+    return payload as unknown as JWTPayload
+  } catch {
+    return null
   }
 }
 
+export const decodeJWT = verifyJWT
+
 export function isJWTExpired(payload: JWTPayload): boolean {
-  return payload.exp < Date.now();
+  return payload.exp <= Math.floor(Date.now() / 1000)
 }

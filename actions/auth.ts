@@ -1,7 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/database/server'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import bcrypt from 'bcryptjs'
@@ -23,7 +22,7 @@ export async function login(prevState: any, formData: FormData) {
   const supabaseAdmin = createAdminClient()
 
   // 1. Get the user record from the public users table
-  const query = supabaseAdmin.from('users_tk').select('id, username, email, role, password_hash')
+  const query = supabaseAdmin.from('users_tk').select('id, username, email, role, status, password_hash')
   const { data: userData, error: userError } = await (
     isEmail
       ? query.eq('email', input).maybeSingle()
@@ -40,6 +39,10 @@ export async function login(prevState: any, formData: FormData) {
     return { error: 'Username atau password salah.' }
   }
 
+  if (userData.status !== 'active') {
+    return { error: 'Akun Anda sedang tidak aktif.' }
+  }
+
   // 2. Verify the password locally using bcrypt
   const isPasswordValid = await bcrypt.compare(password, userData.password_hash)
   if (!isPasswordValid) {
@@ -47,7 +50,7 @@ export async function login(prevState: any, formData: FormData) {
   }
 
   // 3. Generate POS-style custom JWT and set it in cookies to establish the session
-  const token = generateJWT({
+  const token = await generateJWT({
     id: userData.id,
     username: userData.username,
     email: userData.email,
@@ -56,26 +59,12 @@ export async function login(prevState: any, formData: FormData) {
 
   const cookieStore = await cookies()
   cookieStore.set('sekolah_tk_token', token, {
-    httpOnly: false, // Let client components read it to extract metadata
+    httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
     maxAge: 2 * 60 * 60 // 2 hours
   })
-
-  // Sign in to Supabase Auth to establish Supabase session cookies so RLS works
-  try {
-    const supabase = await createClient()
-    const { error: supabaseError } = await supabase.auth.signInWithPassword({
-      email: userData.email,
-      password: password
-    })
-    if (supabaseError) {
-      console.error('Supabase Auth sign-in failed:', supabaseError.message)
-    }
-  } catch (err: any) {
-    console.error('Error during Supabase Auth sign-in:', err.message)
-  }
 
   // 4. Redirect depending on role
   const role = userData.role
@@ -97,14 +86,6 @@ export async function login(prevState: any, formData: FormData) {
 export async function logout() {
   const cookieStore = await cookies()
   cookieStore.delete('sekolah_tk_token')
-  
-  try {
-    const supabase = await createClient()
-    await supabase.auth.signOut()
-  } catch (err: any) {
-    console.error('Error during Supabase Auth sign-out:', err.message)
-  }
-
   revalidatePath('/', 'layout')
   redirect('/login')
 }

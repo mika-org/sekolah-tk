@@ -1,21 +1,10 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/database/server'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { decodeJWT } from '@/lib/jwt'
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
-
-const s3Client = new S3Client({
-  endpoint: process.env.SUPABASE_S3_ENDPOINT,
-  region: process.env.SUPABASE_S3_REGION || 'ap-southeast-1',
-  credentials: {
-    accessKeyId: process.env.SUPABASE_S3_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.SUPABASE_S3_SECRET_ACCESS_KEY || '',
-  },
-  forcePathStyle: true,
-})
+import { deleteStoredFile, saveStoredFile, storagePathFromUrl } from '@/lib/storage'
 
 async function getCurrentUser() {
   const cookieStore = await cookies()
@@ -25,23 +14,6 @@ async function getCurrentUser() {
     return decodeJWT(token)
   } catch (e) {
     return null
-  }
-}
-
-async function ensureBucketExists(bucket: string) {
-  try {
-    const supabase = createAdminClient()
-    const { data: buckets, error } = await supabase.storage.listBuckets()
-    if (error) {
-      console.error(`Failed to list buckets: ${error.message}`)
-      return
-    }
-    const exists = buckets?.some(b => b.id === bucket)
-    if (!exists) {
-      await supabase.storage.createBucket(bucket, { public: true })
-    }
-  } catch (err) {
-    console.error(`Failed to ensure bucket ${bucket} exists:`, err)
   }
 }
 
@@ -74,29 +46,13 @@ export async function uploadMaterial(formData: FormData) {
       return { error: 'Profil guru Anda tidak ditemukan.' }
     }
 
-    // 2. Upload file to S3 (bucket: bucket_tk)
+    // 2. Upload file to the configured local/shared storage.
     const bucketName = 'bucket_tk'
-    await ensureBucketExists(bucketName)
 
     const fileExtension = file.name.split('.').pop() || 'pdf'
     const fileName = `${classId}/material_${Date.now()}.${fileExtension}`
 
-    const arrayBuffer = await file.arrayBuffer()
-    const buffer = Buffer.from(arrayBuffer)
-
-    const command = new PutObjectCommand({
-      Bucket: bucketName,
-      Key: fileName,
-      Body: buffer,
-      ContentType: file.type,
-    })
-
-    await s3Client.send(command)
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-    const match = supabaseUrl.match(/https:\/\/(.*?)\.supabase/)
-    const projectId = match ? match[1] : 'rgccflnozdvdmmxnshqv'
-    const fileUrl = `https://${projectId}.supabase.co/storage/v1/object/public/${bucketName}/${fileName}`
+    const fileUrl = await saveStoredFile(bucketName, fileName, Buffer.from(await file.arrayBuffer()))
 
     // 3. Save message log/record into database
     const { data: materialData, error: dbError } = await supabase
@@ -139,19 +95,14 @@ export async function deleteMaterial(id: string, fileUrl: string) {
 
     if (dbError) throw dbError
 
-    // 2. Delete file from S3 Storage
+    // 2. Delete file from storage.
     try {
-      const match = fileUrl.match(/\/public\/bucket_tk\/(.*)/)
-      if (match && match[1]) {
-        const fileKey = decodeURIComponent(match[1])
-        const command = new DeleteObjectCommand({
-          Bucket: 'bucket_tk',
-          Key: fileKey,
-        })
-        await s3Client.send(command)
+      const stored = storagePathFromUrl(fileUrl)
+      if (stored) {
+        await deleteStoredFile(stored.bucket, stored.objectPath)
       }
-    } catch (s3Error) {
-      console.warn('Failed to delete file from S3 Storage bucket:', s3Error)
+    } catch (storageError) {
+      console.warn('Failed to delete stored material:', storageError)
     }
 
     revalidatePath('/dashboard/guru/materials')

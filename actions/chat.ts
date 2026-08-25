@@ -1,7 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createAdminClient } from '@/lib/database/server'
 import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { decodeJWT } from '@/lib/jwt'

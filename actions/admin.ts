@@ -1,11 +1,12 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/database/server'
+import { createAdminClient } from '@/lib/database/server'
 import { revalidatePath } from 'next/cache'
 import bcrypt from 'bcryptjs'
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
 import nodemailer from 'nodemailer'
+import { deleteStoredFile, saveStoredFile, storagePathFromUrl } from '@/lib/storage'
+import { requireSessionRole } from '@/lib/auth/session'
 
 async function sendCredentialEmail(email: string, studentName: string, username: string, passwordStr: string) {
   try {
@@ -88,18 +89,9 @@ async function sendCredentialEmail(email: string, studentName: string, username:
   }
 }
 
-const s3Client = new S3Client({
-  endpoint: process.env.SUPABASE_S3_ENDPOINT,
-  region: process.env.SUPABASE_S3_REGION || 'ap-southeast-1',
-  credentials: {
-    accessKeyId: process.env.SUPABASE_S3_ACCESS_KEY_ID || '',
-    secretAccessKey: process.env.SUPABASE_S3_SECRET_ACCESS_KEY || '',
-  },
-  forcePathStyle: true,
-})
-
 export async function approvePPDB(ppdbId: string) {
   try {
+    await requireSessionRole(['super_admin', 'admin'])
     const supabase = await createClient()
     const supabaseAdmin = createAdminClient()
 
@@ -167,29 +159,22 @@ export async function approvePPDB(ppdbId: string) {
       }
     }
 
-    // 5. Create user in Supabase Auth (via admin client)
-    // Fallback if admin key is not available
-    let authId = 'mock-auth-id-' + Date.now()
-    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: parentEmail,
-        password: passwordStr,
-        email_confirm: true,
-        user_metadata: {
-          role: 'orang_tua',
-          username: username,
-          student_name: ppdb.student_name
-        }
-      })
-
-      if (authError || !authUser.user) {
-        console.error('Auth User Creation Error:', authError)
-        return { error: 'Gagal membuat user auth: ' + authError?.message }
+    // 5. Allocate the local account UUID. Authentication now uses users_tk directly.
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
+      email: parentEmail,
+      password: passwordStr,
+      user_metadata: {
+        role: 'orang_tua',
+        username: username,
+        student_name: ppdb.student_name
       }
-      authId = authUser.user.id
-    } else {
-      console.warn('SUPABASE_SERVICE_ROLE_KEY not configured. Simulating auth user creation.')
+    })
+
+    if (authError || !authUser.user) {
+      console.error('Local User Creation Error:', authError)
+      return { error: 'Gagal membuat user: ' + (authError?.message || 'unknown error') }
     }
+    const authId = authUser.user.id
 
     // 6. Insert into public.users table
     const { error: publicUserError } = await supabase
@@ -254,6 +239,7 @@ export async function approvePPDB(ppdbId: string) {
 
 export async function uploadGalleryPhoto(formData: FormData) {
   try {
+    await requireSessionRole(['super_admin', 'admin'])
     const file = formData.get('file') as File
     const title = formData.get('title') as string
     const category = formData.get('category') as string
@@ -271,19 +257,7 @@ export async function uploadGalleryPhoto(formData: FormData) {
 
     const bucketName = 'bucket_tk'
 
-    const command = new PutObjectCommand({
-      Bucket: bucketName,
-      Key: filePath,
-      Body: buffer,
-      ContentType: file.type,
-    })
-
-    await s3Client.send(command)
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-    const match = supabaseUrl.match(/https:\/\/(.*?)\.supabase/)
-    const projectId = match ? match[1] : 'rgccflnozdvdmmxnshqv'
-    const publicUrl = `https://${projectId}.supabase.co/storage/v1/object/public/${bucketName}/${filePath}`
+    const publicUrl = await saveStoredFile(bucketName, filePath, buffer)
 
     const supabaseAdmin = createAdminClient()
     const { data, error: dbError } = await supabaseAdmin
@@ -306,17 +280,11 @@ export async function uploadGalleryPhoto(formData: FormData) {
 
 export async function deleteGalleryPhoto(id: string, imageUrl: string) {
   try {
+    await requireSessionRole(['super_admin', 'admin'])
     const supabaseAdmin = createAdminClient()
-    const bucketName = 'bucket_tk'
-    const urlParts = imageUrl?.split(`/${bucketName}/`)
-    const storagePath = urlParts?.[1]
-
-    if (storagePath) {
-      const command = new DeleteObjectCommand({
-        Bucket: bucketName,
-        Key: storagePath,
-      })
-      await s3Client.send(command)
+    const stored = storagePathFromUrl(imageUrl)
+    if (stored) {
+      await deleteStoredFile(stored.bucket, stored.objectPath)
     }
 
     const { error } = await supabaseAdmin
@@ -340,6 +308,7 @@ export async function deleteGalleryPhoto(id: string, imageUrl: string) {
 
 export async function uploadTestimonialPhoto(formData: FormData) {
   try {
+    await requireSessionRole(['super_admin', 'admin'])
     const file = formData.get('file') as File
     if (!file || file.size === 0) return { photoUrl: null }
 
@@ -350,18 +319,7 @@ export async function uploadTestimonialPhoto(formData: FormData) {
     const filePath = `testimonials/${fileName}`
     const bucketName = 'bucket_tk'
 
-    const command = new PutObjectCommand({
-      Bucket: bucketName,
-      Key: filePath,
-      Body: buffer,
-      ContentType: file.type,
-    })
-    await s3Client.send(command)
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-    const match = supabaseUrl.match(/https:\/\/(.*?)\.supabase/)
-    const projectId = match ? match[1] : ''
-    const photoUrl = `https://${projectId}.supabase.co/storage/v1/object/public/${bucketName}/${filePath}`
+    const photoUrl = await saveStoredFile(bucketName, filePath, buffer)
 
     return { photoUrl }
   } catch (err: any) {
@@ -378,6 +336,7 @@ export async function saveTestimonial(data: {
   photo?: string | null
 }) {
   try {
+    await requireSessionRole(['super_admin', 'admin'])
     const supabaseAdmin = createAdminClient()
     const { data: result, error } = await supabaseAdmin
       .from('testimonials_tk')
@@ -402,6 +361,7 @@ export async function saveTestimonial(data: {
 
 export async function toggleTestimonialPublished(id: string, published: boolean) {
   try {
+    await requireSessionRole(['super_admin', 'admin'])
     const supabaseAdmin = createAdminClient()
     const { error } = await supabaseAdmin
       .from('testimonials_tk')
@@ -418,15 +378,12 @@ export async function toggleTestimonialPublished(id: string, published: boolean)
 
 export async function deleteTestimonial(id: string, photoUrl?: string | null) {
   try {
+    await requireSessionRole(['super_admin', 'admin'])
     const supabaseAdmin = createAdminClient()
-    const bucketName = 'bucket_tk'
-
     if (photoUrl) {
-      const urlParts = photoUrl?.split(`/${bucketName}/`)
-      const storagePath = urlParts?.[1]
-      if (storagePath) {
-        const command = new DeleteObjectCommand({ Bucket: bucketName, Key: storagePath })
-        await s3Client.send(command)
+      const stored = storagePathFromUrl(photoUrl)
+      if (stored) {
+        await deleteStoredFile(stored.bucket, stored.objectPath)
       }
     }
 
@@ -442,6 +399,7 @@ export async function deleteTestimonial(id: string, photoUrl?: string | null) {
 
 export async function resendCredentialsEmail(ppdbId: string) {
   try {
+    await requireSessionRole(['super_admin', 'admin'])
     const supabase = createAdminClient()
 
     // 1. Get PPDB record
@@ -530,6 +488,7 @@ export async function resendCredentialsEmail(ppdbId: string) {
 
 export async function uploadHeroBanner(formData: FormData) {
   try {
+    await requireSessionRole(['super_admin', 'admin'])
     const file = formData.get('file') as File
     const buttonText = formData.get('buttonText') as string || ''
     const buttonLink = formData.get('buttonLink') as string || ''
@@ -547,19 +506,7 @@ export async function uploadHeroBanner(formData: FormData) {
 
     const bucketName = 'bucket_tk'
 
-    const command = new PutObjectCommand({
-      Bucket: bucketName,
-      Key: filePath,
-      Body: buffer,
-      ContentType: file.type,
-    })
-
-    await s3Client.send(command)
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-    const match = supabaseUrl.match(/https:\/\/(.*?)\.supabase/)
-    const projectId = match ? match[1] : 'rgccflnozdvdmmxnshqv'
-    const publicUrl = `https://${projectId}.supabase.co/storage/v1/object/public/${bucketName}/${filePath}`
+    const publicUrl = await saveStoredFile(bucketName, filePath, buffer)
 
     // Encode button configuration as JSON string in the title column
     const titleJson = JSON.stringify({ buttonText, buttonLink })
@@ -586,17 +533,11 @@ export async function uploadHeroBanner(formData: FormData) {
 
 export async function deleteHeroBanner(id: string, imageUrl: string) {
   try {
+    await requireSessionRole(['super_admin', 'admin'])
     const supabaseAdmin = createAdminClient()
-    const bucketName = 'bucket_tk'
-    const urlParts = imageUrl?.split(`/${bucketName}/`)
-    const storagePath = urlParts?.[1]
-
-    if (storagePath) {
-      const command = new DeleteObjectCommand({
-        Bucket: bucketName,
-        Key: storagePath,
-      })
-      await s3Client.send(command)
+    const stored = storagePathFromUrl(imageUrl)
+    if (stored) {
+      await deleteStoredFile(stored.bucket, stored.objectPath)
     }
 
     const { error } = await supabaseAdmin
@@ -616,4 +557,3 @@ export async function deleteHeroBanner(id: string, imageUrl: string) {
     return { error: 'Gagal menghapus banner: ' + err.message }
   }
 }
-
