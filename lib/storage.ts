@@ -1,15 +1,14 @@
-import 'server-only'
-
 import { mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
 const storageRoot = path.resolve(process.env.STORAGE_PATH || path.join(process.cwd(), 'storage'))
 
 function safeSegment(segment: string) {
-  if (!/^[a-zA-Z0-9._-]+$/.test(segment) || segment === '.' || segment === '..') {
-    throw new Error('Nama path storage tidak valid.')
+  if (!segment || segment === '.' || segment === '..') {
+    return 'file'
   }
-  return segment
+  const clean = segment.replace(/[/\\?%*:|"<>]/g, '_').trim()
+  return clean || 'file'
 }
 
 function resolveStoragePath(bucket: string, objectPath = '') {

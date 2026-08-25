@@ -1,5 +1,3 @@
-import 'server-only'
-
 import { randomUUID } from 'node:crypto'
 import { createQueryClient, type DatabaseError } from '@/lib/database/query-builder'
 import { executeDatabaseQuery } from '@/lib/database/execute'

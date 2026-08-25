@@ -3,22 +3,6 @@ import { saveStoredFile } from '@/lib/storage'
 import { getRequestUser } from '@/lib/auth/request'
 
 const publicBuckets = new Set(['payment-proof', 'payment-proofs', 'ppdb-documents'])
-const allowedBuckets = new Set([
-  'bucket_tk',
-  'payment-proof',
-  'payment-proofs',
-  'ppdb-documents',
-  'materials',
-  'materials_tk',
-  'galleries',
-  'galleries_tk',
-  'announcements',
-  'announcements_tk',
-  'testimonials',
-  'testimonials_tk',
-  'teachers',
-  'teachers_tk',
-])
 const maxUploadBytes = 15 * 1024 * 1024
 
 export async function POST(request: NextRequest) {
