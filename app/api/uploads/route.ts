@@ -31,7 +31,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Permintaan upload tidak valid.' }, { status: 400 })
   }
 
-  // If not a public bucket, require user session
   if (!publicBuckets.has(bucket)) {
     const user = await getRequestUser(request)
     if (!user) return NextResponse.json({ error: 'Sesi login diperlukan.' }, { status: 401 })
