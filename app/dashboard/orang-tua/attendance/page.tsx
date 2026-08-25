@@ -1,15 +1,24 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/database/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { CalendarDays, ClipboardList, Sparkles } from 'lucide-react'
 
 export default function AttendancePage() {
   const [studentData, setStudentData] = useState<any>(null)
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Search & Pagination
+  const [searchQuery, setSearchQuery] = useState('')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const supabase = createClient()
 
@@ -97,6 +106,22 @@ export default function AttendancePage() {
     loadData()
   }, [])
 
+  const filteredLogs = useMemo(() => {
+    return attendanceLogs.filter((log) => {
+      const matchSearch =
+        !searchQuery ||
+        String(log.date).toLowerCase().includes(searchQuery.toLowerCase())
+      const matchStatus = statusFilter === 'all' || log.status === statusFilter
+      return matchSearch && matchStatus
+    })
+  }, [attendanceLogs, searchQuery, statusFilter])
+
+  const totalPages = Math.ceil(filteredLogs.length / pageSize) || 1
+  const paginatedLogs = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredLogs.slice(start, start + pageSize)
+  }, [filteredLogs, currentPage, pageSize])
+
   if (loading) {
     return <div className="p-8 text-center text-gray-400">Memuat absensi anak...</div>
   }
@@ -125,20 +150,54 @@ export default function AttendancePage() {
         {/* Attendance Logs Table */}
         <div className="lg:col-span-8 space-y-6">
           <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-            <CardHeader className="p-8 border-b border-gray-50">
-              <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
-                <CalendarDays className="text-primary-green" />
-                Histori Presensi Anak
-              </CardTitle>
-              <CardDescription className="text-xs text-gray-400 font-semibold">Daftar riwayat kehadiran siswa di kelas.</CardDescription>
+            <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
+                  <CalendarDays className="text-primary-green" />
+                  Histori Presensi Anak
+                </CardTitle>
+                <CardDescription className="text-xs text-gray-400 font-semibold">Daftar riwayat kehadiran siswa ({filteredLogs.length} entri).</CardDescription>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <TableSearchFilter
+                  value={searchQuery}
+                  onChange={(val) => {
+                    setSearchQuery(val)
+                    setCurrentPage(1)
+                  }}
+                  placeholder="Cari tanggal (YYYY-MM-DD)..."
+                />
+
+                <Select
+                  value={statusFilter}
+                  onValueChange={(val) => {
+                    if (val) {
+                      setStatusFilter(val)
+                      setCurrentPage(1)
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-32 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
+                    <SelectValue placeholder="Semua Status" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="all">Semua Status</SelectItem>
+                    <SelectItem value="Hadir">Hadir</SelectItem>
+                    <SelectItem value="Sakit">Sakit</SelectItem>
+                    <SelectItem value="Izin">Izin</SelectItem>
+                    <SelectItem value="Alfa">Alfa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               <div className="divide-y divide-gray-100">
-                {attendanceLogs.length === 0 ? (
-                  <div className="p-8 text-center text-gray-400 font-semibold text-xs">Belum ada riwayat kehadiran terdaftar.</div>
+                {filteredLogs.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400 font-semibold text-xs">Belum ada riwayat kehadiran yang sesuai.</div>
                 ) : (
-                  attendanceLogs.map((log) => (
-                    <div key={log.id} className="p-4 flex justify-between items-center px-8">
+                  paginatedLogs.map((log) => (
+                    <div key={log.id} className="p-4 flex justify-between items-center px-8 hover:bg-gray-50/50 transition-colors">
                       <div className="text-xs font-bold text-gray-600">
                         {new Date(log.date).toLocaleDateString('id-ID', {
                           day: 'numeric',
@@ -146,21 +205,20 @@ export default function AttendancePage() {
                           year: 'numeric'
                         })}
                       </div>
-                      <Badge className={`border-none font-bold rounded-lg px-2.5 py-0.5 text-[10px] ${
-                        log.status === 'Hadir' 
-                          ? 'bg-emerald-100 text-emerald-800' 
-                          : log.status === 'Sakit' 
-                            ? 'bg-amber-100 text-amber-800' 
-                            : log.status === 'Izin' 
-                              ? 'bg-blue-100 text-blue-800' 
-                              : 'bg-rose-100 text-rose-800'
-                      }`}>
-                        {log.status}
-                      </Badge>
+                      <StatusBadge status={log.status} />
                     </div>
                   ))
                 )}
               </div>
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredLogs.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                pageSizeOptions={[5, 10, 20]}
+              />
             </CardContent>
           </Card>
         </div>
@@ -174,7 +232,7 @@ export default function AttendancePage() {
             <CardContent className="p-6 space-y-4 text-xs text-gray-500 font-semibold">
               <div className="flex justify-between">
                 <span>Nama Siswa:</span>
-                <span className="text-primary-blue font-extrabold">{studentData?.nama}</span>
+                <span className="text-primary-blue font-extrabold">{studentData?.nama || 'Belum Terhubung'}</span>
               </div>
               <div className="flex justify-between">
                 <span>Rasio Kehadiran:</span>

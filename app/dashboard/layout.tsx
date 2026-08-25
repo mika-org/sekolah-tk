@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/database/client'
@@ -23,8 +23,25 @@ import {
   DollarSign,
   FileSpreadsheet,
   Layers,
-  UserCog
+  UserCog,
+  ChevronDown,
+  ChevronRight,
+  ShieldCheck,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
+interface NavItem {
+  name: string
+  href: string
+  icon: React.ElementType
+}
+
+interface NavGroup {
+  id: string
+  title: string
+  collapsible?: boolean
+  items: NavItem[]
+}
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter()
@@ -32,6 +49,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen] = useState(false)
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+
+  // State to track which group is expanded / collapsed
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
 
   const supabase = createClient()
 
@@ -45,15 +65,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           const parts = token.split('.')
           const payloadJson = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
           const payload = JSON.parse(payloadJson)
-          
+
           setUser({
             id: payload.id,
             email: payload.email,
             user_metadata: {
               role: payload.role,
               username: payload.username,
-              student_name: payload.username === 'orangtua' ? 'Althaf' : ''
-            }
+              student_name: payload.username === 'orangtua' ? 'Althaf' : '',
+            },
           })
           setLoading(false)
           return
@@ -62,7 +82,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         }
       }
 
-      // 2. Fallback to Supabase Auth
+      // 2. Fallback to API session
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
         setUser(user)
@@ -76,6 +96,201 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     await logout()
   }
 
+  const role = user?.user_metadata?.role || 'admin'
+
+  // Structured navigation groups based on user role
+  const navGroups = useMemo<NavGroup[]>(() => {
+    switch (role) {
+      case 'super_admin':
+        return [
+          {
+            id: 'main',
+            title: 'Utama',
+            collapsible: false,
+            items: [
+              { name: 'Dashboard', href: '/dashboard/super-admin', icon: LayoutDashboard },
+            ],
+          },
+          {
+            id: 'academic',
+            title: 'Master Data Akademik',
+            collapsible: true,
+            items: [
+              { name: 'Master Guru', href: '/dashboard/super-admin/teachers', icon: GraduationCap },
+              { name: 'Master Murid', href: '/dashboard/super-admin/students', icon: Users },
+              { name: 'Master Kelas', href: '/dashboard/super-admin/classes', icon: Layers },
+            ],
+          },
+          {
+            id: 'ppdb',
+            title: 'PPDB & Kesiswaan',
+            collapsible: true,
+            items: [
+              { name: 'Pendaftar PPDB', href: '/dashboard/admin/ppdb', icon: UserCheck },
+              { name: 'Verifikasi Pembayaran', href: '/dashboard/admin/payments', icon: DollarSign },
+              { name: 'Laporan PPDB', href: '/dashboard/super-admin/reports', icon: FileSpreadsheet },
+            ],
+          },
+          {
+            id: 'content',
+            title: 'Konten & Media Web',
+            collapsible: true,
+            items: [
+              { name: 'Kelola Banner Hero', href: '/dashboard/admin/hero', icon: Layers },
+              { name: 'Kelola Galeri', href: '/dashboard/admin/gallery', icon: BookOpen },
+              { name: 'Pengumuman', href: '/dashboard/admin/announcements', icon: Megaphone },
+              { name: 'Testimoni', href: '/dashboard/admin/testimonials', icon: MessageSquare },
+            ],
+          },
+          {
+            id: 'system',
+            title: 'Sistem & Pengaturan',
+            collapsible: true,
+            items: [
+              { name: 'Manajemen User', href: '/dashboard/admin/users', icon: UserCog },
+              { name: 'Audit Log Aktivitas', href: '/dashboard/super-admin/audit-logs', icon: FileText },
+              { name: 'Pengaturan Web', href: '/dashboard/super-admin/settings', icon: Settings },
+            ],
+          },
+        ]
+      case 'admin':
+        return [
+          {
+            id: 'main',
+            title: 'Utama',
+            collapsible: false,
+            items: [
+              { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
+            ],
+          },
+          {
+            id: 'ppdb',
+            title: 'PPDB & Kesiswaan',
+            collapsible: true,
+            items: [
+              { name: 'Pendaftar PPDB', href: '/dashboard/admin/ppdb', icon: UserCheck },
+              { name: 'Verifikasi Pembayaran', href: '/dashboard/admin/payments', icon: DollarSign },
+            ],
+          },
+          {
+            id: 'content',
+            title: 'Konten & Media Web',
+            collapsible: true,
+            items: [
+              { name: 'Kelola Banner Hero', href: '/dashboard/admin/hero', icon: Layers },
+              { name: 'Kelola Galeri', href: '/dashboard/admin/gallery', icon: BookOpen },
+              { name: 'Pengumuman', href: '/dashboard/admin/announcements', icon: Megaphone },
+              { name: 'Testimoni', href: '/dashboard/admin/testimonials', icon: MessageSquare },
+            ],
+          },
+          {
+            id: 'system',
+            title: 'Sistem',
+            collapsible: true,
+            items: [
+              { name: 'Manajemen User', href: '/dashboard/admin/users', icon: UserCog },
+            ],
+          },
+        ]
+      case 'guru':
+        return [
+          {
+            id: 'main',
+            title: 'Utama',
+            collapsible: false,
+            items: [
+              { name: 'Dashboard', href: '/dashboard/guru', icon: LayoutDashboard },
+            ],
+          },
+          {
+            id: 'academic',
+            title: 'Akademik & Penilaian',
+            collapsible: true,
+            items: [
+              { name: 'Absensi TK', href: '/dashboard/guru/attendance', icon: ClipboardList },
+              { name: 'Input Nilai PAUD', href: '/dashboard/guru/grades', icon: BookOpen },
+              { name: 'Materi Belajar', href: '/dashboard/guru/materials', icon: Layers },
+            ],
+          },
+          {
+            id: 'communication',
+            title: 'Komunikasi',
+            collapsible: true,
+            items: [
+              { name: 'Chat Orang Tua', href: '/dashboard/guru/chat', icon: MessageSquare },
+            ],
+          },
+        ]
+      case 'orang_tua':
+        return [
+          {
+            id: 'main',
+            title: 'Utama',
+            collapsible: false,
+            items: [
+              { name: 'Dashboard', href: '/dashboard/orang-tua', icon: LayoutDashboard },
+            ],
+          },
+          {
+            id: 'child_dev',
+            title: 'Perkembangan Ananda',
+            collapsible: true,
+            items: [
+              { name: 'Absensi Anak', href: '/dashboard/orang-tua/attendance', icon: ClipboardList },
+              { name: 'Nilai & Rapor PAUD', href: '/dashboard/orang-tua/grades', icon: GraduationCap },
+              { name: 'Materi Belajar', href: '/dashboard/orang-tua/materials', icon: Layers },
+            ],
+          },
+          {
+            id: 'admin_fin',
+            title: 'Administrasi & Keuangan',
+            collapsible: true,
+            items: [
+              { name: 'Status PPDB', href: '/dashboard/orang-tua/ppdb-status', icon: FileText },
+              { name: 'Tagihan & Bayar', href: '/dashboard/orang-tua/billing', icon: DollarSign },
+            ],
+          },
+          {
+            id: 'communication',
+            title: 'Komunikasi',
+            collapsible: true,
+            items: [
+              { name: 'Chat Wali Kelas', href: '/dashboard/orang-tua/chat', icon: MessageSquare },
+            ],
+          },
+        ]
+      default:
+        return []
+    }
+  }, [role])
+
+  // Automatically make sure the group containing active link is expanded
+  useEffect(() => {
+    navGroups.forEach((group) => {
+      const hasActiveChild = group.items.some((item) => pathname === item.href || pathname.startsWith(item.href + '/'))
+      if (hasActiveChild) {
+        setCollapsedGroups((prev) => ({ ...prev, [group.id]: false }))
+      }
+    })
+  }, [pathname, navGroups])
+
+  const toggleGroup = (groupId: string) => {
+    setCollapsedGroups((prev) => ({
+      ...prev,
+      [groupId]: !prev[groupId],
+    }))
+  }
+
+  const formatRoleName = (r: string) => {
+    switch (r) {
+      case 'super_admin': return 'Super Admin'
+      case 'admin': return 'Administrator'
+      case 'guru': return 'Guru Pengajar'
+      case 'orang_tua': return 'Orang Tua'
+      default: return r
+    }
+  }
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-[#F8F6F2]">
@@ -84,120 +299,126 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     )
   }
 
-  const role = user?.user_metadata?.role || 'admin'
+  // Sidebar navigation content renderer
+  const renderNav = (isMobile = false) => (
+    <div className="space-y-4">
+      {navGroups.map((group) => {
+        const isCollapsed = Boolean(collapsedGroups[group.id])
+        const hasActiveChild = group.items.some((item) => pathname === item.href)
 
-  // Get sidebar links based on role
-  const getLinks = () => {
-    switch (role) {
-      case 'super_admin':
-        return [
-          { name: 'Dashboard', href: '/dashboard/super-admin', icon: LayoutDashboard },
-          { name: 'Master Guru', href: '/dashboard/super-admin/teachers', icon: GraduationCap },
-          { name: 'Master Murid', href: '/dashboard/super-admin/students', icon: Users },
-          { name: 'Master Kelas', href: '/dashboard/super-admin/classes', icon: Layers },
-          { name: 'Pendaftar PPDB', href: '/dashboard/admin/ppdb', icon: UserCheck },
-          { name: 'Verifikasi Pembayaran', href: '/dashboard/admin/payments', icon: DollarSign },
-          { name: 'Kelola Banner Hero', href: '/dashboard/admin/hero', icon: Layers },
-          { name: 'Kelola Galeri', href: '/dashboard/admin/gallery', icon: BookOpen },
-          { name: 'Pengumuman', href: '/dashboard/admin/announcements', icon: Megaphone },
-          { name: 'Testimoni', href: '/dashboard/admin/testimonials', icon: MessageSquare },
-          { name: 'Laporan PPDB', href: '/dashboard/super-admin/reports', icon: FileSpreadsheet },
-          { name: 'Manajemen User', href: '/dashboard/admin/users', icon: UserCog },
-          { name: 'Audit Log', href: '/dashboard/super-admin/audit-logs', icon: FileText },
-          { name: 'Pengaturan Web', href: '/dashboard/super-admin/settings', icon: Settings },
-        ]
-      case 'admin':
-        return [
-          { name: 'Dashboard', href: '/dashboard/admin', icon: LayoutDashboard },
-          { name: 'Pendaftar PPDB', href: '/dashboard/admin/ppdb', icon: UserCheck },
-          { name: 'Verifikasi Pembayaran', href: '/dashboard/admin/payments', icon: DollarSign },
-          { name: 'Kelola Banner Hero', href: '/dashboard/admin/hero', icon: Layers },
-          { name: 'Kelola Galeri', href: '/dashboard/admin/gallery', icon: BookOpen },
-          { name: 'Pengumuman', href: '/dashboard/admin/announcements', icon: Megaphone },
-          { name: 'Testimoni', href: '/dashboard/admin/testimonials', icon: MessageSquare },
-          { name: 'Manajemen User', href: '/dashboard/admin/users', icon: UserCog },
-        ]
-      case 'guru':
-        return [
-          { name: 'Dashboard', href: '/dashboard/guru', icon: LayoutDashboard },
-          { name: 'Absensi TK', href: '/dashboard/guru/attendance', icon: ClipboardList },
-          { name: 'Input Nilai', href: '/dashboard/guru/grades', icon: BookOpen },
-          { name: 'Chat Orang Tua', href: '/dashboard/guru/chat', icon: MessageSquare },
-          { name: 'Materi Belajar', href: '/dashboard/guru/materials', icon: BookOpen },
-        ]
-      case 'orang_tua':
-        return [
-          { name: 'Dashboard', href: '/dashboard/orang-tua', icon: LayoutDashboard },
-          { name: 'Status PPDB', href: '/dashboard/orang-tua/ppdb-status', icon: FileText },
-          { name: 'Absensi Anak', href: '/dashboard/orang-tua/attendance', icon: ClipboardList },
-          { name: 'Nilai & Rapor', href: '/dashboard/orang-tua/grades', icon: GraduationCap },
-          { name: 'Tagihan & Bayar', href: '/dashboard/orang-tua/billing', icon: DollarSign },
-          { name: 'Chat Wali Kelas', href: '/dashboard/orang-tua/chat', icon: MessageSquare },
-          { name: 'Materi Belajar', href: '/dashboard/orang-tua/materials', icon: BookOpen },
-        ]
-      default:
-        return []
-    }
-  }
+        if (!group.collapsible) {
+          // Direct non-collapsible group (e.g. Dashboard)
+          return (
+            <div key={group.id} className="space-y-1">
+              {group.items.map((item) => {
+                const Icon = item.icon
+                const active = pathname === item.href
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.href}
+                    onClick={() => isMobile && setMobileOpen(false)}
+                    className={cn(
+                      'flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all',
+                      active
+                        ? 'bg-primary-green text-white shadow-md shadow-primary-green/20'
+                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    )}
+                  >
+                    <Icon size={17} className={active ? 'text-white' : 'text-emerald-400'} />
+                    <span>{item.name}</span>
+                  </Link>
+                )
+              })}
+            </div>
+          )
+        }
 
-  const links = getLinks()
+        return (
+          <div key={group.id} className="space-y-1">
+            {/* Group Header with toggle */}
+            <button
+              type="button"
+              onClick={() => toggleGroup(group.id)}
+              className={cn(
+                'w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors select-none cursor-pointer',
+                hasActiveChild ? 'text-emerald-400' : 'text-gray-400 hover:text-gray-200'
+              )}
+            >
+              <span>{group.title}</span>
+              <span className="p-0.5 rounded transition-transform">
+                {isCollapsed ? (
+                  <ChevronRight size={13} className="text-gray-400" />
+                ) : (
+                  <ChevronDown size={13} className="text-gray-400" />
+                )}
+              </span>
+            </button>
 
-  const formatRoleName = (role: string) => {
-    switch (role) {
-      case 'super_admin': return 'Super Admin'
-      case 'admin': return 'Administrator'
-      case 'guru': return 'Guru Pengajar'
-      case 'orang_tua': return 'Orang Tua'
-      default: return role
-    }
-  }
+            {/* Collapsible Submenu Items */}
+            {!isCollapsed && (
+              <div className="space-y-1 pl-1.5 pt-0.5">
+                {group.items.map((item) => {
+                  const Icon = item.icon
+                  const active = pathname === item.href
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => isMobile && setMobileOpen(false)}
+                      className={cn(
+                        'flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-bold transition-all',
+                        active
+                          ? 'bg-primary-green text-white font-extrabold shadow-md shadow-primary-green/20'
+                          : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                      )}
+                    >
+                      <Icon size={16} className={active ? 'text-white' : 'text-gray-400'} />
+                      <span className="truncate">{item.name}</span>
+                    </Link>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
 
   return (
     <div className="flex h-screen bg-[#F8F6F2] overflow-hidden font-sans">
       
       {/* DESKTOP SIDEBAR */}
-      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-primary-blue text-white flex-shrink-0 relative">
-        <div className="p-6 border-b border-white/10 flex items-center space-x-3">
-          <div className="w-8 h-8 bg-primary-green rounded-full flex items-center justify-center font-black text-sm">
+      <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-primary-blue text-white flex-shrink-0 relative select-none">
+        {/* Brand Header */}
+        <div className="p-5 border-b border-white/10 flex items-center space-x-3 bg-primary-blue/90">
+          <div className="w-9 h-9 bg-primary-green text-white rounded-xl flex items-center justify-center font-black text-base shadow-sm">
             I
           </div>
-          <div>
-            <div className="font-extrabold text-sm tracking-tight leading-none">Istiqamah Portal</div>
-            <span className="text-[9px] uppercase font-bold text-primary-green tracking-wider">{formatRoleName(role)}</span>
+          <div className="min-w-0">
+            <div className="font-black text-sm tracking-tight leading-tight truncate">TK Istiqamah</div>
+            <div className="inline-flex items-center gap-1 mt-0.5">
+              <ShieldCheck size={11} className="text-primary-green" />
+              <span className="text-[9px] uppercase font-black text-primary-green tracking-wider">{formatRoleName(role)}</span>
+            </div>
           </div>
         </div>
 
-        {/* Sidebar Links */}
-        <nav className="flex-1 px-4 py-6 space-y-1.5 overflow-y-auto">
-          {links.map((link) => {
-            const Icon = link.icon
-            const active = pathname === link.href
-            return (
-              <Link
-                key={link.name}
-                href={link.href}
-                className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                  active 
-                    ? 'bg-primary-green text-white shadow-md shadow-primary-green/10' 
-                    : 'text-gray-300 hover:bg-white/5 hover:text-white'
-                }`}
-              >
-                <Icon size={18} />
-                <span>{link.name}</span>
-              </Link>
-            )
-          })}
+        {/* Navigation Groups with Scroll */}
+        <nav className="flex-1 px-3.5 py-4 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/10 hover:[&::-webkit-scrollbar-thumb]:bg-white/20 [&::-webkit-scrollbar-thumb]:rounded-full">
+          {renderNav(false)}
         </nav>
 
-        {/* Logout Button Footer */}
-        <div className="p-4 border-t border-white/10">
+        {/* Logout Footer */}
+        <div className="p-3.5 border-t border-white/10 bg-primary-blue/95">
           <Button 
             onClick={handleLogout}
             variant="ghost" 
-            className="w-full justify-start space-x-3 text-red-300 hover:text-red-400 hover:bg-white/5 rounded-xl font-bold cursor-pointer"
+            className="w-full justify-start space-x-3 text-red-300 hover:text-red-200 hover:bg-white/10 rounded-xl font-bold text-xs py-2.5 h-auto cursor-pointer"
           >
-            <LogOut size={18} />
-            <span>Keluar</span>
+            <LogOut size={16} />
+            <span>Keluar Portal</span>
           </Button>
         </div>
       </aside>
@@ -206,53 +427,55 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col overflow-hidden">
         
         {/* MOBILE HEADER */}
-        <header className="lg:hidden bg-primary-blue text-white px-4 py-4 flex items-center justify-between shadow-md">
+        <header className="lg:hidden bg-primary-blue text-white px-4 py-3.5 flex items-center justify-between shadow-md z-30">
           <div className="flex items-center space-x-3">
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="focus:outline-none">
-              {mobileOpen ? <X size={24} /> : <Menu size={24} />}
+            <button onClick={() => setMobileOpen(!mobileOpen)} className="p-1 rounded-lg hover:bg-white/10 focus:outline-none cursor-pointer">
+              {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
-            <span className="font-extrabold text-sm tracking-tight">Portal Istiqamah ({formatRoleName(role)})</span>
+            <span className="font-black text-sm tracking-tight">Portal TK Istiqamah</span>
           </div>
-          <button onClick={handleLogout} className="text-red-300 hover:text-red-400">
-            <LogOut size={20} />
+          <button onClick={handleLogout} className="text-red-300 hover:text-red-200 p-1.5 cursor-pointer">
+            <LogOut size={18} />
           </button>
         </header>
 
-        {/* MOBILE SIDEBAR DRAWERS */}
+        {/* MOBILE SIDEBAR DRAWER */}
         {mobileOpen && (
           <div className="lg:hidden fixed inset-0 z-40 flex">
-            {/* Overlay */}
-            <div className="fixed inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
+            {/* Backdrop */}
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" onClick={() => setMobileOpen(false)} />
             
-            {/* Sidebar drawer */}
-            <div className="relative flex-1 flex flex-col max-w-xs w-full bg-primary-blue text-white z-50">
-              <div className="p-6 border-b border-white/10 flex justify-between items-center">
-                <span className="font-extrabold text-base">Menu Portal</span>
-                <button onClick={() => setMobileOpen(false)} className="text-white">
-                  <X size={24} />
+            {/* Drawer */}
+            <div className="relative flex-1 flex flex-col max-w-xs w-full bg-primary-blue text-white z-50 shadow-2xl">
+              <div className="p-5 border-b border-white/10 flex justify-between items-center bg-primary-blue">
+                <div className="flex items-center space-x-3">
+                  <div className="w-8 h-8 bg-primary-green text-white rounded-xl flex items-center justify-center font-black text-sm">
+                    I
+                  </div>
+                  <div>
+                    <span className="font-extrabold text-sm block leading-none">Menu Portal</span>
+                    <span className="text-[9px] uppercase font-bold text-primary-green tracking-wider">{formatRoleName(role)}</span>
+                  </div>
+                </div>
+                <button onClick={() => setMobileOpen(false)} className="text-gray-300 hover:text-white p-1 rounded-lg hover:bg-white/10 cursor-pointer">
+                  <X size={20} />
                 </button>
               </div>
-              <nav className="flex-grow px-4 py-6 space-y-1.5 overflow-y-auto">
-                {links.map((link) => {
-                  const Icon = link.icon
-                  const active = pathname === link.href
-                  return (
-                    <Link
-                      key={link.name}
-                      href={link.href}
-                      onClick={() => setMobileOpen(false)}
-                      className={`flex items-center space-x-3 px-4 py-3 rounded-xl text-sm font-bold transition-all ${
-                        active 
-                          ? 'bg-primary-green text-white shadow-md' 
-                          : 'text-gray-300 hover:bg-white/5 hover:text-white'
-                      }`}
-                    >
-                      <Icon size={18} />
-                      <span>{link.name}</span>
-                    </Link>
-                  )
-                })}
+
+              <nav className="flex-grow px-3.5 py-4 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10">
+                {renderNav(true)}
               </nav>
+
+              <div className="p-3.5 border-t border-white/10 bg-primary-blue">
+                <Button 
+                  onClick={handleLogout}
+                  variant="ghost" 
+                  className="w-full justify-start space-x-3 text-red-300 hover:text-red-200 hover:bg-white/10 rounded-xl font-bold text-xs py-2.5 h-auto cursor-pointer"
+                >
+                  <LogOut size={16} />
+                  <span>Keluar Portal</span>
+                </Button>
+              </div>
             </div>
           </div>
         )}

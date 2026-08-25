@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { createClient } from '@/lib/database/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { Button } from '@/components/ui/button'
 import {
   CalendarDays,
@@ -223,7 +224,7 @@ export default function OrangTuaDashboard() {
     <div className="space-y-8">
       
       {/* Welcome Banner */}
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-gradient-to-r from-primary-blue to-blue-900 text-white p-8 sm:p-10 rounded-[32px] shadow-xl relative overflow-hidden">
+      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-linear-to-r from-primary-blue to-blue-900 text-white p-8 sm:p-10 rounded-[32px] shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-primary-green/10 rounded-full blur-3xl" />
         <div className="relative z-10 space-y-2">
           <div className="inline-flex items-center space-x-2 bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
@@ -238,7 +239,7 @@ export default function OrangTuaDashboard() {
       {/* Menu Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Card 1: PPDB Status */}
-        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300">
+        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:-translate-y-1 transition-all duration-300">
           <CardHeader className="pb-4">
             <div className="w-10 h-10 bg-blue-50 text-primary-blue rounded-2xl flex items-center justify-center mb-2">
               <FileText size={20} />
@@ -247,11 +248,9 @@ export default function OrangTuaDashboard() {
             <CardDescription className="text-[10px] font-semibold text-gray-400">Pendaftaran & registrasi berkas.</CardDescription>
           </CardHeader>
           <CardContent className="pt-0 space-y-4">
-            <div className="py-2.5 px-3 bg-[#F8F6F2] rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
+            <div className="py-2.5 px-3 bg-cream rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
               <span>Status:</span>
-              <Badge className={ppdbData?.status === 'Diterima' ? 'bg-emerald-100 text-emerald-800 border-none' : 'bg-blue-100 text-blue-800 border-none'}>
-                {ppdbData?.status || 'Submitted'}
-              </Badge>
+              <StatusBadge status={ppdbData?.status || 'Submitted'} size="sm" />
             </div>
             <Link href="/dashboard/orang-tua/ppdb-status" className="w-full">
               <Button variant="outline" className="w-full justify-between border-gray-100 hover:border-gray-200 text-primary-blue text-xs font-bold py-2 h-auto rounded-xl">
@@ -263,7 +262,7 @@ export default function OrangTuaDashboard() {
         </Card>
 
         {/* Card 2: Attendance */}
-        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300">
+        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:-translate-y-1 transition-all duration-300">
           <CardHeader className="pb-4">
             <div className="w-10 h-10 bg-emerald-50 text-primary-green rounded-2xl flex items-center justify-center mb-2">
               <CalendarDays size={20} />
@@ -272,7 +271,7 @@ export default function OrangTuaDashboard() {
             <CardDescription className="text-[10px] font-semibold text-gray-400">Rasio kehadiran harian kelas.</CardDescription>
           </CardHeader>
           <CardContent className="pt-0 space-y-4">
-            <div className="py-2.5 px-3 bg-[#F8F6F2] rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
+            <div className="py-2.5 px-3 bg-cream rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
               <span>Rasio Masuk:</span>
               <span className="text-primary-green font-extrabold">{presenceRate}%</span>
             </div>
@@ -286,7 +285,7 @@ export default function OrangTuaDashboard() {
         </Card>
 
         {/* Card 3: Grades */}
-        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300">
+        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:-translate-y-1 transition-all duration-300">
           <CardHeader className="pb-4">
             <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-2">
               <GraduationCap size={20} />
@@ -295,7 +294,7 @@ export default function OrangTuaDashboard() {
             <CardDescription className="text-[10px] font-semibold text-gray-400">Update hasil belajar teranyar.</CardDescription>
           </CardHeader>
           <CardContent className="pt-0 space-y-4">
-            <div className="py-2.5 px-3 bg-[#F8F6F2] rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
+            <div className="py-2.5 px-3 bg-cream rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
               <span>Nilai Terakhir:</span>
               <span className="text-purple-600 font-extrabold">{latestGrade ? `${latestGrade.subject} (${latestGrade.score})` : '-'}</span>
             </div>
@@ -309,7 +308,7 @@ export default function OrangTuaDashboard() {
         </Card>
 
         {/* Card 4: Billing */}
-        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:translate-y-[-4px] transition-all duration-300">
+        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:-translate-y-1 transition-all duration-300">
           <CardHeader className="pb-4">
             <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-2">
               <CreditCard size={20} />
@@ -318,7 +317,7 @@ export default function OrangTuaDashboard() {
             <CardDescription className="text-[10px] font-semibold text-gray-400">Status keuangan & pembayaran.</CardDescription>
           </CardHeader>
           <CardContent className="pt-0 space-y-4">
-            <div className="py-2.5 px-3 bg-[#F8F6F2] rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
+            <div className="py-2.5 px-3 bg-cream rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
               <span>SPP Juli:</span>
               <span className="text-primary-green font-extrabold">LUNAS</span>
             </div>
@@ -348,7 +347,7 @@ export default function OrangTuaDashboard() {
             announcements.map((a) => (
               <div key={a.id} className="space-y-2 pb-4 border-b border-gray-50 last:border-none last:pb-0">
                 <div className="flex items-center gap-2">
-                  <Badge className="bg-emerald-50 text-[#07A363] border-none font-extrabold text-[9px] px-2.5 py-0.5 rounded-md">
+                  <Badge className="bg-emerald-50 text-primary-green border-none font-extrabold text-[9px] px-2.5 py-0.5 rounded-md">
                     Pengumuman
                   </Badge>
                   <span className="text-[10px] text-gray-400 font-semibold">
@@ -367,7 +366,7 @@ export default function OrangTuaDashboard() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Schedule Selector */}
         <Card className="bg-white rounded-[32px] shadow-sm border-none lg:col-span-1 overflow-hidden">
-          <CardHeader className="p-6 bg-[#F8F6F2] border-b border-gray-150">
+          <CardHeader className="p-6 bg-cream border-b border-gray-150">
             <CardTitle className="text-sm font-black text-primary-blue">Hari Belajar</CardTitle>
           </CardHeader>
           <CardContent className="p-4 space-y-2">
@@ -378,7 +377,7 @@ export default function OrangTuaDashboard() {
                   key={day}
                   onClick={() => setActiveDay(day)}
                   className={`w-full p-3.5 rounded-2xl text-xs font-bold transition-all text-left cursor-pointer ${
-                    active ? 'bg-primary-blue text-white shadow-md' : 'bg-[#F8F6F2] hover:bg-gray-100 text-gray-650'
+                    active ? 'bg-primary-blue text-white shadow-md' : 'bg-cream hover:bg-gray-100 text-gray-650'
                   }`}
                 >
                   {day}
@@ -407,7 +406,7 @@ export default function OrangTuaDashboard() {
                 {daySched.map((item, idx) => (
                   <div key={idx} className="relative">
                     {/* Circle marker */}
-                    <div className="absolute -left-[21px] top-1.5 w-3.5 h-3.5 rounded-full bg-primary-green ring-4 ring-emerald-50" />
+                    <div className="absolute -left-5.25 top-1.5 w-3.5 h-3.5 rounded-full bg-primary-green ring-4 ring-emerald-50" />
                     <div>
                       <span className="text-[10px] text-gray-400 font-extrabold font-mono">{item.time}</span>
                       <h4 className="font-extrabold text-sm text-primary-blue mt-0.5">{item.subject}</h4>

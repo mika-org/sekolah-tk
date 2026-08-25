@@ -1,13 +1,16 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/database/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   GraduationCap,
   Plus,
@@ -34,6 +37,11 @@ export default function MasterGuruPage() {
   const [selectedTeacher, setSelectedTeacher] = useState<any>(null)
 
   const [form, setForm] = useState({ nama: '', nip: '', hp: '', alamat: '', user_id: '' })
+
+  // Search & Pagination
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const supabase = createClient()
 
@@ -106,27 +114,46 @@ export default function MasterGuruPage() {
     setSaving(false)
   }
 
+  const filteredTeachers = useMemo(() => {
+    return teachers.filter((t) => {
+      const matchSearch =
+        !searchQuery ||
+        (t.nama || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.nip || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (t.hp || '').toLowerCase().includes(searchQuery.toLowerCase())
+      return matchSearch
+    })
+  }, [teachers, searchQuery])
+
+  const totalPages = Math.ceil(filteredTeachers.length / pageSize) || 1
+  const paginatedTeachers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredTeachers.slice(start, start + pageSize)
+  }, [filteredTeachers, currentPage, pageSize])
+
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-primary-blue">Master Guru</h1>
-          <p className="text-gray-500 font-semibold text-xs mt-1">Kelola data seluruh guru pengajar KB & TK Istiqamah.</p>
+          <p className="text-gray-500 font-semibold text-xs mt-1">Kelola data seluruh dewan guru dan tenaga pendidik KB & TK Istiqamah.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button onClick={loadData} variant="outline" className="border-gray-200 font-bold rounded-xl text-xs cursor-pointer gap-2">
             <RefreshCw size={14} /> Refresh
           </Button>
-          <Button onClick={() => { resetForm(); setCreateOpen(true) }}
-            className="bg-primary-blue hover:bg-primary-blue/90 text-white font-bold rounded-xl text-xs cursor-pointer gap-2">
+          <Button
+            onClick={() => { resetForm(); setCreateOpen(true) }}
+            className="bg-primary-green hover:bg-primary-green/90 text-white font-extrabold rounded-xl text-xs cursor-pointer gap-2 shadow-sm"
+          >
             <Plus size={14} /> Tambah Guru
           </Button>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <Card className="bg-white rounded-3xl shadow-sm border-none">
           <CardContent className="p-6 flex items-center gap-4">
             <div className="w-12 h-12 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center">
@@ -164,12 +191,19 @@ export default function MasterGuruPage() {
 
       {/* Table */}
       <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-        <CardHeader className="p-8 border-b border-gray-50 flex flex-row items-center justify-between">
+        <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-lg font-black text-primary-blue">Daftar Guru Pengajar</CardTitle>
-            <CardDescription className="text-xs font-semibold text-gray-400">Seluruh guru yang terdaftar di sistem.</CardDescription>
+            <CardDescription className="text-xs font-semibold text-gray-400">Seluruh guru yang terdaftar di sistem ({filteredTeachers.length} guru).</CardDescription>
           </div>
-          <GraduationCap className="text-primary-green" />
+          <TableSearchFilter
+            value={searchQuery}
+            onChange={(val) => {
+              setSearchQuery(val)
+              setCurrentPage(1)
+            }}
+            placeholder="Cari nama guru, NIP, no HP..."
+          />
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
@@ -185,8 +219,8 @@ export default function MasterGuruPage() {
                 <RefreshCw size={14} /> Coba Lagi
               </Button>
             </div>
-          ) : teachers.length === 0 ? (
-            <div className="p-12 text-center text-gray-400">Belum ada data guru. Klik "Tambah Guru" untuk mulai.</div>
+          ) : filteredTeachers.length === 0 ? (
+            <div className="p-12 text-center text-gray-400">Tidak ada data guru yang sesuai.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm border-collapse">
@@ -200,7 +234,7 @@ export default function MasterGuruPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {teachers.map(t => (
+                  {paginatedTeachers.map(t => (
                     <tr key={t.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="p-4 pl-8">
                         <div className="flex items-center gap-3">
@@ -223,22 +257,28 @@ export default function MasterGuruPage() {
                       </td>
                       <td className="p-4">
                         {t.users_tk ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 border-none font-bold rounded-full px-2 py-0.5 text-[10px]">
-                            @{t.users_tk.username}
-                          </Badge>
+                          <StatusBadge status="active" customLabel={`@${t.users_tk.username}`} size="sm" />
                         ) : (
-                          <Badge className="bg-gray-100 text-gray-500 border-none font-bold rounded-full px-2 py-0.5 text-[10px]">Belum terhubung</Badge>
+                          <StatusBadge status="neutral" customLabel="Belum terhubung" size="sm" />
                         )}
                       </td>
-                      <td className="p-4 pr-8 text-right space-x-2">
-                        <Button onClick={() => openEdit(t)} variant="outline"
-                          className="border-gray-200 text-primary-blue hover:bg-primary-blue/5 rounded-lg text-xs py-1.5 px-3 h-auto cursor-pointer gap-1.5">
-                          <Edit size={12} /> Edit
-                        </Button>
-                        <Button onClick={() => { setSelectedTeacher(t); setDeleteOpen(true) }} variant="outline"
-                          className="border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs py-1.5 px-3 h-auto cursor-pointer gap-1.5">
-                          <Trash2 size={12} /> Hapus
-                        </Button>
+                      <td className="p-4 pr-8 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            onClick={() => openEdit(t)}
+                            variant="outline"
+                            className="h-8 border-gray-200 text-primary-blue hover:bg-primary-blue/5 font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <Edit size={12} /> Edit
+                          </Button>
+                          <Button
+                            onClick={() => { setSelectedTeacher(t); setDeleteOpen(true) }}
+                            variant="outline"
+                            className="h-8 border-rose-200 text-rose-600 hover:bg-rose-50 font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <Trash2 size={12} /> Hapus
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -246,6 +286,14 @@ export default function MasterGuruPage() {
               </table>
             </div>
           )}
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredTeachers.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
         </CardContent>
       </Card>
 

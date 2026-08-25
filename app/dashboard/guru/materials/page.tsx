@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { uploadMaterial, deleteMaterial, getMaterialsList } from '@/actions/materials'
 import { createClient } from '@/lib/database/client'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
 import { toast } from 'sonner'
 import { BookOpen, Upload, Trash2, RefreshCw, FileText } from 'lucide-react'
 
@@ -25,6 +27,12 @@ export default function GuruMaterialsPage() {
   const [file, setFile] = useState<File | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
+  // Search & Pagination
+  const [searchQuery, setSearchQuery] = useState('')
+  const [classFilter, setClassFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(6)
+
   const supabase = createClient()
 
   const loadData = async () => {
@@ -38,7 +46,7 @@ export default function GuruMaterialsPage() {
 
       if (classesData) {
         setClasses(classesData)
-        if (classesData.length > 0) setSelectedClass(classesData[0].id)
+        if (classesData.length > 0 && !selectedClass) setSelectedClass(classesData[0].id)
       }
 
       // 2. Fetch materials
@@ -83,8 +91,6 @@ export default function GuruMaterialsPage() {
         setDescription('')
         setFile(null)
         if (fileInputRef.current) fileInputRef.current.value = ''
-        
-        // Reload list
         loadData()
       } else {
         toast.error(result.error || 'Gagal mengunggah materi.')
@@ -99,15 +105,37 @@ export default function GuruMaterialsPage() {
   const handleDelete = async (item: any) => {
     if (!confirm(`Hapus materi "${item.title}"?`)) return
     setDeletingId(item.id)
-    const result = await deleteMaterial(item.id, item.file_url)
-    if (result.success) {
-      toast.success('Materi berhasil dihapus.')
-      setMaterials(prev => prev.filter(m => m.id !== item.id))
-    } else {
-      toast.error(result.error || 'Gagal menghapus materi.')
+    try {
+      const result = await deleteMaterial(item.id, item.file_url)
+      if (result.success) {
+        toast.success('Materi berhasil dihapus.')
+        setMaterials(prev => prev.filter(m => m.id !== item.id))
+      } else {
+        toast.error(result.error || 'Gagal menghapus materi.')
+      }
+    } catch (e: any) {
+      toast.error('Gagal: ' + e.message)
+    } finally {
+      setDeletingId(null)
     }
-    setDeletingId(null)
   }
+
+  const filteredMaterials = useMemo(() => {
+    return materials.filter((m) => {
+      const matchSearch =
+        !searchQuery ||
+        (m.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (m.description || '').toLowerCase().includes(searchQuery.toLowerCase())
+      const matchClass = classFilter === 'all' || m.class_id === classFilter
+      return matchSearch && matchClass
+    })
+  }, [materials, searchQuery, classFilter])
+
+  const totalPages = Math.ceil(filteredMaterials.length / pageSize) || 1
+  const paginatedMaterials = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredMaterials.slice(start, start + pageSize)
+  }, [filteredMaterials, currentPage, pageSize])
 
   return (
     <div className="space-y-8">
@@ -115,7 +143,7 @@ export default function GuruMaterialsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-primary-blue">Materi Belajar</h1>
-          <p className="text-gray-500 font-semibold text-xs mt-1">Unggah bahan ajar, rencana pembelajaran (RPP), dan tugas untuk wali murid.</p>
+          <p className="text-gray-500 font-semibold text-xs mt-1">Unggah modul pembelajaran, buku pedoman, atau materi ajar untuk orang tua dan siswa.</p>
         </div>
         <Button onClick={loadData} variant="outline" className="border-gray-200 font-bold rounded-xl text-xs cursor-pointer gap-2">
           <RefreshCw size={14} /> Refresh
@@ -123,25 +151,23 @@ export default function GuruMaterialsPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Upload Form */}
+        
+        {/* Upload Form Card */}
         <div className="lg:col-span-5">
-          <Card className="bg-white rounded-[32px] shadow-sm border-none">
-            <CardHeader className="p-6">
-              <CardTitle className="text-base font-black text-primary-blue flex items-center gap-2">
-                <Upload size={20} className="text-primary-green" />
-                Unggah Berkas Baru
-              </CardTitle>
-              <CardDescription className="text-xs text-gray-400 font-semibold">Dokumen materi ajar format PDF, DOCX, atau Gambar.</CardDescription>
+          <Card className="bg-white rounded-[32px] shadow-sm border-none sticky top-6">
+            <CardHeader className="p-6 pb-2">
+              <CardTitle className="text-base font-black text-primary-blue">Unggah Materi Baru</CardTitle>
+              <CardDescription className="text-xs font-semibold text-gray-400">Bagikan modul atau berkas pendukung pembelajaran.</CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleUpload} className="space-y-4 text-xs font-semibold">
+            <CardContent className="p-6 pt-2">
+              <form onSubmit={handleUpload} className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="title" className="text-xs font-bold text-primary-blue">Judul Materi *</Label>
                   <Input
                     id="title"
                     value={title}
                     onChange={e => setTitle(e.target.value)}
-                    placeholder="Contoh: Modul Doa Harian & Pendek"
+                    placeholder="Contoh: Modul Mengenal Huruf Hijaiyah"
                     className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10"
                     required
                   />
@@ -187,7 +213,7 @@ export default function GuruMaterialsPage() {
                 <Button
                   type="submit"
                   disabled={uploading || !file}
-                  className="w-full bg-primary-green hover:bg-primary-green/90 text-white font-extrabold rounded-xl py-3 text-xs uppercase cursor-pointer"
+                  className="w-full bg-primary-green hover:bg-primary-green/90 text-white font-extrabold rounded-xl py-3 text-xs uppercase cursor-pointer shadow-sm"
                 >
                   {uploading ? 'Mengunggah...' : 'Unggah & Bagikan'}
                 </Button>
@@ -199,22 +225,54 @@ export default function GuruMaterialsPage() {
         {/* Uploaded Materials List */}
         <div className="lg:col-span-7">
           <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-            <CardHeader className="p-8 border-b border-gray-50 flex items-center justify-between">
+            <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-lg font-black text-primary-blue">Katalog Materi Ajar</CardTitle>
-                <CardDescription className="text-xs font-semibold text-gray-400">Berkas silabus dan materi ajar yang telah dibagikan.</CardDescription>
+                <CardDescription className="text-xs font-semibold text-gray-400">Berkas silabus dan materi ajar ({filteredMaterials.length} materi).</CardDescription>
               </div>
-              <BookOpen className="text-primary-green" />
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <TableSearchFilter
+                  value={searchQuery}
+                  onChange={(val) => {
+                    setSearchQuery(val)
+                    setCurrentPage(1)
+                  }}
+                  placeholder="Cari materi..."
+                />
+
+                <Select
+                  value={classFilter}
+                  onValueChange={(val) => {
+                    if (val) {
+                      setClassFilter(val)
+                      setCurrentPage(1)
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-36 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
+                    <SelectValue placeholder="Semua Kelas" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="all">Semua Kelas</SelectItem>
+                    {classes.map((c) => (
+                      <SelectItem key={c.id} value={c.id}>
+                        {c.nama}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {loading ? (
                 <div className="p-8 text-center text-gray-400">Memuat katalog...</div>
-              ) : materials.length === 0 ? (
-                <div className="p-8 text-center text-gray-400">Belum ada materi belajar yang dibagikan.</div>
+              ) : filteredMaterials.length === 0 ? (
+                <div className="p-8 text-center text-gray-400">Tidak ada materi belajar yang sesuai.</div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {materials.map((m) => (
-                    <div key={m.id} className="p-6 flex items-start justify-between gap-4 hover:bg-gray-55/10 transition-all">
+                  {paginatedMaterials.map((m) => (
+                    <div key={m.id} className="p-6 flex items-start justify-between gap-4 hover:bg-gray-50/50 transition-all">
                       <div className="flex items-start gap-3 min-w-0">
                         <div className="w-10 h-10 bg-primary-blue/10 text-primary-blue rounded-xl flex items-center justify-center flex-shrink-0">
                           <FileText size={20} />
@@ -226,7 +284,7 @@ export default function GuruMaterialsPage() {
                               Kelas: {m.classes_tk?.nama || 'N/A'}
                             </Badge>
                           </div>
-                          <p className="text-xs text-gray-450 truncate font-semibold mt-0.5">{m.description || 'Tidak ada keterangan.'}</p>
+                          <p className="text-xs text-gray-500 truncate font-semibold mt-0.5">{m.description || 'Tidak ada keterangan.'}</p>
                           <a
                             href={m.file_url}
                             target="_blank"
@@ -241,7 +299,7 @@ export default function GuruMaterialsPage() {
                         onClick={() => handleDelete(m)}
                         disabled={deletingId === m.id}
                         variant="ghost"
-                        className="text-red-500 hover:text-red-650 hover:bg-red-50 p-2 h-auto rounded-xl"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 p-2 h-auto rounded-xl cursor-pointer"
                       >
                         <Trash2 size={16} />
                       </Button>
@@ -249,6 +307,15 @@ export default function GuruMaterialsPage() {
                   ))}
                 </div>
               )}
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredMaterials.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                pageSizeOptions={[6, 12, 24]}
+              />
             </CardContent>
           </Card>
         </div>

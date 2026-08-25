@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/database/client'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   MessageSquare,
   Plus,
@@ -34,6 +36,11 @@ export default function AdminTestimonialsPage() {
   const [photoFile, setPhotoFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Search & Pagination
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(5)
 
   const supabase = createClient()
 
@@ -66,7 +73,6 @@ export default function AdminTestimonialsPage() {
     try {
       let photoUrl: string | null = null
 
-      // Upload photo if selected
       if (photoFile) {
         const fd = new FormData()
         fd.append('file', photoFile)
@@ -101,52 +107,61 @@ export default function AdminTestimonialsPage() {
     const result = await deleteTestimonial(item.id, item.photo)
     if (result.error) { toast.error('Gagal: ' + result.error); return }
     setList(prev => prev.filter(t => t.id !== item.id))
+    toast.success('Testimoni dihapus')
   }
+
+  const filteredList = useMemo(() => {
+    return list.filter((item) => {
+      const matchSearch =
+        !searchQuery ||
+        (item.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.job || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.content || '').toLowerCase().includes(searchQuery.toLowerCase())
+      return matchSearch
+    })
+  }, [list, searchQuery])
+
+  const totalPages = Math.ceil(filteredList.length / pageSize) || 1
+  const paginatedList = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredList.slice(start, start + pageSize)
+  }, [filteredList, currentPage, pageSize])
 
   return (
     <div className="space-y-8">
-
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-primary-blue">Kelola Testimoni</h1>
-          <p className="text-gray-500 font-semibold text-xs mt-1">Tambahkan ulasan orang tua murid yang tampil di halaman utama sekolah.</p>
-        </div>
-        <Button onClick={loadData} variant="outline" className="border-gray-200 font-bold rounded-xl text-xs cursor-pointer gap-2">
-          <RefreshCw size={14} /> Refresh
-        </Button>
+      <div>
+        <h1 className="text-3xl font-black text-primary-blue">Kelola Testimoni</h1>
+        <p className="text-gray-500 font-semibold text-xs mt-1">
+          Kelola ulasan dan pengalaman dari orang tua murid untuk ditampilkan di halaman depan.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
-        {/* Form Tambah */}
+        
+        {/* Form Tambah Testimoni */}
         <div className="lg:col-span-4">
-          <Card className="bg-white rounded-[32px] shadow-sm border-none">
-            <CardHeader>
-              <CardTitle className="text-base font-black text-primary-blue flex items-center gap-2">
-                <Plus size={18} className="text-primary-green" />
-                Tambah Testimoni
-              </CardTitle>
+          <Card className="bg-white rounded-[32px] shadow-sm border-none sticky top-6">
+            <CardHeader className="p-6 pb-2">
+              <CardTitle className="text-base font-black text-primary-blue">Tambah Testimoni</CardTitle>
               <CardDescription className="text-xs font-semibold text-gray-400">
-                Isi data testimoni dari orang tua atau wali murid.
+                Lengkapi form berikut untuk menambahkan ulasan baru.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4 text-sm">
-
-                {/* Photo Picker */}
+            <CardContent className="p-6 pt-2">
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {/* Upload Foto */}
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-primary-blue">Foto (Opsional)</Label>
+                  <Label className="text-xs font-bold text-primary-blue">Foto Orang Tua / Profil</Label>
                   <div
                     onClick={() => fileInputRef.current?.click()}
-                    className="cursor-pointer border-2 border-dashed border-gray-200 hover:border-primary-green rounded-2xl transition-colors overflow-hidden flex items-center justify-center bg-[#F8F6F2]"
-                    style={{ height: 96 }}
+                    className="h-28 border-2 border-dashed border-gray-200 hover:border-primary-green/60 rounded-2xl flex flex-col items-center justify-center cursor-pointer overflow-hidden transition-all bg-[#F8F6F2]"
                   >
                     {previewUrl ? (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={previewUrl} alt="Preview" className="h-full w-full object-cover" />
                     ) : (
-                      <div className="text-center text-gray-400 space-y-1 pointer-events-none">
+                      <div className="text-center text-gray-400 space-y-1">
                         <ImagePlus size={22} className="mx-auto" />
                         <p className="text-[10px] font-semibold">Klik untuk pilih foto</p>
                       </div>
@@ -186,7 +201,7 @@ export default function AdminTestimonialsPage() {
                 </div>
 
                 <Button type="submit" disabled={saving}
-                  className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white font-extrabold rounded-xl py-3 text-xs uppercase cursor-pointer gap-2">
+                  className="w-full bg-primary-green hover:bg-primary-green/90 text-white font-extrabold rounded-xl py-3 text-xs uppercase cursor-pointer gap-2 shadow-sm">
                   <Upload size={14} />
                   {saving ? 'Menyimpan...' : 'Simpan Testimoni'}
                 </Button>
@@ -198,23 +213,31 @@ export default function AdminTestimonialsPage() {
         {/* Daftar Testimoni */}
         <div className="lg:col-span-8">
           <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-            <CardHeader className="p-6 pb-4 border-b border-gray-50 flex flex-row items-center justify-between">
+            <CardHeader className="p-6 pb-4 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-lg font-black text-primary-blue">Daftar Testimoni</CardTitle>
                 <CardDescription className="text-xs font-semibold text-gray-400">
-                  {list.length} testimoni tersimpan · {list.filter(t => t.published).length} ditayangkan
+                  {filteredList.length} testimoni · {list.filter(t => t.published).length} ditayangkan
                 </CardDescription>
               </div>
-              <MessageSquare className="text-primary-green" />
+
+              <TableSearchFilter
+                value={searchQuery}
+                onChange={(val) => {
+                  setSearchQuery(val)
+                  setCurrentPage(1)
+                }}
+                placeholder="Cari nama, pekerjaan..."
+              />
             </CardHeader>
             <CardContent className="p-0">
               {loading ? (
                 <div className="p-12 text-center text-gray-400 text-xs">Memuat testimoni...</div>
-              ) : list.length === 0 ? (
-                <div className="p-12 text-center text-gray-400 text-xs">Belum ada testimoni. Tambahkan yang pertama!</div>
+              ) : filteredList.length === 0 ? (
+                <div className="p-12 text-center text-gray-400 text-xs">Tidak ada testimoni yang sesuai.</div>
               ) : (
                 <div className="divide-y divide-gray-50">
-                  {list.map(item => (
+                  {paginatedList.map(item => (
                     <div key={item.id} className="p-5 flex gap-4 items-start hover:bg-gray-50/50 transition-colors">
                       {/* Avatar */}
                       <div className="flex-shrink-0">
@@ -237,11 +260,7 @@ export default function AdminTestimonialsPage() {
                             <p className="text-[10px] text-gray-400 font-semibold">{item.job}</p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <Badge className={item.published
-                              ? 'bg-emerald-100 text-emerald-800 border-none font-bold rounded-full text-[10px]'
-                              : 'bg-gray-100 text-gray-500 border-none font-bold rounded-full text-[10px]'}>
-                              {item.published ? 'Ditayangkan' : 'Tersembunyi'}
-                            </Badge>
+                            <StatusBadge status={item.published ? 'published' : 'draft'} customLabel={item.published ? 'Ditayangkan' : 'Tersembunyi'} size="sm" />
                           </div>
                         </div>
                         <div className="mt-2 flex items-start gap-1.5">
@@ -272,6 +291,15 @@ export default function AdminTestimonialsPage() {
                   ))}
                 </div>
               )}
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredList.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                pageSizeOptions={[5, 10, 20]}
+              />
             </CardContent>
           </Card>
         </div>

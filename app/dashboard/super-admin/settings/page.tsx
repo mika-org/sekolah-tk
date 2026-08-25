@@ -240,7 +240,7 @@ export default function SettingsPage() {
       <div className="p-5 bg-blue-50 text-blue-700 rounded-3xl text-xs font-semibold flex items-start gap-2.5 leading-relaxed">
         <Settings size={18} className="flex-shrink-0 mt-0.5" />
         <span>
-          Pengaturan ini disimpan di database Supabase secara aman. Beberapa halaman seperti Form PPDB, halaman instruksi pembayaran, dan kontak publik akan menyinkronkan data rekening bank dan kontak ini secara dinamis.
+          Pengaturan ini disimpan di basis data PostgreSQL secara aman. Beberapa halaman seperti Form PPDB, halaman instruksi pembayaran, dan kontak publik akan menyinkronkan data rekening bank dan kontak ini secara dinamis.
         </span>
       </div>
     </div>

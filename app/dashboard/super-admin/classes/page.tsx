@@ -1,13 +1,16 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/database/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Layers,
   Plus,
@@ -31,6 +34,11 @@ export default function MasterKelasPage() {
   const [selected, setSelected] = useState<any>(null)
 
   const [form, setForm] = useState({ nama: '', guru_id: '', tahun_ajaran: '2026/2027' })
+
+  // Search & Pagination
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const supabase = createClient()
 
@@ -109,19 +117,37 @@ export default function MasterKelasPage() {
     '2030/2031'
   ]
 
+  const filteredClasses = useMemo(() => {
+    return classes.filter((c) => {
+      const matchSearch =
+        !searchQuery ||
+        (c.nama || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.teachers_tk?.nama || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.tahun_ajaran || '').toLowerCase().includes(searchQuery.toLowerCase())
+      return matchSearch
+    })
+  }, [classes, searchQuery])
+
+  const totalPages = Math.ceil(filteredClasses.length / pageSize) || 1
+  const paginatedClasses = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredClasses.slice(start, start + pageSize)
+  }, [filteredClasses, currentPage, pageSize])
+
   return (
     <div className="space-y-8">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-primary-blue">Master Kelas</h1>
-          <p className="text-gray-500 font-semibold text-xs mt-1">Kelola data kelas dan wali kelas untuk setiap tahun ajaran.</p>
+          <p className="text-gray-500 font-semibold text-xs mt-1">Kelola rombongan belajar dan wali kelas KB & TK Istiqamah.</p>
         </div>
         <div className="flex items-center gap-3">
           <Button onClick={loadData} variant="outline" className="border-gray-200 font-bold rounded-xl text-xs cursor-pointer gap-2">
             <RefreshCw size={14} /> Refresh
           </Button>
           <Button onClick={() => { resetForm(); setCreateOpen(true) }}
-            className="bg-primary-blue hover:bg-primary-blue/90 text-white font-bold rounded-xl text-xs cursor-pointer gap-2">
+            className="bg-primary-green hover:bg-primary-green/90 text-white font-extrabold rounded-xl text-xs cursor-pointer gap-2 shadow-sm">
             <Plus size={14} /> Tambah Kelas
           </Button>
         </div>
@@ -160,18 +186,26 @@ export default function MasterKelasPage() {
 
       {/* Table */}
       <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-        <CardHeader className="p-8 border-b border-gray-50 flex flex-row items-center justify-between">
+        <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-lg font-black text-primary-blue">Daftar Kelas</CardTitle>
-            <CardDescription className="text-xs font-semibold text-gray-400">Seluruh kelas yang terdaftar di sistem.</CardDescription>
+            <CardDescription className="text-xs font-semibold text-gray-400">Seluruh rombel yang terdaftar di sistem ({filteredClasses.length} kelas).</CardDescription>
           </div>
-          <Layers className="text-primary-green" />
+
+          <TableSearchFilter
+            value={searchQuery}
+            onChange={(val) => {
+              setSearchQuery(val)
+              setCurrentPage(1)
+            }}
+            placeholder="Cari nama kelas, wali kelas..."
+          />
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
             <div className="p-12 text-center text-gray-400">Memuat data kelas...</div>
-          ) : classes.length === 0 ? (
-            <div className="p-12 text-center text-gray-400">Belum ada kelas. Klik "Tambah Kelas" untuk mulai.</div>
+          ) : filteredClasses.length === 0 ? (
+            <div className="p-12 text-center text-gray-400">Tidak ada data kelas yang sesuai.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm border-collapse">
@@ -184,7 +218,7 @@ export default function MasterKelasPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {classes.map(c => (
+                  {paginatedClasses.map(c => (
                     <tr key={c.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="p-4 pl-8">
                         <div className="flex items-center gap-3">
@@ -196,29 +230,31 @@ export default function MasterKelasPage() {
                       </td>
                       <td className="p-4">
                         {c.teachers_tk ? (
-                          <Badge className="bg-emerald-100 text-emerald-800 border-none font-bold rounded-full px-3 py-1 text-xs">
-                            {c.teachers_tk.nama}
-                          </Badge>
+                          <StatusBadge status="guru" customLabel={c.teachers_tk.nama} size="sm" />
                         ) : (
-                          <Badge className="bg-gray-100 text-gray-500 border-none font-bold rounded-full px-3 py-1 text-xs">
-                            Belum ada wali kelas
-                          </Badge>
+                          <StatusBadge status="neutral" customLabel="Belum ada wali kelas" size="sm" />
                         )}
                       </td>
-                      <td className="p-4">
-                        <Badge className="bg-primary-blue/10 text-primary-blue border-none font-bold rounded-full px-3 py-1 text-xs">
-                          {c.tahun_ajaran}
-                        </Badge>
+                      <td className="p-4 font-mono text-xs font-bold text-gray-600">
+                        {c.tahun_ajaran}
                       </td>
-                      <td className="p-4 pr-8 text-right space-x-2">
-                        <Button onClick={() => openEdit(c)} variant="outline"
-                          className="border-gray-200 text-primary-blue hover:bg-primary-blue/5 rounded-lg text-xs py-1.5 px-3 h-auto cursor-pointer gap-1.5">
-                          <Edit size={12} /> Edit
-                        </Button>
-                        <Button onClick={() => { setSelected(c); setDeleteOpen(true) }} variant="outline"
-                          className="border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs py-1.5 px-3 h-auto cursor-pointer gap-1.5">
-                          <Trash2 size={12} /> Hapus
-                        </Button>
+                      <td className="p-4 pr-8 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            onClick={() => openEdit(c)}
+                            variant="outline"
+                            className="h-8 border-gray-200 text-primary-blue hover:bg-primary-blue/5 font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <Edit size={12} /> Edit
+                          </Button>
+                          <Button
+                            onClick={() => { setSelected(c); setDeleteOpen(true) }}
+                            variant="outline"
+                            className="h-8 border-rose-200 text-rose-600 hover:bg-rose-50 font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <Trash2 size={12} /> Hapus
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -226,6 +262,14 @@ export default function MasterKelasPage() {
               </table>
             </div>
           )}
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredClasses.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
         </CardContent>
       </Card>
 

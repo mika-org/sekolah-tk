@@ -1,28 +1,37 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/database/client'
+import { uploadPaymentProof } from '@/actions/admin'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Badge } from '@/components/ui/badge'
+import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
+import { StatusBadge } from '@/components/ui/status-badge'
 import { toast } from 'sonner'
-import { CreditCard, CheckCircle2, Sparkles, DollarSign } from 'lucide-react'
+import { CreditCard, CheckCircle2, Sparkles, DollarSign, ExternalLink } from 'lucide-react'
 
 export default function BillingPage() {
   const [studentData, setStudentData] = useState<any>(null)
+  const [payments, setPayments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   const [paymentFile, setPaymentFile] = useState<File | null>(null)
   const [paymentPending, setPaymentPending] = useState(false)
   const [paymentSuccess, setPaymentSuccess] = useState(false)
 
+  // Search & Pagination
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(5)
+
   const supabase = createClient()
 
   const loadData = async () => {
     setLoading(true)
     
-    // 1. Try to read from cookie first (custom POS-style auth)
     let user = null
     const match = document.cookie.match(new RegExp('(^| )sekolah_tk_token=([^;]+)'))
     if (match) {
@@ -53,7 +62,6 @@ export default function BillingPage() {
     let studentId = ''
 
     if (user) {
-      // 1. First, try to query parents_tk by user_id to get linked student_id
       const { data: parent } = await supabase
         .from('parents_tk')
         .select('student_id')
@@ -71,7 +79,6 @@ export default function BillingPage() {
           setStudentData(stud)
         }
       } else {
-        // 2. Fallback to name-based match for mock/seeded logins
         const studentName = user.user_metadata?.student_name || (user.user_metadata?.username === 'orangtua' ? 'Althaf Syahputra' : '')
         if (studentName) {
           const { data: stud } = await supabase
@@ -87,6 +94,16 @@ export default function BillingPage() {
       }
     }
 
+    // Load payments
+    const { data: pays } = await supabase
+      .from('payments_tk')
+      .select('*')
+      .order('id', { ascending: false })
+
+    if (pays) {
+      setPayments(pays)
+    }
+
     setLoading(false)
   }
 
@@ -99,30 +116,24 @@ export default function BillingPage() {
 
     setPaymentPending(true)
     try {
-      // Upload bukti ke Supabase Storage (bucket: payment-proofs)
-      const fileExt = paymentFile.name.split('.').pop()
-      const filePath = `proofs/${Date.now()}.${fileExt}`
-      
-      const { error: uploadError } = await supabase.storage
-        .from('payment-proofs')
-        .upload(filePath, paymentFile)
-
-      if (uploadError) throw uploadError
-
-      const { data: { publicUrl } } = supabase.storage
-        .from('payment-proofs')
-        .getPublicUrl(filePath)
+      const fd = new FormData()
+      fd.append('file', paymentFile)
+      const uploadRes = await uploadPaymentProof(fd)
+      if ('error' in uploadRes && uploadRes.error) throw new Error(uploadRes.error)
 
       // Save proof record to payments_tk
-      await supabase.from('payments_tk').insert({
+      const { error: insertError } = await supabase.from('payments_tk').insert({
         method: 'Transfer',
         amount: 250000,
-        proof: publicUrl,
+        proof: uploadRes.proofUrl,
         status: 'Pending'
       })
 
+      if (insertError) throw insertError
+
       setPaymentSuccess(true)
       toast.success('Bukti pembayaran berhasil diunggah! Status: Menunggu Verifikasi Admin.')
+      loadData()
     } catch (err: any) {
       toast.error('Gagal mengunggah: ' + (err.message || 'Unknown error'))
     } finally {
@@ -133,6 +144,23 @@ export default function BillingPage() {
   useEffect(() => {
     loadData()
   }, [])
+
+  const filteredPayments = useMemo(() => {
+    return payments.filter((p) => {
+      const matchSearch =
+        !searchQuery ||
+        (p.method || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (p.status || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        String(p.amount || '').includes(searchQuery)
+      return matchSearch
+    })
+  }, [payments, searchQuery])
+
+  const totalPages = Math.ceil(filteredPayments.length / pageSize) || 1
+  const paginatedPayments = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredPayments.slice(start, start + pageSize)
+  }, [filteredPayments, currentPage, pageSize])
 
   if (loading) {
     return <div className="p-8 text-center text-gray-400">Memuat tagihan & pembayaran...</div>
@@ -154,39 +182,74 @@ export default function BillingPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* SPP Bills */}
+        {/* SPP Bills & History */}
         <div className="lg:col-span-7 space-y-6">
           <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-            <CardHeader className="p-8 border-b border-gray-50">
-              <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
-                <CreditCard className="text-primary-green" />
-                Administrasi & Uang SPP Bulanan
-              </CardTitle>
-              <CardDescription className="text-xs text-gray-400 font-semibold">Daftar tagihan aktif dan status pembayaran siswa.</CardDescription>
-            </CardHeader>
-            <CardContent className="p-8 space-y-4">
-              <div className="p-5 bg-emerald-50 rounded-2xl border border-emerald-100 flex justify-between items-center text-xs">
-                <div>
-                  <div className="font-extrabold text-primary-blue text-sm">Tagihan SPP Juli 2026</div>
-                  <div className="text-[10px] text-gray-400 mt-1 font-semibold">Uang SPP bulanan sekolah reguler.</div>
-                </div>
-                <div className="font-black text-primary-green text-sm px-4 py-1.5 bg-white rounded-full shadow-sm">LUNAS</div>
+            <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
+                  <CreditCard className="text-primary-green" />
+                  Riwayat Pembayaran
+                </CardTitle>
+                <CardDescription className="text-xs text-gray-400 font-semibold">Daftar transaksi pembayaran SPP dan pendaftaran.</CardDescription>
               </div>
 
-              <div className="p-5 bg-amber-50 rounded-2xl border border-amber-100 flex justify-between items-center text-xs opacity-75">
-                <div>
-                  <div className="font-extrabold text-primary-blue text-sm">Tagihan SPP Agustus 2026</div>
-                  <div className="text-[10px] text-gray-400 mt-1 font-semibold">Jatuh tempo pada 10 Agustus 2026.</div>
+              <TableSearchFilter
+                value={searchQuery}
+                onChange={(val) => {
+                  setSearchQuery(val)
+                  setCurrentPage(1)
+                }}
+                placeholder="Cari transaksi..."
+              />
+            </CardHeader>
+            <CardContent className="p-0">
+              {filteredPayments.length === 0 ? (
+                <div className="p-8 text-center text-gray-400 text-xs font-semibold">Belum ada riwayat transaksi pembayaran.</div>
+              ) : (
+                <div className="divide-y divide-gray-100">
+                  {paginatedPayments.map((pay) => (
+                    <div key={pay.id} className="p-5 px-8 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
+                      <div>
+                        <div className="font-extrabold text-primary-blue text-sm">Pembayaran via {pay.method}</div>
+                        <div className="text-[10px] text-gray-400 font-semibold mt-0.5">
+                          Jumlah: <span className="font-bold text-primary-green">Rp {Number(pay.amount || 0).toLocaleString('id-ID')}</span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        {pay.proof && (
+                          <a
+                            href={pay.proof}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-xs text-primary-blue hover:text-primary-green font-bold flex items-center gap-1"
+                          >
+                            <span>Bukti</span>
+                            <ExternalLink size={12} />
+                          </a>
+                        )}
+                        <StatusBadge status={pay.status} />
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div className="font-black text-amber-700 text-sm px-4 py-1.5 bg-white rounded-full shadow-sm">Rp 250.000</div>
-              </div>
+              )}
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredPayments.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                pageSizeOptions={[5, 10, 20]}
+              />
             </CardContent>
           </Card>
         </div>
 
         {/* Upload Proof */}
         <div className="lg:col-span-5">
-          <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
+          <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden sticky top-6">
             <CardHeader className="p-6 bg-[#F8F6F2] border-b border-gray-150">
               <CardTitle className="text-sm font-black text-primary-blue">Kirim Bukti Pembayaran Baru</CardTitle>
             </CardHeader>
@@ -194,7 +257,7 @@ export default function BillingPage() {
               <form onSubmit={handleUploadPayment} className="space-y-4 text-xs">
                 <div className="space-y-1">
                   <span className="text-[10px] font-extrabold text-primary-blue">Nama Siswa:</span>
-                  <div className="font-extrabold text-primary-blue text-sm">{studentData?.nama}</div>
+                  <div className="font-extrabold text-primary-blue text-sm">{studentData?.nama || 'Murid Terdaftar'}</div>
                 </div>
 
                 <div className="space-y-2">
@@ -208,13 +271,14 @@ export default function BillingPage() {
                     <>
                       <Input 
                         type="file" 
+                        accept="image/*,application/pdf"
                         onChange={(e) => setPaymentFile(e.target.files?.[0] || null)}
                         className="bg-[#F8F6F2] border-transparent text-xs rounded-xl cursor-pointer py-3 h-auto" 
                       />
                       <Button 
                         type="submit" 
                         disabled={paymentPending}
-                        className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white rounded-xl text-xs py-3 h-auto cursor-pointer font-bold mt-2"
+                        className="w-full bg-primary-green hover:bg-primary-green/90 text-white rounded-xl text-xs py-3 h-auto cursor-pointer font-bold mt-2 shadow-sm"
                       >
                         {paymentPending ? 'Mengunggah...' : 'Unggah Bukti Bayar'}
                       </Button>

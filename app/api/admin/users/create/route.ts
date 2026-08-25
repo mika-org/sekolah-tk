@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/database/server'
 import bcrypt from 'bcryptjs'
 import { requestHasRole } from '@/lib/auth/request'
+import { randomUUID } from 'node:crypto'
 
 export async function POST(req: NextRequest) {
   try {
@@ -14,31 +15,37 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Semua field wajib diisi.' }, { status: 400 })
     }
 
+    const cleanEmail = String(email).trim().toLowerCase()
+    const cleanUsername = String(username).trim()
+
     const supabase = createAdminClient()
 
-    // 1. Create Auth user in Supabase Auth first
-    let authId = 'user-id-' + Date.now()
-    if (process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
-        email,
-        password,
-        email_confirm: true,
-        user_metadata: { role, username }
-      })
+    // Check duplicate
+    const { data: existing } = await supabase
+      .from('users_tk')
+      .select('id, username, email')
+      .or(`email.eq.${cleanEmail},username.eq.${cleanUsername}`)
+      .maybeSingle()
 
-      if (authError || !authUser.user) {
-        return NextResponse.json({ error: 'Gagal membuat auth user: ' + (authError?.message || 'Unknown error') }, { status: 400 })
-      }
-      authId = authUser.user.id
+    if (existing) {
+      return NextResponse.json({ error: 'Username atau Email sudah terdaftar.' }, { status: 400 })
     }
 
-    // 2. Hash password for users_tk
+    // Hash password for users_tk
     const hashed = await bcrypt.hash(password, 10)
+    const authId = randomUUID()
 
-    // 3. Insert into public.users_tk
+    // Insert into public.users_tk
     const { data, error } = await supabase
       .from('users_tk')
-      .insert({ id: authId, username, email, password_hash: hashed, role, status: 'active' })
+      .insert({
+        id: authId,
+        username: cleanUsername,
+        email: cleanEmail,
+        password_hash: hashed,
+        role,
+        status: 'active',
+      })
       .select('id')
       .single()
 

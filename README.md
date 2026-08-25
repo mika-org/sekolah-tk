@@ -171,16 +171,15 @@ npm run db:migrate
 npm run db:verify
 ```
 
-### 3. Impor Data Supabase Lama
+### 3. Migrasi & Seed Database PostgreSQL
 
-Isi `NEXT_PUBLIC_SUPABASE_URL` dan `SUPABASE_SERVICE_ROLE_KEY` sumber, jalankan dry-run, kemudian impor tabel dan objek Storage:
+Jalankan perintah prisma untuk sinkronisasi skema dan verifikasi database:
 
 ```bash
-npm run migrate:supabase:dry
-npm run migrate:supabase
+npm run db:generate
+npm run db:migrate
+npm run db:verify
 ```
-
-Importer melakukan upsert menurut primary key dan memeriksa jumlah baris sumber/target. Bila sumber tidak tersedia, dry-run berhenti sebelum target diubah.
 
 ### 4. Seed Super Admin Opsional
 

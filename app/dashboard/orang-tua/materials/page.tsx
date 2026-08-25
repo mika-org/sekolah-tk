@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { getMaterialsList } from '@/actions/materials'
 import { createClient } from '@/lib/database/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
 import { BookOpen, FileText, Download, Sparkles } from 'lucide-react'
 
 export default function OrangTuaMaterialsPage() {
@@ -12,12 +13,16 @@ export default function OrangTuaMaterialsPage() {
   const [student, setStudent] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
+  // Search & Pagination
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(6)
+
   const supabase = createClient()
 
   const loadData = async () => {
     setLoading(true)
     try {
-      // 1. Try to read from cookie first (custom POS-style auth)
       let user = null
       const match = document.cookie.match(new RegExp('(^| )sekolah_tk_token=([^;]+)'))
       if (match) {
@@ -48,7 +53,6 @@ export default function OrangTuaMaterialsPage() {
       let classId = ''
 
       if (user) {
-        // Query parents_tk by user_id
         const { data: parent } = await supabase
           .from('parents_tk')
           .select('student_id')
@@ -58,7 +62,6 @@ export default function OrangTuaMaterialsPage() {
         let studentId = parent?.student_id
 
         if (!studentId) {
-          // Fallback to name-based match
           const studentName = user.user_metadata?.student_name || (user.user_metadata?.username === 'orangtua' ? 'Althaf Syahputra' : '')
           if (studentName) {
             const { data: stud } = await supabase
@@ -84,7 +87,6 @@ export default function OrangTuaMaterialsPage() {
         }
       }
 
-      // 2. Fetch materials for this class
       if (classId) {
         const result = await getMaterialsList(classId)
         if (result.success) {
@@ -100,6 +102,23 @@ export default function OrangTuaMaterialsPage() {
   useEffect(() => {
     loadData()
   }, [])
+
+  const filteredMaterials = useMemo(() => {
+    return materials.filter((m) => {
+      const matchSearch =
+        !searchQuery ||
+        (m.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (m.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (m.teachers_tk?.nama || '').toLowerCase().includes(searchQuery.toLowerCase())
+      return matchSearch
+    })
+  }, [materials, searchQuery])
+
+  const totalPages = Math.ceil(filteredMaterials.length / pageSize) || 1
+  const paginatedMaterials = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredMaterials.slice(start, start + pageSize)
+  }, [filteredMaterials, currentPage, pageSize])
 
   return (
     <div className="space-y-8">
@@ -120,25 +139,34 @@ export default function OrangTuaMaterialsPage() {
         {/* Materials List */}
         <div className="lg:col-span-8 space-y-6">
           <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-            <CardHeader className="p-8 border-b border-gray-50 flex items-center justify-between">
+            <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
                   <FileText className="text-primary-green" />
                   Materi Belajar Kelas
                 </CardTitle>
-                <CardDescription className="text-xs text-gray-400 font-semibold">Bahan ajar aktif yang dibagikan oleh wali kelas.</CardDescription>
+                <CardDescription className="text-xs text-gray-400 font-semibold">Bahan ajar aktif ({filteredMaterials.length} berkas).</CardDescription>
               </div>
+
+              <TableSearchFilter
+                value={searchQuery}
+                onChange={(val) => {
+                  setSearchQuery(val)
+                  setCurrentPage(1)
+                }}
+                placeholder="Cari modul / materi..."
+              />
             </CardHeader>
             <CardContent className="p-0">
               {loading ? (
                 <div className="p-8 text-center text-gray-400">Memuat materi...</div>
               ) : !student?.kelas_id ? (
                 <div className="p-12 text-center text-gray-400 text-xs">Ananda belum ditempatkan di kelas manapun. Silakan hubungi admin sekolah.</div>
-              ) : materials.length === 0 ? (
-                <div className="p-12 text-center text-gray-400 text-xs">Belum ada materi belajar yang dibagikan untuk kelas ini.</div>
+              ) : filteredMaterials.length === 0 ? (
+                <div className="p-12 text-center text-gray-400 text-xs">Tidak ada materi belajar yang sesuai.</div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {materials.map((m) => (
+                  {paginatedMaterials.map((m) => (
                     <div key={m.id} className="p-6 flex items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
                       <div className="flex items-start gap-3 min-w-0">
                         <div className="w-10 h-10 bg-primary-green/10 text-primary-green rounded-xl flex items-center justify-center flex-shrink-0">
@@ -156,7 +184,8 @@ export default function OrangTuaMaterialsPage() {
                         href={m.file_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-[#F8F6F2] hover:bg-primary-green/10 text-primary-blue hover:text-primary-green p-3 rounded-xl transition-all cursor-pointer"
+                        className="bg-[#F8F6F2] hover:bg-primary-green/10 text-primary-blue hover:text-primary-green p-3 rounded-xl transition-all cursor-pointer flex-shrink-0"
+                        title="Download Berkas"
                       >
                         <Download size={16} />
                       </a>
@@ -164,6 +193,15 @@ export default function OrangTuaMaterialsPage() {
                   ))}
                 </div>
               )}
+              <TablePagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={filteredMaterials.length}
+                pageSize={pageSize}
+                onPageChange={setCurrentPage}
+                onPageSizeChange={setPageSize}
+                pageSizeOptions={[6, 12, 24]}
+              />
             </CardContent>
           </Card>
         </div>

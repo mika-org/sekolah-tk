@@ -89,7 +89,7 @@ async function sendCredentialEmail(email: string, studentName: string, username:
   }
 }
 
-export async function approvePPDB(ppdbId: string) {
+export async function syncPpdbToStudent(ppdbId: string) {
   try {
     await requireSessionRole(['super_admin', 'admin'])
     const supabase = await createClient()
@@ -103,138 +103,283 @@ export async function approvePPDB(ppdbId: string) {
       .single()
 
     if (ppdbError || !ppdb) {
-      return { error: 'Data pendaftaran tidak ditemukan: ' + ppdbError?.message }
+      return { error: 'Data pendaftaran tidak ditemukan: ' + (ppdbError?.message || '') }
     }
 
-    // 2. Generate Username
-    // Format: lowercase student name without spaces
-    const baseUsername = ppdb.student_name.toLowerCase().replace(/\s+/g, '')
-    let username = baseUsername
+    const childDetails = (ppdb.child_details as Record<string, any>) || {}
+    const fatherDetails = (ppdb.father_details as Record<string, any>) || {}
+    const motherDetails = (ppdb.mother_details as Record<string, any>) || {}
+
+    // 2. Generate Username & Password
+    const baseUsername = ppdb.student_name.toLowerCase().replace(/[^a-z0-9]/g, '')
+    let username = baseUsername || 'murid'
     let counter = 1
 
-    // Check if username exists in users table
-    while (true) {
-      const { data: exists } = await supabase
-        .from('users_tk')
-        .select('username')
-        .eq('username', username)
-        .maybeSingle()
+    // Check if parent account exists
+    const parentEmail = (fatherDetails.email_ayah || motherDetails.email_ibu || `${username}@gmail.com`).trim().toLowerCase()
+    const parentPhone = (fatherDetails.hp_ayah || motherDetails.hp_ibu || '').trim()
 
-      if (!exists) break
-      username = `${baseUsername}${counter.toString().padStart(2, '0')}`
-      counter++
-    }
+    let authId = ''
+    let passwordStr = ''
 
-    // 3. Generate Password from birth date (DDMMYYYY)
-    // Birth date is in YYYY-MM-DD from database (e.g. 2021-05-17)
-    const dateObj = new Date(ppdb.birth_date)
-    const dd = String(dateObj.getDate()).padStart(2, '0')
-    const mm = String(dateObj.getMonth() + 1).padStart(2, '0')
-    const yyyy = dateObj.getFullYear()
-    const passwordStr = `${dd}${mm}${yyyy}`
-
-    // Hash password using bcrypt
-    const passwordHash = await bcrypt.hash(passwordStr, 10)
-
-    // 4. Create Parent email
-    // Get parent email from student/parent registration if any, or default to username@school.com
-    const { data: student } = await supabase
-      .from('students_tk')
-      .select('id, user_id')
-      .eq('nama', ppdb.student_name)
+    const { data: existingUser } = await supabase
+      .from('users_tk')
+      .select('id, username')
+      .or(`email.eq.${parentEmail},username.eq.${username}`)
       .maybeSingle()
 
-    let parentEmail = `${username}@gmail.com`
-    let studentId = ''
+    if (existingUser) {
+      authId = existingUser.id
+      username = existingUser.username
+      await supabase
+        .from('users_tk')
+        .update({ status: 'active' })
+        .eq('id', authId)
+    } else {
+      while (true) {
+        const { data: exists } = await supabase
+          .from('users_tk')
+          .select('username')
+          .eq('username', username)
+          .maybeSingle()
 
-    if (student) {
-      studentId = student.id
-      const { data: parent } = await supabase
-        .from('parents_tk')
-        .select('email')
-        .eq('student_id', student.id)
-        .maybeSingle()
-      if (parent && parent.email) {
-        parentEmail = parent.email
+        if (!exists) break
+        username = `${baseUsername}${counter.toString().padStart(2, '0')}`
+        counter++
       }
-    }
 
-    // 5. Allocate the local account UUID. Authentication now uses users_tk directly.
-    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: parentEmail,
-      password: passwordStr,
-      user_metadata: {
-        role: 'orang_tua',
-        username: username,
-        student_name: ppdb.student_name
-      }
-    })
+      const dateObj = new Date(ppdb.birth_date)
+      const dd = String(dateObj.getDate()).padStart(2, '0')
+      const mm = String(dateObj.getMonth() + 1).padStart(2, '0')
+      const yyyy = dateObj.getFullYear()
+      passwordStr = `${dd}${mm}${yyyy}`
 
-    if (authError || !authUser.user) {
-      console.error('Local User Creation Error:', authError)
-      return { error: 'Gagal membuat user: ' + (authError?.message || 'unknown error') }
-    }
-    const authId = authUser.user.id
+      const passwordHash = await bcrypt.hash(passwordStr, 10)
 
-    // 6. Insert into public.users table
-    const { error: publicUserError } = await supabase
-      .from('users_tk')
-      .insert({
-        id: authId,
-        username,
+      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
         email: parentEmail,
-        password_hash: passwordHash,
-        role: 'orang_tua',
-        status: 'active'
+        password: passwordStr,
+        user_metadata: {
+          role: 'orang_tua',
+          username: username,
+          student_name: ppdb.student_name,
+        },
       })
 
-    if (publicUserError) {
-      console.error('Public User Error:', publicUserError)
-      // If user already exists locally, we just ignore for demo purposes
-      if (!publicUserError.message.includes('duplicate key')) {
-        return { error: 'Gagal membuat data user publik: ' + publicUserError.message }
+      if (authError || !authUser.user) {
+        console.error('Local User Creation Error:', authError)
+        return { error: 'Gagal membuat user: ' + (authError?.message || 'unknown error') }
+      }
+      authId = authUser.user.id
+
+      await supabase
+        .from('users_tk')
+        .insert({
+          id: authId,
+          username,
+          email: parentEmail,
+          password_hash: passwordHash,
+          role: 'orang_tua',
+          status: 'active',
+        })
+    }
+
+    // 3. Upsert Student Record in students_tk
+    const studentName = ppdb.student_name.trim()
+    const rawNik = (childDetails.nik || '').toString().trim()
+    const studentNik = rawNik ? rawNik.slice(0, 16) : null
+    const rawNisn = (childDetails.nisn || '').toString().trim()
+    const studentNisn = rawNisn ? rawNisn.slice(0, 10) : null
+
+    let studentId = ''
+
+    // Try finding by NIK first if available, otherwise by name
+    let { data: existingStudent } = studentNik
+      ? await supabase.from('students_tk').select('id').eq('nik', studentNik).maybeSingle()
+      : { data: null }
+
+    if (!existingStudent) {
+      const { data: byName } = await supabase
+        .from('students_tk')
+        .select('id')
+        .eq('nama', studentName)
+        .maybeSingle()
+      existingStudent = byName
+    }
+
+    const birthDate = childDetails.birth_date || ppdb.birth_date
+    const gender = childDetails.jenis_kelamin === 'P' || childDetails.jenis_kelamin === 'Perempuan' ? 'P' : 'L'
+    const studentPayload = {
+      nama: studentName,
+      nik: studentNik,
+      nisn: studentNisn,
+      tempat_lahir: childDetails.tempat_lahir || null,
+      tanggal_lahir: birthDate,
+      jenis_kelamin: gender,
+      agama: childDetails.agama || 'Islam',
+      alamat: childDetails.alamat || fatherDetails.alamat_ayah || motherDetails.alamat_ibu || null,
+      status: 'active',
+      user_id: authId || null,
+    }
+
+    if (existingStudent) {
+      studentId = existingStudent.id
+      await supabase
+        .from('students_tk')
+        .update(studentPayload)
+        .eq('id', studentId)
+    } else {
+      const { data: newStudent, error: createStudentError } = await supabase
+        .from('students_tk')
+        .insert(studentPayload)
+        .select('id')
+        .single()
+
+      if (createStudentError) {
+        console.error('Create student error:', createStudentError)
+        return { error: 'Gagal membuat data murid: ' + createStudentError.message }
+      }
+      studentId = newStudent?.id || ''
+    }
+
+    // 4. Upsert Parent Record in parents_tk
+    const fatherName = (fatherDetails.nama_ayah || '').trim()
+    const motherName = (motherDetails.nama_ibu || '').trim()
+    const parentJob = `${fatherDetails.pekerjaan_ayah || ''} / ${motherDetails.pekerjaan_ibu || ''}`.replace(/^[\s/]+|[\s/]+$/g, '') || null
+
+    if (studentId) {
+      const { data: existingParent } = await supabase
+        .from('parents_tk')
+        .select('id')
+        .eq('student_id', studentId)
+        .maybeSingle()
+
+      const parentPayload = {
+        student_id: studentId,
+        nama_ayah: fatherName || null,
+        nama_ibu: motherName || null,
+        hp: parentPhone || null,
+        email: parentEmail || null,
+        alamat: fatherDetails.alamat_ayah || motherDetails.alamat_ibu || childDetails.alamat || null,
+        pekerjaan: parentJob,
+        user_id: authId || null,
+      }
+
+      if (existingParent) {
+        await supabase
+          .from('parents_tk')
+          .update(parentPayload)
+          .eq('id', existingParent.id)
+      } else {
+        await supabase
+          .from('parents_tk')
+          .insert(parentPayload)
       }
     }
 
-    // 7. Update PPDB status to 'Diterima' and payment_status to 'Verified'
+    // 5. Update PPDB & Payment Status
     await supabase
       .from('ppdb_tk')
       .update({ status: 'Diterima', payment_status: 'Verified' })
       .eq('id', ppdbId)
 
-    // 8. Update student and parent details
-    if (studentId) {
-      // Set student active
-      await supabase
-        .from('students_tk')
-        .update({ user_id: authId, status: 'active' })
-        .eq('id', studentId)
+    await supabase
+      .from('payments_tk')
+      .update({ status: 'Verified' })
+      .eq('ppdb_id', ppdbId)
 
-      // Set parent user_id
-      await supabase
-        .from('parents_tk')
-        .update({ user_id: authId })
-        .eq('student_id', studentId)
+    // Send Credential Email if password was generated
+    if (passwordStr && parentEmail) {
+      try {
+        await sendCredentialEmail(parentEmail, ppdb.student_name, username, passwordStr)
+      } catch (emailErr) {
+        console.warn('Email sending skipped/failed:', emailErr)
+      }
     }
 
-    // 9. Send Email to Parent
-    await sendCredentialEmail(parentEmail, ppdb.student_name, username, passwordStr)
-
-    // Save activity log
+    // Log activity
     try {
       await supabase.from('activity_logs_tk').insert({
-        activity: `Menyetujui pendaftaran PPDB ${ppdb.student_name} dan membuat akun orang tua (${username})`
+        activity: `Verifikasi pendaftaran & pembayaran ${ppdb.student_name} selesai. Akun orang tua (${username}) dan data murid aktif telah dibuat.`,
       })
-    } catch (e) {
-      console.warn('Logging activity failed (probably db not synced yet)')
-    }
+    } catch {}
 
     revalidatePath('/dashboard/admin')
-    return { success: true, username, password: passwordStr }
+    revalidatePath('/dashboard/admin/ppdb')
+    revalidatePath('/dashboard/admin/payments')
+    revalidatePath('/dashboard/super-admin/students')
+
+    return {
+      success: true,
+      username,
+      password: passwordStr,
+      studentId,
+      parentEmail,
+      parentPhone,
+    }
   } catch (e: any) {
-    console.error(e)
+    console.error('syncPpdbToStudent error:', e)
     return { error: 'Terjadi kesalahan sistem: ' + e.message }
   }
+}
+
+export interface UpdatePPDBPayload {
+  student_name: string
+  birth_date: string
+  status: string
+  payment_status: string
+  child_details: Record<string, any>
+  father_details: Record<string, any>
+  mother_details: Record<string, any>
+  development_health?: Record<string, any>
+}
+
+export async function updatePPDB(ppdbId: string, payload: UpdatePPDBPayload) {
+  try {
+    await requireSessionRole(['super_admin', 'admin'])
+    const supabase = await createClient()
+
+    const { error } = await supabase
+      .from('ppdb_tk')
+      .update({
+        student_name: payload.student_name.trim(),
+        birth_date: payload.birth_date,
+        status: payload.status,
+        payment_status: payload.payment_status,
+        child_details: payload.child_details || {},
+        father_details: payload.father_details || {},
+        mother_details: payload.mother_details || {},
+        development_health: payload.development_health || {},
+      })
+      .eq('id', ppdbId)
+
+    if (error) throw error
+
+    // If status is 'Diterima', ensure synced to student and parent records
+    if (payload.status === 'Diterima') {
+      await syncPpdbToStudent(ppdbId)
+    }
+
+    try {
+      await supabase.from('activity_logs_tk').insert({
+        activity: `Data pendaftaran PPDB ${payload.student_name.trim()} diperbarui oleh admin.`,
+      })
+    } catch {}
+
+    revalidatePath('/dashboard/admin')
+    revalidatePath('/dashboard/admin/ppdb')
+    revalidatePath('/dashboard/admin/payments')
+    revalidatePath('/dashboard/super-admin/students')
+
+    return { success: true }
+  } catch (err: any) {
+    console.error('Error updating PPDB:', err)
+    return { error: 'Gagal memperbarui data PPDB: ' + err.message }
+  }
+}
+
+export async function approvePPDB(ppdbId: string) {
+  return syncPpdbToStudent(ppdbId)
 }
 
 export async function uploadGalleryPhoto(formData: FormData) {
@@ -325,6 +470,27 @@ export async function uploadTestimonialPhoto(formData: FormData) {
   } catch (err: any) {
     console.error('Upload testimonial photo error:', err)
     return { error: 'Gagal upload foto: ' + err.message }
+  }
+}
+
+export async function uploadPaymentProof(formData: FormData) {
+  try {
+    const file = formData.get('file') as File
+    if (!file || file.size === 0) return { error: 'File tidak ditemukan.' }
+
+    const bytes = await file.arrayBuffer()
+    const buffer = Buffer.from(bytes)
+    const ext = file.name.split('.').pop()
+    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
+    const filePath = `payments/${fileName}`
+    const bucketName = 'bucket_tk'
+
+    const proofUrl = await saveStoredFile(bucketName, filePath, buffer)
+
+    return { proofUrl }
+  } catch (err: any) {
+    console.error('Upload payment proof error:', err)
+    return { error: 'Gagal upload bukti transfer: ' + err.message }
   }
 }
 

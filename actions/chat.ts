@@ -1,45 +1,28 @@
 'use server'
 
-import { createAdminClient } from '@/lib/database/server'
+import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { cookies } from 'next/headers'
-import { decodeJWT } from '@/lib/jwt'
-
-async function getCurrentUser() {
-  const cookieStore = await cookies()
-  const token = cookieStore.get('sekolah_tk_token')?.value
-  if (!token) return null
-  try {
-    return decodeJWT(token)
-  } catch (e) {
-    return null
-  }
-}
+import { getSessionUser } from '@/lib/auth/session'
 
 export async function sendChatMessage(receiverId: string, message: string) {
   try {
-    const user = await getCurrentUser()
+    const user = await getSessionUser()
     if (!user) return { error: 'Anda harus login untuk mengirim pesan.' }
 
     const messageText = message?.trim()
     if (!messageText) return { error: 'Pesan tidak boleh kosong.' }
 
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-      .from('chats_tk')
-      .insert({
+    const chat = await prisma.chat.create({
+      data: {
         sender_id: user.id,
         receiver_id: receiverId,
-        message: messageText
-      })
-      .select()
-      .single()
-
-    if (error) throw error
+        message: messageText,
+      },
+    })
 
     revalidatePath('/dashboard/guru/chat')
     revalidatePath('/dashboard/orang-tua/chat')
-    return { success: true, data }
+    return { success: true, data: chat }
   } catch (e: any) {
     console.error('Error sending chat:', e)
     return { error: 'Gagal mengirim pesan: ' + e.message }
@@ -48,126 +31,219 @@ export async function sendChatMessage(receiverId: string, message: string) {
 
 export async function getChatMessages(chatPartnerId: string) {
   try {
-    const user = await getCurrentUser()
-    if (!user) return { error: 'Tidak terautentikasi' }
+    const user = await getSessionUser()
+    if (!user) return { error: 'Tidak terautentikasi', messages: [] }
 
-    const supabase = createAdminClient()
-    const { data, error } = await supabase
-      .from('chats_tk')
-      .select('*')
-      .or(`and(sender_id.eq.${user.id},receiver_id.eq.${chatPartnerId}),and(sender_id.eq.${chatPartnerId},receiver_id.eq.${user.id})`)
-      .order('created_at', { ascending: true })
+    const messages = await prisma.chat.findMany({
+      where: {
+        OR: [
+          { sender_id: user.id, receiver_id: chatPartnerId },
+          { sender_id: chatPartnerId, receiver_id: user.id },
+        ],
+      },
+      orderBy: { created_at: 'asc' },
+    })
 
-    if (error) throw error
-    return { success: true, messages: data || [] }
+    return { success: true, messages }
   } catch (e: any) {
     console.error('Error fetching chat messages:', e)
     return { error: e.message, messages: [] }
   }
 }
 
-// Get the Wali Kelas (teacher) for Orang Tua, or the List of Parents for Guru
+// Get chat partners for Guru (Parents) or Orang Tua (Teachers)
 export async function getChatPartners() {
   try {
-    const user = await getCurrentUser()
-    if (!user) return { error: 'Tidak terautentikasi' }
+    const user = await getSessionUser()
+    if (!user) return { error: 'Tidak terautentikasi', partners: [] }
 
-    const supabase = createAdminClient()
+    if (user.role === 'guru' || user.role === 'admin' || user.role === 'super_admin') {
+      // 1. Try to get the teacher record of current logged-in guru
+      let teacher = await prisma.teacher.findFirst({
+        where: { user_id: user.id },
+      })
 
-    if (user.role === 'guru') {
-      // 1. Get the teacher record of current logged-in guru
-      const { data: teacher } = await supabase
-        .from('teachers_tk')
-        .select('id')
-        .eq('user_id', user.id)
-        .maybeSingle()
+      // If not linked by user_id, fallback to matching by email or username
+      if (!teacher && user.email) {
+        teacher = await prisma.teacher.findFirst({
+          where: {
+            OR: [
+              { nama: { contains: user.username, mode: 'insensitive' } },
+              { hp: { not: null } },
+            ],
+          },
+        })
+      }
 
-      if (!teacher) return { partners: [] }
+      // 2. Get students: if teacher has classes, get their class students; otherwise get all active students
+      let studentIds: string[] = []
+      if (teacher) {
+        const classes = await prisma.class.findMany({
+          where: { guru_id: teacher.id },
+          select: { id: true },
+        })
+        const classIds = classes.map((c) => c.id)
 
-      // 2. Get the classes taught by this teacher
-      const { data: classes } = await supabase
-        .from('classes_tk')
-        .select('id')
-        .eq('guru_id', teacher.id)
+        if (classIds.length > 0) {
+          const students = await prisma.student.findMany({
+            where: { kelas_id: { in: classIds } },
+            select: { id: true },
+          })
+          studentIds = students.map((s) => s.id)
+        }
+      }
 
-      if (!classes || classes.length === 0) return { partners: [] }
-      const classIds = classes.map(c => c.id)
+      // If teacher has no specific class or class has no students, fetch all active students
+      if (studentIds.length === 0) {
+        const allStudents = await prisma.student.findMany({
+          where: { status: 'active' },
+          select: { id: true },
+        })
+        studentIds = allStudents.map((s) => s.id)
+      }
 
-      // 3. Get students in these classes
-      const { data: students } = await supabase
-        .from('students_tk')
-        .select('id, nama')
-        .in('kelas_id', classIds)
+      // 3. Find parent records with their students and user accounts
+      const parents = await prisma.parent.findMany({
+        where: studentIds.length > 0 ? { student_id: { in: studentIds } } : undefined,
+        include: {
+          students_tk: {
+            include: {
+              classes_tk: true,
+            },
+          },
+          users_tk: true,
+        },
+      })
 
-      if (!students || students.length === 0) return { partners: [] }
-      const studentIds = students.map(s => s.id)
+      // Also find all users with role 'orang_tua' to ensure every registered parent is reachable
+      const parentUsers = await prisma.user.findMany({
+        where: { role: 'orang_tua', status: 'active' },
+      })
 
-      // 4. Get parents of these students who have active user accounts
-      const { data: parents } = await supabase
-        .from('parents_tk')
-        .select('*, users_tk(id, username, email), students_tk(nama)')
-        .in('student_id', studentIds)
-        .not('user_id', 'is', null)
+      const partnersMap = new Map<string, { id: string; name: string; role: string; email: string; studentName?: string; phone?: string; className?: string }>()
 
-      const formattedPartners = (parents || []).map((p: any) => ({
-        id: p.user_id,
-        name: `Ayah ${p.nama_ayah || ''} / Ibu ${p.nama_ibu || ''} (${p.students_tk?.nama || ''})`,
-        role: 'orang_tua',
-        email: p.email || p.users_tk?.email || ''
-      }))
+      for (const p of parents) {
+        const partnerId = p.user_id || p.users_tk?.id || p.id
+        const parentName = [p.nama_ayah ? `Ayah ${p.nama_ayah}` : '', p.nama_ibu ? `Ibu ${p.nama_ibu}` : '']
+          .filter(Boolean)
+          .join(' / ') || 'Orang Tua'
+        const childName = p.students_tk?.nama || ''
+        const className = p.students_tk?.classes_tk?.nama || ''
 
-      return { success: true, partners: formattedPartners }
+        partnersMap.set(partnerId, {
+          id: partnerId,
+          name: childName ? `${parentName} (${childName})` : parentName,
+          role: 'orang_tua',
+          email: p.email || p.users_tk?.email || p.hp || '',
+          studentName: childName,
+          phone: p.hp || '',
+          className,
+        })
+      }
 
+      // Add any parent users not yet in the map
+      for (const u of parentUsers) {
+        if (!partnersMap.has(u.id)) {
+          partnersMap.set(u.id, {
+            id: u.id,
+            name: `Wali Murid (@${u.username})`,
+            role: 'orang_tua',
+            email: u.email,
+          })
+        }
+      }
+
+      return {
+        success: true,
+        partners: Array.from(partnersMap.values()),
+      }
     } else if (user.role === 'orang_tua') {
-      // Get parent student profile
-      const { data: parent } = await supabase
-        .from('parents_tk')
-        .select('student_id')
-        .eq('user_id', user.id)
-        .maybeSingle()
+      // For orang tua: find child's teacher/wali kelas, plus all active teachers
+      const parent = await prisma.parent.findFirst({
+        where: {
+          OR: [
+            { user_id: user.id },
+            { email: user.email },
+          ],
+        },
+        include: {
+          students_tk: {
+            include: {
+              classes_tk: {
+                include: {
+                  teachers_tk: {
+                    include: {
+                      users_tk: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      })
 
-      if (!parent?.student_id) return { partners: [] }
+      const teachers = await prisma.teacher.findMany({
+        include: {
+          users_tk: true,
+          classes_tk: true,
+        },
+      })
 
-      // Get student's class
-      const { data: student } = await supabase
-        .from('students_tk')
-        .select('kelas_id')
-        .eq('id', parent.student_id)
-        .maybeSingle()
+      const guruUsers = await prisma.user.findMany({
+        where: { role: { in: ['guru', 'admin', 'super_admin'] }, status: 'active' },
+      })
 
-      if (!student?.kelas_id) return { partners: [] }
+      const partnersMap = new Map<string, { id: string; name: string; role: string; email: string; className?: string }>()
 
-      // Get class wali kelas (teacher)
-      const { data: cls } = await supabase
-        .from('classes_tk')
-        .select('guru_id, nama')
-        .eq('id', student.kelas_id)
-        .maybeSingle()
+      // Prioritize direct wali kelas
+      const waliKelas = parent?.students_tk?.classes_tk?.teachers_tk
+      if (waliKelas && (waliKelas.user_id || waliKelas.users_tk?.id)) {
+        const id = waliKelas.user_id || waliKelas.users_tk!.id
+        partnersMap.set(id, {
+          id,
+          name: `Ustadz/Ustadzah ${waliKelas.nama} (Wali Kelas ${parent?.students_tk?.classes_tk?.nama || ''})`,
+          role: 'guru',
+          email: waliKelas.users_tk?.email || waliKelas.hp || '',
+          className: parent?.students_tk?.classes_tk?.nama || '',
+        })
+      }
 
-      if (!cls?.guru_id) return { partners: [] }
+      // Add other teachers
+      for (const t of teachers) {
+        const id = t.user_id || t.users_tk?.id
+        if (id && !partnersMap.has(id)) {
+          const classNames = t.classes_tk?.map((c) => c.nama).join(', ')
+          partnersMap.set(id, {
+            id,
+            name: `Ustadz/Ustadzah ${t.nama} ${classNames ? `(Guru ${classNames})` : ''}`,
+            role: 'guru',
+            email: t.users_tk?.email || t.hp || '',
+          })
+        }
+      }
 
-      // Get teacher profile and user account
-      const { data: teacher } = await supabase
-        .from('teachers_tk')
-        .select('*, users_tk(id, username, email)')
-        .eq('id', cls.guru_id)
-        .maybeSingle()
+      // Add any guru user accounts
+      for (const u of guruUsers) {
+        if (!partnersMap.has(u.id) && u.id !== user.id) {
+          partnersMap.set(u.id, {
+            id: u.id,
+            name: `Pengajar / Admin (@${u.username})`,
+            role: u.role,
+            email: u.email,
+          })
+        }
+      }
 
-      if (!teacher || !teacher.user_id) return { partners: [] }
-
-      const formattedPartners = [{
-        id: teacher.user_id,
-        name: `Ustadz/Ustadzah ${teacher.nama} (Wali Kelas ${cls.nama})`,
-        role: 'guru',
-        email: teacher.users_tk?.email || ''
-      }]
-
-      return { success: true, partners: formattedPartners }
+      return {
+        success: true,
+        partners: Array.from(partnersMap.values()),
+      }
     }
 
-    return { partners: [] }
+    return { success: true, partners: [] }
   } catch (e: any) {
     console.error('Error fetching chat partners:', e)
-    return { error: e.message, partners: [] }
+    return { error: 'Gagal memuat kontak: ' + e.message, partners: [] }
   }
 }

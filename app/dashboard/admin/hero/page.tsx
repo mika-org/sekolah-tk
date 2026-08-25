@@ -1,12 +1,13 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/database/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
 import {
   Camera,
   Trash2,
@@ -33,6 +34,11 @@ export default function AdminHeroPage() {
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Search & Pagination
+  const [searchQuery, setSearchQuery] = useState('')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(4)
 
   const supabase = createClient()
 
@@ -102,56 +108,62 @@ export default function AdminHeroPage() {
   }
 
   const handleDelete = async (item: any) => {
-    if (!confirm('Apakah Anda yakin ingin menghapus banner hero ini?')) return
+    if (!confirm('Hapus banner hero ini?')) return
 
-    const result = await deleteHeroBanner(item.id, item.image)
-
-    if (result.error) {
-      toast.error('Gagal menghapus: ' + result.error)
-    } else {
-      setBannerList(prev => prev.filter(g => g.id !== item.id))
-      toast.success('Banner hero berhasil dihapus!')
-    }
-  }
-
-  const prevSlide = () => setCurrentSlide(i => (i - 1 + bannerList.length) % bannerList.length)
-  const nextSlide = () => setCurrentSlide(i => (i + 1) % bannerList.length)
-
-  // Parse button config safely from title
-  const getButtonConfig = (title: string) => {
     try {
-      const parsed = JSON.parse(title)
-      return {
-        text: parsed.buttonText || '',
-        link: parsed.buttonLink || ''
+      const result = await deleteHeroBanner(item.id, item.image)
+      if (result.error) {
+        throw new Error(result.error)
       }
-    } catch (e) {
-      return {
-        text: title || '',
-        link: ''
-      }
+      setBannerList(prev => prev.filter(b => b.id !== item.id))
+      toast.success('Banner hero berhasil dihapus!')
+    } catch (err: any) {
+      toast.error('Gagal menghapus: ' + err.message)
     }
   }
 
-  const activeBanner = bannerList[currentSlide]
-  const activeBtnConfig = activeBanner ? getButtonConfig(activeBanner.title) : { text: '', link: '' }
+  const parseBtnConfig = (titleStr: string) => {
+    try {
+      const obj = JSON.parse(titleStr)
+      return { text: obj.btnText || '', link: obj.btnLink || '' }
+    } catch {
+      return { text: titleStr || '', link: '' }
+    }
+  }
+
+  const filteredBanners = useMemo(() => {
+    return bannerList.filter((item) => {
+      const cfg = parseBtnConfig(item.title)
+      const matchSearch =
+        !searchQuery ||
+        cfg.text.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        cfg.link.toLowerCase().includes(searchQuery.toLowerCase())
+      return matchSearch
+    })
+  }, [bannerList, searchQuery])
+
+  const totalPages = Math.ceil(filteredBanners.length / pageSize) || 1
+  const paginatedBanners = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredBanners.slice(start, start + pageSize)
+  }, [filteredBanners, currentPage, pageSize])
 
   return (
     <div className="space-y-8">
-
+      
       {/* Page Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-primary-blue">Kelola Banner Hero</h1>
-          <p className="text-gray-500 font-semibold text-xs mt-1">Unggah dan kelola gambar banner slider untuk section beranda (hero) website.</p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-black text-primary-blue">Kelola Banner Hero</h1>
+        <p className="text-gray-500 font-semibold text-xs mt-1">
+          Unggah dan atur gambar latar belakang carousel untuk halaman depan website sekolah.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
         {/* Upload Form */}
         <div className="lg:col-span-4">
-          <Card className="bg-white rounded-[32px] shadow-sm border-none">
+          <Card className="bg-white rounded-[32px] shadow-sm border-none sticky top-6">
             <CardHeader>
               <CardTitle className="text-base font-black text-primary-blue flex items-center gap-2">
                 <Plus size={18} className="text-primary-green" />
@@ -216,7 +228,7 @@ export default function AdminHeroPage() {
                 <Button
                   type="submit"
                   disabled={uploading || !imageFile}
-                  className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white font-extrabold rounded-xl py-3 text-xs uppercase cursor-pointer gap-2"
+                  className="w-full bg-primary-green hover:bg-primary-green/90 text-white font-extrabold rounded-xl py-3 text-xs uppercase cursor-pointer gap-2 shadow-sm"
                 >
                   <Upload size={14} />
                   {uploading ? 'Mengunggah...' : 'Upload & Simpan'}
@@ -230,119 +242,70 @@ export default function AdminHeroPage() {
         {/* Banner Catalog */}
         <div className="lg:col-span-8 space-y-6">
           <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-            <CardHeader className="flex flex-row items-center justify-between p-6 pb-4">
+            <CardHeader className="p-6 pb-4 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <CardTitle className="text-lg font-black text-primary-blue">Katalog Banner</CardTitle>
+                <CardTitle className="text-lg font-black text-primary-blue">Katalog Banner Hero</CardTitle>
                 <CardDescription className="text-xs font-semibold text-gray-400">
-                  {bannerList.length} banner aktif · gunakan panah untuk menelusuri
+                  {filteredBanners.length} banner aktif.
                 </CardDescription>
               </div>
-              <Layers className="text-primary-green" />
+
+              <TableSearchFilter
+                value={searchQuery}
+                onChange={(val) => {
+                  setSearchQuery(val)
+                  setCurrentPage(1)
+                }}
+                placeholder="Cari teks tombol/link..."
+              />
             </CardHeader>
-            <CardContent className="p-6 pt-0">
+            <CardContent className="p-6">
               {loading ? (
                 <div className="text-center p-16 text-gray-400 text-xs">Memuat katalog banner...</div>
-              ) : bannerList.length === 0 ? (
-                <div className="text-center p-16 text-gray-400 text-xs">Belum ada banner hero. Silakan unggah banner pertama!</div>
+              ) : filteredBanners.length === 0 ? (
+                <div className="text-center p-16 text-gray-400 text-xs">Tidak ada banner hero yang sesuai.</div>
               ) : (
-                <div className="space-y-4">
-                  {/* Main Slider Preview */}
-                  <div className="relative rounded-2xl overflow-hidden bg-gray-100 aspect-video group">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      key={activeBanner?.id}
-                      src={activeBanner?.image}
-                      alt="Banner Hero Preview"
-                      className="w-full h-full object-cover transition-all duration-300"
-                    />
-
-                    {/* Button overlay preview if configured */}
-                    {activeBtnConfig.text && (
-                      <div className="absolute inset-0 flex items-center justify-center bg-black/25 pointer-events-none">
-                        <span className="px-5 py-2 bg-primary-green text-white font-extrabold text-[10px] sm:text-xs uppercase rounded-full tracking-wider shadow-md">
-                          {activeBtnConfig.text}
-                        </span>
-                      </div>
-                    )}
-
-                    {/* Delete button */}
-                    <button
-                      onClick={() => handleDelete(activeBanner)}
-                      className="absolute top-3 right-3 bg-red-500/90 hover:bg-red-600 text-white p-2 rounded-xl transition-all cursor-pointer z-10 shadow"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-
-                    {/* Nav Arrows */}
-                    {bannerList.length > 1 && (
-                      <>
-                        <button
-                          onClick={prevSlide}
-                          className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/85 hover:bg-white text-primary-blue p-2 rounded-xl shadow transition-all cursor-pointer z-10"
-                        >
-                          <ChevronLeft size={18} />
-                        </button>
-                        <button
-                          onClick={nextSlide}
-                          className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/85 hover:bg-white text-primary-blue p-2 rounded-xl shadow transition-all cursor-pointer z-10"
-                        >
-                          <ChevronRight size={18} />
-                        </button>
-                      </>
-                    )}
-                    {/* Counter */}
-                    <div className="absolute bottom-3 right-3 bg-black/50 text-white text-[10px] font-bold px-2.5 py-1 rounded-full">
-                      {currentSlide + 1} / {bannerList.length}
-                    </div>
-                  </div>
-
-                  {/* Banner Info */}
-                  <div className="bg-[#F8F6F2] rounded-2xl p-4 space-y-2 text-xs">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-400 font-semibold">Teks Tombol:</span>
-                      <span className="font-bold text-primary-blue">{activeBtnConfig.text || 'Tidak Ada Tombol'}</span>
-                    </div>
-                    {activeBtnConfig.text && (
-                      <div className="flex justify-between items-center">
-                        <span className="text-gray-400 font-semibold">Link Tombol:</span>
-                        <span className="font-bold text-primary-green flex items-center gap-1 font-mono">
-                          {activeBtnConfig.link || '/ (Default)'}
-                          <ExternalLink size={10} />
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex justify-between items-center pt-2 border-t border-gray-200/50">
-                      <span className="text-gray-400 font-semibold">Diunggah Pada:</span>
-                      <span className="font-bold text-gray-500">
-                        {new Date(activeBanner.created_at).toLocaleDateString('id-ID', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric',
-                          hour: '2-digit',
-                          minute: '2-digit'
-                        })}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Thumbnail Strip */}
-                  <div className="flex gap-2 overflow-x-auto pb-1">
-                    {bannerList.map((item, idx) => (
-                      <button
-                        key={item.id}
-                        onClick={() => setCurrentSlide(idx)}
-                        className={`flex-shrink-0 w-16 h-12 rounded-xl overflow-hidden border-2 transition-all cursor-pointer ${
-                          idx === currentSlide ? 'border-primary-green' : 'border-transparent opacity-60 hover:opacity-100'
-                        }`}
-                      >
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {paginatedBanners.map((item) => {
+                    const cfg = parseBtnConfig(item.title)
+                    return (
+                      <div key={item.id} className="group relative rounded-2xl overflow-hidden bg-gray-100 aspect-video border border-gray-100">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={item.image} alt="thumbnail" className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
+                        <img
+                          src={item.image}
+                          alt="Banner Hero"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
+                        />
+                        {cfg.text && (
+                          <span className="absolute top-2.5 left-2.5 bg-primary-green text-white text-[9px] uppercase font-bold px-2 py-0.5 rounded-full backdrop-blur-xs">
+                            Tombol: {cfg.text}
+                          </span>
+                        )}
+                        <button
+                          onClick={() => handleDelete(item)}
+                          className="absolute top-2.5 right-2.5 bg-red-500/90 hover:bg-red-600 text-white p-1.5 rounded-lg transition-all cursor-pointer opacity-90 hover:opacity-100"
+                          title="Hapus banner"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent p-3 pt-6 text-white text-[11px]">
+                          <p className="font-mono text-gray-300 truncate">{cfg.link || 'Link default: /'}</p>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
               )}
             </CardContent>
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredBanners.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[4, 8, 16]}
+            />
           </Card>
         </div>
 

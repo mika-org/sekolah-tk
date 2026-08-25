@@ -1,12 +1,15 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   UserCog,
   Plus,
@@ -52,6 +55,13 @@ export default function AdminUsersPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showEditPassword, setShowEditPassword] = useState(false)
+
+  // Search & Pagination
+  const [searchQuery, setSearchQuery] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const loadUsers = async () => {
     setLoading(true)
@@ -161,24 +171,26 @@ export default function AdminUsersPage() {
   }
 
   const getRoleBadge = (role: string) => {
-    const map: Record<string, string> = {
-      super_admin: 'bg-purple-100 text-purple-800',
-      admin: 'bg-blue-100 text-blue-800',
-      guru: 'bg-amber-100 text-amber-800',
-      orang_tua: 'bg-emerald-100 text-emerald-800',
-    }
-    const labels: Record<string, string> = {
-      super_admin: 'Super Admin',
-      admin: 'Administrator',
-      guru: 'Guru',
-      orang_tua: 'Orang Tua',
-    }
-    return (
-      <Badge className={`${map[role] || 'bg-gray-100 text-gray-700'} border-none font-bold rounded-full px-3 py-1`}>
-        {labels[role] || role}
-      </Badge>
-    )
+    return <StatusBadge status={role} />
   }
+
+  const filteredUsers = useMemo(() => {
+    return users.filter((u) => {
+      const matchSearch =
+        !searchQuery ||
+        (u.username || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (u.email || '').toLowerCase().includes(searchQuery.toLowerCase())
+      const matchRole = roleFilter === 'all' || u.role === roleFilter
+      const matchStatus = statusFilter === 'all' || u.status === statusFilter
+      return matchSearch && matchRole && matchStatus
+    })
+  }, [users, searchQuery, roleFilter, statusFilter])
+
+  const totalPages = Math.ceil(filteredUsers.length / pageSize) || 1
+  const paginatedUsers = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredUsers.slice(start, start + pageSize)
+  }, [filteredUsers, currentPage, pageSize])
 
   return (
     <div className="space-y-8">
@@ -187,15 +199,15 @@ export default function AdminUsersPage() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-primary-blue">Manajemen User</h1>
-          <p className="text-gray-500 font-semibold text-xs mt-1">Kelola akun pengguna portal KB & TK Istiqamah berdasarkan perannya.</p>
+          <p className="text-gray-500 font-semibold text-xs mt-1">Kelola akun dan hak akses pengguna portal sistem.</p>
         </div>
-        <div className="flex items-center gap-3">
-          <Button onClick={loadUsers} variant="outline" className="border-gray-200 font-bold rounded-xl text-xs cursor-pointer gap-2">
+        <div className="flex items-center gap-2">
+          <Button onClick={loadUsers} variant="outline" className="border-gray-200 hover:border-gray-300 font-bold rounded-xl text-xs cursor-pointer gap-2">
             <RefreshCw size={14} /> Refresh
           </Button>
           <Button
             onClick={() => setCreateOpen(true)}
-            className="bg-primary-blue hover:bg-primary-blue/90 text-white font-bold rounded-xl text-xs cursor-pointer gap-2"
+            className="bg-primary-green hover:bg-primary-green/90 text-white font-extrabold rounded-xl text-xs cursor-pointer gap-2 shadow-sm"
           >
             <Plus size={14} /> Tambah User Baru
           </Button>
@@ -204,20 +216,71 @@ export default function AdminUsersPage() {
 
       {/* Users Table */}
       <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-        <CardHeader className="p-8 border-b border-gray-50 flex flex-row items-center justify-between">
+        <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-lg font-black text-primary-blue">Daftar Pengguna</CardTitle>
             <CardDescription className="text-xs font-semibold text-gray-400">
-              {users.length} akun pengguna terdaftar di sistem.
+              {filteredUsers.length} akun pengguna terdaftar di sistem.
             </CardDescription>
           </div>
-          <UserCog className="text-primary-green" />
+
+          {/* Filters */}
+          <div className="flex flex-wrap items-center gap-2.5">
+            <TableSearchFilter
+              value={searchQuery}
+              onChange={(val) => {
+                setSearchQuery(val)
+                setCurrentPage(1)
+              }}
+              placeholder="Cari username atau email..."
+            />
+
+            <Select
+              value={roleFilter}
+              onValueChange={(val) => {
+                if (val) {
+                  setRoleFilter(val)
+                  setCurrentPage(1)
+                }
+              }}
+            >
+              <SelectTrigger className="h-9 w-36 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
+                <SelectValue placeholder="Semua Role" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">Semua Role</SelectItem>
+                <SelectItem value="super_admin">Super Admin</SelectItem>
+                <SelectItem value="admin">Administrator</SelectItem>
+                <SelectItem value="guru">Guru Pengajar</SelectItem>
+                <SelectItem value="orang_tua">Orang Tua</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={statusFilter}
+              onValueChange={(val) => {
+                if (val) {
+                  setStatusFilter(val)
+                  setCurrentPage(1)
+                }
+              }}
+            >
+              <SelectTrigger className="h-9 w-32 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
+                <SelectValue placeholder="Semua Status" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">Semua Status</SelectItem>
+                <SelectItem value="active">Aktif</SelectItem>
+                <SelectItem value="inactive">Nonaktif</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </CardHeader>
         <CardContent className="p-0">
           {loading ? (
             <div className="p-12 text-center text-gray-400 text-sm">Memuat daftar user...</div>
-          ) : users.length === 0 ? (
-            <div className="p-12 text-center text-gray-400 text-sm">Belum ada pengguna terdaftar.</div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="p-12 text-center text-gray-400 text-sm">Tidak ada data pengguna yang sesuai.</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-sm border-collapse">
@@ -232,7 +295,7 @@ export default function AdminUsersPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {users.map(u => (
+                  {paginatedUsers.map(u => (
                     <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="p-4 pl-8">
                         <div className="font-bold text-primary-blue flex items-center gap-2">
@@ -245,33 +308,30 @@ export default function AdminUsersPage() {
                       <td className="p-4 text-gray-600 font-semibold text-xs">{u.email}</td>
                       <td className="p-4">{getRoleBadge(u.role)}</td>
                       <td className="p-4">
-                        <Badge className={u.status === 'active'
-                          ? 'bg-emerald-100 text-emerald-800 border-none font-bold rounded-full'
-                          : 'bg-rose-100 text-rose-800 border-none font-bold rounded-full'
-                        }>
-                          {u.status === 'active' ? 'Aktif' : 'Nonaktif'}
-                        </Badge>
+                        <StatusBadge status={u.status === 'active' ? 'active' : 'inactive'} customLabel={u.status === 'active' ? 'Aktif' : 'Nonaktif'} />
                       </td>
                       <td className="p-4 text-xs text-gray-400 font-semibold">
                         {new Date(u.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </td>
-                      <td className="p-4 pr-8 text-right space-x-2">
-                        <Button
-                          onClick={() => openEdit(u)}
-                          variant="outline"
-                          className="border-gray-200 text-primary-blue hover:bg-primary-blue/5 rounded-lg text-xs py-1.5 px-3 h-auto cursor-pointer gap-1.5"
-                        >
-                          <Edit size={12} /> Edit
-                        </Button>
-                        {u.role !== 'super_admin' && (
+                      <td className="p-4 pr-8 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
                           <Button
-                            onClick={() => confirmDelete(u.id)}
+                            onClick={() => openEdit(u)}
                             variant="outline"
-                            className="border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs py-1.5 px-3 h-auto cursor-pointer gap-1.5"
+                            className="h-8 border-gray-200 text-primary-blue hover:bg-primary-blue/5 font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1"
                           >
-                            <Trash2 size={12} /> Hapus
+                            <Edit size={12} /> Edit
                           </Button>
-                        )}
+                          {u.role !== 'super_admin' && (
+                            <Button
+                              onClick={() => confirmDelete(u.id)}
+                              variant="outline"
+                              className="h-8 border-rose-200 text-rose-600 hover:bg-rose-50 font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1"
+                            >
+                              <Trash2 size={12} /> Hapus
+                            </Button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -279,6 +339,14 @@ export default function AdminUsersPage() {
               </table>
             </div>
           )}
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filteredUsers.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
         </CardContent>
       </Card>
 

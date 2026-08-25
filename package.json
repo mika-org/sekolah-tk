@@ -13,8 +13,6 @@
     "db:status": "prisma migrate status",
     "db:seed": "tsx scripts/seed-admin.ts",
     "db:verify": "tsx scripts/verify-database.ts",
-    "migrate:supabase": "tsx scripts/migrate-supabase-to-prisma.ts",
-    "migrate:supabase:dry": "tsx scripts/migrate-supabase-to-prisma.ts --dry-run",
     "lint": "eslint"
   },
   "dependencies": {

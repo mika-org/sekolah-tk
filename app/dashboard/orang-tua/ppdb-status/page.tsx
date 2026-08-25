@@ -4,7 +4,8 @@ import React, { useState, useEffect } from 'react'
 import { createClient } from '@/lib/database/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { FileText, Sparkles, UserCheck } from 'lucide-react'
+import { StatusBadge } from '@/components/ui/status-badge'
+import { FileText, Sparkles, UserCheck, Clock, CheckCircle2, AlertCircle } from 'lucide-react'
 
 export default function PPDBStatusPage() {
   const [studentData, setStudentData] = useState<any>(null)
@@ -115,13 +116,7 @@ export default function PPDBStatusPage() {
   }
 
   const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'Submitted': return <Badge className="bg-blue-100 text-blue-800 border-none rounded-full px-3 py-1 font-bold">Baru</Badge>
-      case 'Verifikasi Berkas': return <Badge className="bg-amber-100 text-amber-800 border-none rounded-full px-3 py-1 font-bold">Verifikasi Berkas</Badge>
-      case 'Diterima': return <Badge className="bg-emerald-100 text-emerald-800 border-none rounded-full px-3 py-1 font-bold">Diterima</Badge>
-      case 'Ditolak': return <Badge className="bg-rose-100 text-rose-800 border-none rounded-full px-3 py-1 font-bold">Ditolak</Badge>
-      default: return <Badge className="bg-gray-100 text-gray-800 border-none rounded-full px-3 py-1 font-bold">{status}</Badge>
-    }
+    return <StatusBadge status={status} />
   }
 
   return (
@@ -176,9 +171,7 @@ export default function PPDBStatusPage() {
               </div>
               <div className="flex justify-between items-center py-2">
                 <span>Status Pembayaran PPDB:</span>
-                <Badge className={ppdbData?.payment_status === 'Verified' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}>
-                  {ppdbData?.payment_status === 'Verified' ? 'Lunas / Terverifikasi' : 'Menunggu Verifikasi'}
-                </Badge>
+                <StatusBadge status={ppdbData?.payment_status} customLabel={ppdbData?.payment_status === 'Verified' ? 'Lunas / Terverifikasi' : 'Menunggu Verifikasi'} />
               </div>
             </CardContent>
           </Card>

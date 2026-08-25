@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/database/client'
 import { Button } from '@/components/ui/button'
@@ -9,6 +9,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Megaphone,
   Plus,
@@ -27,6 +30,12 @@ export default function AdminAnnouncementsPage() {
   const [content, setContent] = useState('')
   const [target, setTarget] = useState('Semua')
   const [published, setPublished] = useState(true)
+
+  // Search & Pagination
+  const [searchQuery, setSearchQuery] = useState('')
+  const [targetFilter, setTargetFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(5)
 
   const supabase = createClient()
 
@@ -98,7 +107,7 @@ export default function AdminAnnouncementsPage() {
       .eq('id', id)
 
     if (error) {
-      toast.error('Gagal memperbarui status: ' + error.message)
+      toast.error('Gagal mengubah status pengumuman: ' + error.message)
     } else {
       setAnnouncementsList(prev => prev.map(item => 
         item.id === id 
@@ -108,41 +117,47 @@ export default function AdminAnnouncementsPage() {
     }
   }
 
-  const getTargetBadge = (target: string) => {
-    switch (target) {
-      case 'Semua': return <Badge className="bg-blue-100 text-blue-800 border-none font-bold">Semua</Badge>
-      case 'Guru': return <Badge className="bg-purple-100 text-purple-800 border-none font-bold">Guru</Badge>
-      case 'Orang Tua': return <Badge className="bg-amber-100 text-amber-800 border-none font-bold">Orang Tua</Badge>
-      default: return <Badge className="bg-gray-100 text-gray-800 border-none font-bold">{target}</Badge>
-    }
+  const getTargetBadge = (targetRole: string) => {
+    return <StatusBadge status={targetRole} size="sm" />
   }
+
+  const filteredAnnouncements = useMemo(() => {
+    return announcementsList.filter((item) => {
+      const matchSearch =
+        !searchQuery ||
+        (item.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (item.content || '').toLowerCase().includes(searchQuery.toLowerCase())
+      const matchTarget = targetFilter === 'all' || item.target === targetFilter
+      return matchSearch && matchTarget
+    })
+  }, [announcementsList, searchQuery, targetFilter])
+
+  const totalPages = Math.ceil(filteredAnnouncements.length / pageSize) || 1
+  const paginatedAnnouncements = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filteredAnnouncements.slice(start, start + pageSize)
+  }, [filteredAnnouncements, currentPage, pageSize])
 
   return (
     <div className="space-y-8">
       
       {/* Page Title */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-black text-primary-blue">Kelola Pengumuman</h1>
-          <p className="text-gray-500 font-semibold text-xs mt-1">Buat, terbitkan, dan hapus pengumuman internal sekolah.</p>
-        </div>
+      <div>
+        <h1 className="text-3xl font-black text-primary-blue">Kelola Pengumuman</h1>
+        <p className="text-gray-500 font-semibold text-xs mt-1">Publikasikan informasi penting, surat edaran, atau agenda sekolah kepada guru dan orang tua.</p>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* Editor Form */}
+        {/* Form Create */}
         <div className="lg:col-span-4">
-          <Card className="bg-white rounded-[32px] shadow-sm border-none">
+          <Card className="bg-white rounded-[32px] shadow-sm border-none sticky top-6">
             <CardHeader>
-              <CardTitle className="text-base font-black text-primary-blue flex items-center gap-2">
-                <Plus size={18} className="text-primary-green" />
-                Buat Pengumuman Baru
-              </CardTitle>
-              <CardDescription className="text-xs font-semibold text-gray-400">Siarkan informasi penting ke lingkup civitas sekolah.</CardDescription>
+              <CardTitle className="text-lg font-black text-primary-blue">Buat Pengumuman</CardTitle>
+              <CardDescription className="text-xs font-semibold text-gray-400">Tulis informasi resmi baru.</CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleAdd} className="space-y-4 text-sm">
-                
+              <form onSubmit={handleAdd} className="space-y-4">
                 <div className="space-y-1.5">
                   <Label htmlFor="title" className="text-xs font-bold text-primary-blue">Judul Pengumuman</Label>
                   <Input
@@ -188,7 +203,7 @@ export default function AdminAnnouncementsPage() {
                     id="published"
                     checked={published}
                     onChange={e => setPublished(e.target.checked)}
-                    className="rounded text-primary-green focus:ring-primary-green w-4 h-4"
+                    className="rounded text-primary-green focus:ring-primary-green w-4 h-4 cursor-pointer"
                   />
                   <Label htmlFor="published" className="text-xs font-bold text-gray-600 select-none cursor-pointer">
                     Langsung terbitkan sekarang
@@ -198,7 +213,7 @@ export default function AdminAnnouncementsPage() {
                 <Button
                   type="submit"
                   disabled={saving}
-                  className="w-full bg-primary-blue hover:bg-primary-blue/90 text-white font-extrabold rounded-xl py-3 text-xs uppercase cursor-pointer"
+                  className="w-full bg-primary-green hover:bg-primary-green/90 text-white font-extrabold rounded-xl py-3 text-xs uppercase cursor-pointer shadow-sm"
                 >
                   {saving ? 'Menyimpan...' : 'Terbitkan'}
                 </Button>
@@ -210,31 +225,59 @@ export default function AdminAnnouncementsPage() {
 
         {/* Announcements List */}
         <div className="lg:col-span-8 space-y-6">
-          <Card className="bg-white rounded-[32px] shadow-sm border-none">
-            <CardHeader className="flex flex-row items-center justify-between">
+          <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
+            <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
                 <CardTitle className="text-lg font-black text-primary-blue">Pengumuman Terbit</CardTitle>
-                <CardDescription className="text-xs font-semibold text-gray-400">Daftar semua siaran pengumuman aktif.</CardDescription>
+                <CardDescription className="text-xs font-semibold text-gray-400">Daftar semua siaran pengumuman aktif ({filteredAnnouncements.length} siaran).</CardDescription>
               </div>
-              <Megaphone className="text-primary-green" />
+
+              <div className="flex flex-wrap items-center gap-2.5">
+                <TableSearchFilter
+                  value={searchQuery}
+                  onChange={(val) => {
+                    setSearchQuery(val)
+                    setCurrentPage(1)
+                  }}
+                  placeholder="Cari pengumuman..."
+                />
+
+                <Select
+                  value={targetFilter}
+                  onValueChange={(val) => {
+                    if (val) {
+                      setTargetFilter(val)
+                      setCurrentPage(1)
+                    }
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-32 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
+                    <SelectValue placeholder="Semua Target" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="all">Semua Target</SelectItem>
+                    <SelectItem value="Semua">Semua (Umum)</SelectItem>
+                    <SelectItem value="Guru">Guru</SelectItem>
+                    <SelectItem value="Orang Tua">Orang Tua</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </CardHeader>
             <CardContent className="p-6">
               {loading ? (
                 <div className="text-center p-8 text-gray-400 text-xs">Memuat daftar pengumuman...</div>
-              ) : announcementsList.length === 0 ? (
-                <div className="text-center p-8 text-gray-400 text-xs">Belum ada pengumuman terbit.</div>
+              ) : filteredAnnouncements.length === 0 ? (
+                <div className="text-center p-8 text-gray-400 text-xs">Tidak ada pengumuman yang sesuai.</div>
               ) : (
                 <div className="space-y-4">
-                  {announcementsList.map(item => (
+                  {paginatedAnnouncements.map(item => (
                     <div key={item.id} className="p-5 bg-[#F8F6F2] rounded-2xl border border-gray-100 flex flex-col justify-between gap-3 relative">
                       <div className="flex items-start justify-between gap-4">
                         <div className="space-y-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <h4 className="font-extrabold text-sm text-primary-blue leading-snug">{item.title}</h4>
                             {getTargetBadge(item.target)}
-                            <Badge className={item.published ? "bg-emerald-50 text-emerald-600 border-none font-bold" : "bg-gray-200 text-gray-600 border-none font-bold"}>
-                              {item.published ? 'Published' : 'Draft'}
-                            </Badge>
+                            <StatusBadge status={item.published ? 'published' : 'draft'} customLabel={item.published ? 'Published' : 'Draft'} size="sm" />
                           </div>
                           <p className="text-xs text-gray-600 leading-relaxed whitespace-pre-wrap">{item.content}</p>
                         </div>
@@ -260,6 +303,15 @@ export default function AdminAnnouncementsPage() {
                 </div>
               )}
             </CardContent>
+            <TablePagination
+              currentPage={currentPage}
+              totalPages={totalPages}
+              totalItems={filteredAnnouncements.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[5, 10, 20]}
+            />
           </Card>
         </div>
 

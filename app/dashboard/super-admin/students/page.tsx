@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/database/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
@@ -8,6 +8,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
+import { StatusBadge } from '@/components/ui/status-badge'
 import {
   Users,
   Plus,
@@ -26,7 +29,12 @@ export default function MasterMuridPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
+  // Search, Filter & Pagination
   const [search, setSearch] = useState('')
+  const [classFilter, setClassFilter] = useState('all')
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [currentPage, setCurrentPage] = useState(1)
+  const [pageSize, setPageSize] = useState(10)
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
@@ -123,8 +131,6 @@ export default function MasterMuridPage() {
     setSaving(false)
   }
 
-  const filtered = students.filter(s => s.nama?.toLowerCase().includes(search.toLowerCase()) || s.nisn?.includes(search) || s.nik?.includes(search))
-
   const FormFields = ({ isEdit = false }: { isEdit?: boolean }) => (
     <div className="space-y-4">
       <div className="grid grid-cols-2 gap-3">
@@ -185,6 +191,25 @@ export default function MasterMuridPage() {
     </div>
   )
 
+  const filtered = useMemo(() => {
+    return students.filter(s => {
+      const matchSearch =
+        !search ||
+        (s.nama || '').toLowerCase().includes(search.toLowerCase()) ||
+        (s.nisn || '').includes(search) ||
+        (s.nik || '').includes(search)
+      const matchClass = classFilter === 'all' || s.kelas_id === classFilter
+      const matchStatus = statusFilter === 'all' || s.status === statusFilter
+      return matchSearch && matchClass && matchStatus
+    })
+  }, [students, search, classFilter, statusFilter])
+
+  const totalPages = Math.ceil(filtered.length / pageSize) || 1
+  const paginatedStudents = useMemo(() => {
+    const start = (currentPage - 1) * pageSize
+    return filtered.slice(start, start + pageSize)
+  }, [filtered, currentPage, pageSize])
+
   return (
     <div className="space-y-8">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -197,7 +222,7 @@ export default function MasterMuridPage() {
             <RefreshCw size={14} /> Refresh
           </Button>
           <Button onClick={() => { setForm(initForm); setCreateOpen(true) }}
-            className="bg-primary-blue hover:bg-primary-blue/90 text-white font-bold rounded-xl text-xs cursor-pointer gap-2">
+            className="bg-primary-green hover:bg-primary-green/90 text-white font-extrabold rounded-xl text-xs cursor-pointer gap-2 shadow-sm">
             <Plus size={14} /> Tambah Murid
           </Button>
         </div>
@@ -238,17 +263,60 @@ export default function MasterMuridPage() {
 
       {/* Search + Table */}
       <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-        <CardHeader className="p-8 border-b border-gray-50">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <div>
-              <CardTitle className="text-lg font-black text-primary-blue">Daftar Murid</CardTitle>
-              <CardDescription className="text-xs font-semibold text-gray-400">Seluruh murid yang terdaftar di sistem. ({filtered.length} ditampilkan)</CardDescription>
-            </div>
-            <div className="relative">
-              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-              <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari nama, NISN, NIK..."
-                className="pl-8 bg-[#F8F6F2] border-transparent focus:border-primary-green rounded-xl text-xs font-medium h-9 w-64" />
-            </div>
+        <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="text-lg font-black text-primary-blue">Daftar Murid</CardTitle>
+            <CardDescription className="text-xs font-semibold text-gray-400">Seluruh murid yang terdaftar di sistem ({filtered.length} murid).</CardDescription>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <TableSearchFilter
+              value={search}
+              onChange={(val) => {
+                setSearch(val)
+                setCurrentPage(1)
+              }}
+              placeholder="Cari nama, NISN, NIK..."
+            />
+
+            <Select
+              value={classFilter}
+              onValueChange={(val) => {
+                if (val) {
+                  setClassFilter(val)
+                  setCurrentPage(1)
+                }
+              }}
+            >
+              <SelectTrigger className="h-9 w-36 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
+                <SelectValue placeholder="Semua Kelas" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">Semua Kelas</SelectItem>
+                {classes.map(c => (
+                  <SelectItem key={c.id} value={c.id}>{c.nama}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              value={statusFilter}
+              onValueChange={(val) => {
+                if (val) {
+                  setStatusFilter(val)
+                  setCurrentPage(1)
+                }
+              }}
+            >
+              <SelectTrigger className="h-9 w-32 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
+                <SelectValue placeholder="Semua Status" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">Semua Status</SelectItem>
+                <SelectItem value="active">Aktif</SelectItem>
+                <SelectItem value="inactive">Nonaktif</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -281,7 +349,7 @@ export default function MasterMuridPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {filtered.map(s => (
+                  {paginatedStudents.map(s => (
                     <tr key={s.id} className="hover:bg-gray-50/50 transition-colors">
                       <td className="p-4 pl-8">
                         <div className="flex items-center gap-3">
@@ -308,19 +376,25 @@ export default function MasterMuridPage() {
                         </Badge>
                       </td>
                       <td className="p-4">
-                        <Badge className={`border-none font-bold rounded-full px-2 py-0.5 text-[10px] ${s.status === 'active' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-700'}`}>
-                          {s.status === 'active' ? 'Aktif' : 'Nonaktif'}
-                        </Badge>
+                        <StatusBadge status={s.status === 'active' ? 'active' : 'inactive'} customLabel={s.status === 'active' ? 'Aktif' : 'Nonaktif'} />
                       </td>
-                      <td className="p-4 pr-8 text-right space-x-2">
-                        <Button onClick={() => openEdit(s)} variant="outline"
-                          className="border-gray-200 text-primary-blue hover:bg-primary-blue/5 rounded-lg text-xs py-1.5 px-3 h-auto cursor-pointer gap-1.5">
-                          <Edit size={12} /> Edit
-                        </Button>
-                        <Button onClick={() => { setSelected(s); setDeleteOpen(true) }} variant="outline"
-                          className="border-red-200 text-red-600 hover:bg-red-50 rounded-lg text-xs py-1.5 px-3 h-auto cursor-pointer gap-1.5">
-                          <Trash2 size={12} /> Hapus
-                        </Button>
+                      <td className="p-4 pr-8 text-right">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            onClick={() => openEdit(s)}
+                            variant="outline"
+                            className="h-8 border-gray-200 text-primary-blue hover:bg-primary-blue/5 font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <Edit size={12} /> Edit
+                          </Button>
+                          <Button
+                            onClick={() => { setSelected(s); setDeleteOpen(true) }}
+                            variant="outline"
+                            className="h-8 border-rose-200 text-rose-600 hover:bg-rose-50 font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1"
+                          >
+                            <Trash2 size={12} /> Hapus
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -328,6 +402,14 @@ export default function MasterMuridPage() {
               </table>
             </div>
           )}
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={filtered.length}
+            pageSize={pageSize}
+            onPageChange={setCurrentPage}
+            onPageSizeChange={setPageSize}
+          />
         </CardContent>
       </Card>
 
