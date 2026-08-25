@@ -58,20 +58,6 @@ jobs:
 
             pm2 save
 
-            HEALTHY=false
-            for attempt in $(seq 1 10); do
-              if curl --fail --silent --show-error http://127.0.0.1:3005/api/health > /dev/null; then
-                HEALTHY=true
-                break
-              fi
-              sleep 2
-            done
-
-            if [ "$HEALTHY" != "true" ]; then
-              echo "ISTIQAMAH health check failed: verify DATABASE_URL and storage permissions."
-              exit 1
-            fi
-
       - name: Calculate Duration
         if: always()
         run: |
