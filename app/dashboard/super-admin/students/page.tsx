@@ -15,7 +15,8 @@ import {
   Trash2,
   RefreshCw,
   Search,
-  UserCheck
+  UserCheck,
+  AlertTriangle
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -23,6 +24,7 @@ export default function MasterMuridPage() {
   const [students, setStudents] = useState<any[]>([])
   const [classes, setClasses] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [search, setSearch] = useState('')
 
@@ -38,15 +40,19 @@ export default function MasterMuridPage() {
 
   const loadData = async () => {
     setLoading(true)
+    setError(null)
     try {
       const [studentsRes, classesRes] = await Promise.all([
         fetch('/api/admin/data?table=students_tk_with_classes'),
         fetch('/api/admin/data?table=classes_tk')
       ])
       const [studentsResult, classesResult] = await Promise.all([studentsRes.json(), classesRes.json()])
+      if (!studentsRes.ok || studentsResult.error) throw new Error(studentsResult.error || 'Gagal memuat data murid')
+      if (!classesRes.ok || classesResult.error) throw new Error(classesResult.error || 'Gagal memuat data kelas')
       setStudents(studentsResult.data || [])
       setClasses(classesResult.data || [])
-    } catch {
+    } catch (err: any) {
+      setError(err.message || 'Terjadi kesalahan saat memuat data murid')
       setStudents([]); setClasses([])
     }
     setLoading(false)
@@ -248,6 +254,17 @@ export default function MasterMuridPage() {
         <CardContent className="p-0">
           {loading ? (
             <div className="p-12 text-center text-gray-400">Memuat data murid...</div>
+          ) : error ? (
+            <div className="p-12 text-center space-y-3">
+              <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+                <AlertTriangle size={24} />
+              </div>
+              <div className="text-sm font-bold text-gray-800">Gagal Memuat Data Murid</div>
+              <div className="text-xs text-rose-600 max-w-md mx-auto">{error}</div>
+              <Button onClick={loadData} variant="outline" className="border-gray-200 text-xs font-bold rounded-xl mt-2 cursor-pointer gap-1.5">
+                <RefreshCw size={14} /> Coba Lagi
+              </Button>
+            </div>
           ) : filtered.length === 0 ? (
             <div className="p-12 text-center text-gray-400">{search ? 'Murid tidak ditemukan.' : 'Belum ada murid terdaftar.'}</div>
           ) : (

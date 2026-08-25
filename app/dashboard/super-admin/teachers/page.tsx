@@ -16,7 +16,8 @@ import {
   RefreshCw,
   Phone,
   MapPin,
-  UserCheck
+  UserCheck,
+  AlertTriangle
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -24,6 +25,7 @@ export default function MasterGuruPage() {
   const [teachers, setTeachers] = useState<any[]>([])
   const [guruUsers, setGuruUsers] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
   const [createOpen, setCreateOpen] = useState(false)
@@ -37,15 +39,19 @@ export default function MasterGuruPage() {
 
   const loadData = async () => {
     setLoading(true)
+    setError(null)
     try {
       const [teachersRes, usersRes] = await Promise.all([
         fetch('/api/admin/data?table=teachers_tk_with_users'),
         fetch('/api/admin/data?table=users_tk')
       ])
       const [teachersResult, usersResult] = await Promise.all([teachersRes.json(), usersRes.json()])
+      if (!teachersRes.ok || teachersResult.error) throw new Error(teachersResult.error || 'Gagal memuat data guru')
+      if (!usersRes.ok || usersResult.error) throw new Error(usersResult.error || 'Gagal memuat data user')
       setTeachers(teachersResult.data || [])
       setGuruUsers((usersResult.data || []).filter((u: any) => u.role === 'guru'))
-    } catch {
+    } catch (err: any) {
+      setError(err.message || 'Terjadi kesalahan saat memuat data')
       setTeachers([]); setGuruUsers([])
     }
     setLoading(false)
@@ -168,6 +174,17 @@ export default function MasterGuruPage() {
         <CardContent className="p-0">
           {loading ? (
             <div className="p-12 text-center text-gray-400">Memuat data guru...</div>
+          ) : error ? (
+            <div className="p-12 text-center space-y-3">
+              <div className="w-12 h-12 bg-rose-100 text-rose-600 rounded-full flex items-center justify-center mx-auto">
+                <AlertTriangle size={24} />
+              </div>
+              <div className="text-sm font-bold text-gray-800">Gagal Memuat Data Guru</div>
+              <div className="text-xs text-rose-600 max-w-md mx-auto">{error}</div>
+              <Button onClick={loadData} variant="outline" className="border-gray-200 text-xs font-bold rounded-xl mt-2 cursor-pointer gap-1.5">
+                <RefreshCw size={14} /> Coba Lagi
+              </Button>
+            </div>
           ) : teachers.length === 0 ? (
             <div className="p-12 text-center text-gray-400">Belum ada data guru. Klik "Tambah Guru" untuk mulai.</div>
           ) : (
