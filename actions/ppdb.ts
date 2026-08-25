@@ -64,8 +64,8 @@ function validateUpload(file: File | null, label: string) {
 export async function submitPPDB(_prevState: PPDBActionState, formData: FormData): Promise<PPDBActionState> {
   try {
     const currentStep = formText(formData, 'current_step')
-    if (currentStep !== '4') {
-      return failure('Formulir belum lengkap. Ikuti semua langkah hingga Langkah 4 sebelum mengirim.', 4)
+    if (currentStep !== '3') {
+      return failure('Formulir belum lengkap. Ikuti semua langkah hingga Langkah 3 sebelum mengirim.', 3)
     }
 
     const childDetails = collectSnapshot(formData, CHILD_FORM_SECTIONS)
@@ -90,26 +90,10 @@ export async function submitPPDB(_prevState: PPDBActionState, formData: FormData
       return failure('No. Telepon/HP Ibu wajib diisi bila identitas ibu diisi.', 2)
     }
 
-    if (formText(formData, 'pernyataan_kebenaran') !== 'setuju') {
-      return failure('Centang pernyataan kebenaran dan kelengkapan data sebelum mengirim.', 4)
-    }
 
     const documentDefinitions = [
-      { name: 'kk', label: 'Kartu Keluarga', required: true },
-      { name: 'akta', label: 'Akta Kelahiran', required: true },
-      { name: 'foto_anak', label: 'Foto Anak', required: false },
-      { name: 'ktp_ayah', label: 'KTP Ayah', required: false },
-      { name: 'ktp_ibu', label: 'KTP Ibu', required: false },
-      {
-        name: 'surat_mutasi',
-        label: 'Surat Mutasi',
-        required: childDetails.status_pendaftaran === 'Siswa pindahan',
-      },
-      {
-        name: 'surat_lulus_kb',
-        label: 'Surat Keterangan Lulus Daycare/KB',
-        required: ['Daycare', 'Kelompok Bermain (KB)'].includes(childDetails.riwayat_pendidikan),
-      },
+      { name: 'akta', label: 'Akta Kelahiran Anak', required: true },
+      { name: 'ktp_ortu', label: 'KTP Orang Tua', required: true },
     ] as const
 
     const documents = documentDefinitions.map((definition) => ({
@@ -118,19 +102,22 @@ export async function submitPPDB(_prevState: PPDBActionState, formData: FormData
     }))
     for (const document of documents) {
       if (document.required && !document.file) {
-        return failure(`${document.label} wajib dilampirkan.`, 4)
+        return failure(`${document.label} wajib dilampirkan.`, 3)
       }
       const uploadError = validateUpload(document.file, document.label)
-      if (uploadError) return failure(uploadError, 4)
+      if (uploadError) return failure(uploadError, 3)
     }
 
     const paymentMethod = formText(formData, 'payment_method') || 'Transfer'
     if (!['Transfer', 'QRIS', 'Cash'].includes(paymentMethod)) {
-      return failure('Metode pembayaran tidak valid.', 4)
+      return failure('Metode pembayaran tidak valid.', 3)
     }
     const proofFile = getUpload(formData, 'bukti_pembayaran')
+    if (paymentMethod !== 'Cash' && !proofFile) {
+      return failure('Bukti pembayaran transfer / QRIS wajib dilampirkan.', 3)
+    }
     const proofError = validateUpload(proofFile, 'Bukti pembayaran')
-    if (proofError) return failure(proofError, 4)
+    if (proofError) return failure(proofError, 3)
 
     const database = createAdminClient()
     const { data: ppdbData, error: ppdbError } = await database
@@ -150,7 +137,7 @@ export async function submitPPDB(_prevState: PPDBActionState, formData: FormData
 
     if (ppdbError || !ppdbData) {
       console.error('PPDB insertion error:', ppdbError)
-      return failure(`Gagal menyimpan data pendaftaran: ${ppdbError?.message || 'data tidak ditemukan'}`, 4)
+      return failure(`Gagal menyimpan data pendaftaran: ${ppdbError?.message || 'data tidak ditemukan'}`, 3)
     }
 
     const ppdbId = ppdbData.id
@@ -232,6 +219,6 @@ export async function submitPPDB(_prevState: PPDBActionState, formData: FormData
   } catch (error: unknown) {
     console.error(error)
     const message = error instanceof Error ? error.message : 'Kesalahan tidak diketahui.'
-    return failure(`Terjadi kesalahan sistem: ${message}`, 4)
+    return failure(`Terjadi kesalahan sistem: ${message}`, 3)
   }
 }

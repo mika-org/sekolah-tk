@@ -34,7 +34,7 @@ export async function listStorageBuckets() {
 }
 
 export function getStorageUrl(bucket: string, objectPath: string) {
-  const base = (process.env.NEXT_PUBLIC_STORAGE_URL || '/api/uploads').replace(/\/$/, '')
+  const base = (process.env.NEXT_PUBLIC_STORAGE_URL || 'https://istiqamah.elevore.web.id/uploads').replace(/\/$/, '')
   const encodedPath = objectPath.replace(/\\/g, '/').split('/').filter(Boolean).map(encodeURIComponent).join('/')
   return `${base}/${encodeURIComponent(bucket)}/${encodedPath}`
 }
@@ -60,10 +60,16 @@ export async function deleteStoredFile(bucket: string, objectPath: string) {
 
 export function storagePathFromUrl(url: string) {
   if (!url) return null
-  const marker = '/api/uploads/'
-  const index = url.indexOf(marker)
-  if (index < 0) return null
-  const parts = url.slice(index + marker.length).split('/').filter(Boolean).map(decodeURIComponent)
-  if (parts.length < 2) return null
-  return { bucket: parts[0], objectPath: parts.slice(1).join('/') }
+  const markers = ['/uploads/', '/api/uploads/']
+  for (const marker of markers) {
+    const index = url.indexOf(marker)
+    if (index >= 0) {
+      const cleanTail = url.slice(index + marker.length).split('?')[0]
+      const parts = cleanTail.split('/').filter(Boolean).map(decodeURIComponent)
+      if (parts.length >= 2) {
+        return { bucket: parts[0], objectPath: parts.slice(1).join('/') }
+      }
+    }
+  }
+  return null
 }

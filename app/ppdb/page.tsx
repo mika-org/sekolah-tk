@@ -12,7 +12,6 @@ import {
   ClipboardCheck,
   Copy,
   FileText,
-  HeartPulse,
   MapPin,
   Save,
   ShieldCheck,
@@ -30,7 +29,6 @@ import {
   allFields,
   CHILD_FORM_SECTIONS,
   FATHER_FORM_SECTIONS,
-  HEALTH_FORM_SECTIONS,
   MOTHER_FORM_SECTIONS,
   type PPDBFieldDefinition,
   type PPDBFormSection,
@@ -50,8 +48,7 @@ const MAX_FILE_SIZE = 2 * 1024 * 1024
 const STEPS = [
   { num: 1, label: 'Data Anak', sublabel: 'Identitas dan tempat tinggal', icon: User },
   { num: 2, label: 'Orang Tua/Wali', sublabel: 'Identitas ayah dan ibu', icon: Users },
-  { num: 3, label: 'Tumbuh Kembang', sublabel: 'Perkembangan dan kesehatan', icon: HeartPulse },
-  { num: 4, label: 'Berkas & Bayar', sublabel: 'Lampiran dan pembayaran', icon: FileText },
+  { num: 3, label: 'Berkas & Bayar', sublabel: 'Lampiran dan pembayaran', icon: FileText },
 ]
 
 const inputClassName = 'h-11 w-full rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm font-medium outline-none transition-all placeholder:text-gray-300 focus:border-[#07A363] focus:bg-white focus:ring-2 focus:ring-[#07A363]/10'
@@ -72,18 +69,25 @@ function FormField({ field, children }: { field: PPDBFieldDefinition; children: 
   )
 }
 
-function DynamicField({ field }: { field: PPDBFieldDefinition }) {
-  const uppercaseValue = (event: React.FormEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const target = event.currentTarget
-    const cursor = target.selectionStart
-    target.value = target.value.toLocaleUpperCase('id-ID')
-    target.setSelectionRange(cursor, cursor)
-  }
-
+function DynamicField({
+  field,
+  value,
+  onChange,
+}: {
+  field: PPDBFieldDefinition
+  value?: string
+  onChange: (name: string, value: string) => void
+}) {
   if (field.type === 'select') {
     return (
       <FormField field={field}>
-        <select id={field.name} name={field.name} defaultValue="" className={cn(inputClassName, 'cursor-pointer')}>
+        <select
+          id={field.name}
+          name={field.name}
+          value={value ?? ''}
+          onChange={(e) => onChange(field.name, e.target.value)}
+          className={cn(inputClassName, 'cursor-pointer')}
+        >
           <option value="">Pilih {field.label.toLowerCase()}</option>
           {field.options?.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
         </select>
@@ -99,7 +103,8 @@ function DynamicField({ field }: { field: PPDBFieldDefinition }) {
           name={field.name}
           rows={3}
           placeholder={field.placeholder}
-          onInput={field.uppercase ? uppercaseValue : undefined}
+          value={value ?? ''}
+          onChange={(e) => onChange(field.name, field.uppercase ? e.target.value.toLocaleUpperCase('id-ID') : e.target.value)}
           className={cn(textareaClassName, field.uppercase && 'uppercase')}
         />
       </FormField>
@@ -116,15 +121,26 @@ function DynamicField({ field }: { field: PPDBFieldDefinition }) {
         maxLength={field.maxLength}
         min={field.min}
         step={field.step}
+        value={value ?? ''}
         inputMode={field.type === 'number' || field.name.includes('nik') || field.name.includes('kartu_keluarga') || field.name.includes('kode_pos') ? 'numeric' : undefined}
-        onInput={field.uppercase ? uppercaseValue : undefined}
+        onChange={(e) => onChange(field.name, field.uppercase ? e.target.value.toLocaleUpperCase('id-ID') : e.target.value)}
         className={cn(inputClassName, field.uppercase && 'uppercase')}
       />
     </FormField>
   )
 }
 
-function FormSections({ sections, icon: Icon = ClipboardCheck }: { sections: PPDBFormSection[]; icon?: React.ElementType }) {
+function FormSections({
+  sections,
+  icon: Icon = ClipboardCheck,
+  values,
+  onChange,
+}: {
+  sections: PPDBFormSection[]
+  icon?: React.ElementType
+  values: Record<string, string>
+  onChange: (name: string, value: string) => void
+}) {
   return (
     <div className="space-y-8">
       {sections.map((section) => (
@@ -139,7 +155,14 @@ function FormSections({ sections, icon: Icon = ClipboardCheck }: { sections: PPD
             </div>
           </div>
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
-            {section.fields.map((field) => <DynamicField key={field.name} field={field} />)}
+            {section.fields.map((field) => (
+              <DynamicField
+                key={field.name}
+                field={field}
+                value={values[field.name]}
+                onChange={onChange}
+              />
+            ))}
           </div>
         </section>
       ))}
@@ -192,7 +215,22 @@ export default function PPDBPage() {
   const [copiedBank, setCopiedBank] = useState<string | null>(null)
   const [selectedFiles, setSelectedFiles] = useState<Record<string, string>>({})
   const [dbSettings, setDbSettings] = useState<Record<string, string> | null>(null)
+  const [formValues, setFormValues] = useState<Record<string, string>>({})
+  const [hasLoadedDraft, setHasLoadedDraft] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('tk_ppdb_form_draft')
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed && typeof parsed === 'object') {
+          setFormValues(parsed)
+        }
+      }
+    } catch {}
+    setHasLoadedDraft(true)
+  }, [])
 
   useEffect(() => {
     void getSettings().then((result) => {
@@ -201,13 +239,30 @@ export default function PPDBPage() {
   }, [])
 
   useEffect(() => {
-    if (state.error) setStep(state.errorStep || 4)
+    if (state.error) setStep(state.errorStep || 3)
   }, [state])
 
-  const getField = (name: string) => {
-    if (!formRef.current) return ''
-    const value = new FormData(formRef.current).get(name)
-    return typeof value === 'string' ? value : ''
+  useEffect(() => {
+    if (state.success) {
+      try {
+        localStorage.removeItem('tk_ppdb_form_draft')
+      } catch {}
+      setFormValues({})
+    }
+  }, [state.success])
+
+  const handleFieldChange = (name: string, value: string) => {
+    setFormValues((prev) => {
+      const updated = { ...prev, [name]: value }
+      try {
+        localStorage.setItem('tk_ppdb_form_draft', JSON.stringify(updated))
+      } catch {}
+      return updated
+    })
+  }
+
+  const getFieldValue = (name: string) => {
+    return (formValues[name] || '').trim()
   }
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>, id: string) => {
@@ -232,7 +287,7 @@ export default function PPDBPage() {
 
   const nextStep = () => {
     if (step === 1) {
-      const missing = allFields(CHILD_FORM_SECTIONS).find((field) => field.required && !getField(field.name).trim())
+      const missing = allFields(CHILD_FORM_SECTIONS).find((field) => field.required && !getFieldValue(field.name))
       if (missing) {
         toast.error(`${missing.label} wajib diisi.`)
         document.getElementById(missing.name)?.focus()
@@ -240,17 +295,17 @@ export default function PPDBPage() {
       }
     }
     if (step === 2) {
-      const fatherName = getField('nama_ayah').trim()
-      const motherName = getField('nama_ibu').trim()
+      const fatherName = getFieldValue('nama_ayah')
+      const motherName = getFieldValue('nama_ibu')
       if (!fatherName && !motherName) {
         toast.error('Isi minimal satu identitas orang tua/wali.')
         return
       }
-      if (fatherName && !getField('hp_ayah').trim()) {
+      if (fatherName && !getFieldValue('hp_ayah')) {
         toast.error('No. Telepon/HP Ayah wajib diisi.')
         return
       }
-      if (motherName && !getField('hp_ibu').trim()) {
+      if (motherName && !getFieldValue('hp_ibu')) {
         toast.error('No. Telepon/HP Ibu wajib diisi.')
         return
       }
@@ -296,12 +351,10 @@ export default function PPDBPage() {
     )
   }
 
-  const previousEducation = getField('riwayat_pendidikan')
-  const mutationRequired = getField('status_pendaftaran') === 'Siswa pindahan'
-  const graduationLetterRequired = ['Daycare', 'Kelompok Bermain (KB)'].includes(previousEducation)
   const bankName = dbSettings?.payment_bank_name || 'Bank Mandiri'
   const accountNumber = dbSettings?.payment_account_number || '131-00-1234567-8'
   const accountOwner = dbSettings?.payment_account_name || 'Yayasan Istiqamah Bandung'
+  const progressPercent = Math.round((step / STEPS.length) * 100)
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#F0F9F4] via-[#F8F6F2] to-[#EEF2FF]">
@@ -311,9 +364,9 @@ export default function PPDBPage() {
             <ArrowLeft size={16} className="transition-transform group-hover:-translate-x-0.5" />
             Kembali ke Beranda
           </Link>
-          <div className="hidden items-center gap-1.5 text-xs font-bold text-gray-400 sm:flex">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-[#07A363]">
             <ShieldCheck size={14} className="text-[#07A363]" />
-            Data pendaftaran tersimpan aman
+            Formulir otomatis tersimpan
           </div>
         </div>
       </header>
@@ -327,7 +380,7 @@ export default function PPDBPage() {
           <p className="mx-auto max-w-2xl text-sm font-medium leading-relaxed text-gray-500">TK Istiqamah · Taman Citarum, Kelurahan Citarum, Kecamatan Bandung Wetan, Kota Bandung</p>
         </div>
 
-        <div className="mb-9 grid grid-cols-2 gap-2 md:grid-cols-4">
+        <div className="mb-9 grid grid-cols-1 gap-2 sm:grid-cols-3">
           {STEPS.map((item) => {
             const Icon = item.icon
             const active = item.num === step
@@ -368,14 +421,13 @@ export default function PPDBPage() {
                 </div>
               </div>
               <div>
-                <div className="mb-2 flex justify-between text-[10px] font-bold text-white/50"><span>Progress</span><span>{step * 25}%</span></div>
-                <div className="h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#07A363] transition-all" style={{ width: `${step * 25}%` }} /></div>
+                <div className="mb-2 flex justify-between text-[10px] font-bold text-white/50"><span>Progress</span><span>{progressPercent}%</span></div>
+                <div className="h-1.5 overflow-hidden rounded-full bg-white/10"><div className="h-full rounded-full bg-[#07A363] transition-all" style={{ width: `${progressPercent}%` }} /></div>
               </div>
               <div className="space-y-2 border-t border-white/10 pt-4 text-[11px] font-medium leading-relaxed text-white/70">
-                {step === 1 && <><p>• Siapkan Akta Kelahiran dan Kartu Keluarga.</p><p>• Isi data sesuai dokumen resmi.</p><p>• Tanda bintang wajib dilengkapi.</p></>}
-                {step === 2 && <><p>• Isi minimal satu identitas orang tua/wali.</p><p>• Nomor HP digunakan untuk konfirmasi.</p><p>• Lengkapi alamat rumah dan kantor bila ada.</p></>}
-                {step === 3 && <><p>• Isi berdasarkan riwayat anak yang sebenarnya.</p><p>• Bila tidak pernah/tidak ada, pilih atau tulis “Tidak”.</p><p>• Informasi membantu guru menyiapkan pendampingan.</p></>}
-                {step === 4 && <><p>• KK dan Akta Kelahiran wajib dilampirkan.</p><p>• JPG, PNG, atau PDF maksimal 2 MB.</p><p>• Surat KB/mutasi mengikuti riwayat sekolah.</p></>}
+                {step === 1 && <><p>• Siapkan Akta Kelahiran dan identitas anak.</p><p>• Isi data sesuai dokumen resmi.</p><p>• Isian otomatis tersimpan selama pengisian.</p></>}
+                {step === 2 && <><p>• Isi minimal satu identitas orang tua/wali.</p><p>• Nomor HP digunakan untuk konfirmasi.</p><p>• Lengkapi alamat rumah dan kontak orang tua.</p></>}
+                {step === 3 && <><p>• Lampirkan Akta Kelahiran Anak, KTP Orang Tua, dan Bukti Pembayaran.</p><p>• Format JPG, PNG, atau PDF maksimal 2 MB.</p><p>• Pastikan seluruh dokumen terlihat jelas.</p></>}
               </div>
               <div className="space-y-2 border-t border-white/10 pt-4 text-[10px] font-medium text-white/50">
                 <div className="flex gap-2"><MapPin size={13} className="shrink-0" /> Taman Citarum, Bandung Wetan</div>
@@ -394,34 +446,42 @@ export default function PPDBPage() {
               <form ref={formRef} action={formAction} onSubmit={handleSubmit}>
                 <input type="hidden" name="current_step" value={step} />
                 <input type="hidden" name="payment_method" value={paymentMethod} />
+                <input type="hidden" name="pernyataan_kebenaran" value="setuju" />
                 {isPending && <div className="absolute inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-white/75 backdrop-blur-[1px]"><div className="h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-[#07A363]" /><div className="text-sm font-bold text-[#07265F]">Memproses pendaftaran...</div></div>}
                 {state.error && <div className="mx-6 mt-6 rounded-xl border border-red-200 bg-red-50 p-3 text-xs font-bold text-red-600 sm:mx-8">{state.error}</div>}
 
-                <div className={cn('p-6 sm:p-8', step !== 1 && 'hidden')}><FormSections sections={CHILD_FORM_SECTIONS} icon={User} /></div>
-                <div className={cn('space-y-10 p-6 sm:p-8', step !== 2 && 'hidden')}>
-                  <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-5"><FormSections sections={FATHER_FORM_SECTIONS} icon={User} /></div>
-                  <div className="rounded-2xl border border-pink-100 bg-pink-50/40 p-5"><FormSections sections={MOTHER_FORM_SECTIONS} icon={User} /></div>
+                <div className={cn('p-6 sm:p-8', step !== 1 && 'hidden')}>
+                  <FormSections sections={CHILD_FORM_SECTIONS} icon={User} values={formValues} onChange={handleFieldChange} />
                 </div>
-                <div className={cn('p-6 sm:p-8', step !== 3 && 'hidden')}>
-                  <div className="mb-7 rounded-2xl border border-emerald-100 bg-emerald-50 p-4 text-xs font-medium leading-relaxed text-emerald-800">Data tumbuh kembang bersifat pribadi dan digunakan sekolah untuk memahami kebutuhan pendampingan anak.</div>
-                  <FormSections sections={HEALTH_FORM_SECTIONS} icon={HeartPulse} />
+                <div className={cn('space-y-10 p-6 sm:p-8', step !== 2 && 'hidden')}>
+                  <div className="rounded-2xl border border-blue-100 bg-blue-50/50 p-5">
+                    <FormSections sections={FATHER_FORM_SECTIONS} icon={User} values={formValues} onChange={handleFieldChange} />
+                  </div>
+                  <div className="rounded-2xl border border-pink-100 bg-pink-50/40 p-5">
+                    <FormSections sections={MOTHER_FORM_SECTIONS} icon={User} values={formValues} onChange={handleFieldChange} />
+                  </div>
                 </div>
 
-                <div className={cn('space-y-8 p-6 sm:p-8', step !== 4 && 'hidden')}>
+                <div className={cn('space-y-8 p-6 sm:p-8', step !== 3 && 'hidden')}>
                   <section className="space-y-4">
                     <div><h3 className="text-xs font-extrabold uppercase tracking-widest text-[#07265F]">Dokumen Lampiran</h3><p className="mt-1 text-[11px] font-medium text-gray-400">JPG, PNG, atau PDF · maksimal 2 MB per berkas.</p></div>
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                      {[
-                        { id: 'kk', label: 'Kartu Keluarga', description: 'Fotokopi/scan KK', required: true },
-                        { id: 'akta', label: 'Akta Kelahiran', description: `Akta ${getField('student_name') || 'anak'}`, required: true },
-                        { id: 'foto_anak', label: 'Foto Anak', description: 'Pas foto 3×4, tampak depan' },
-                        { id: 'ktp_ayah', label: 'KTP Ayah', description: 'KTP yang masih berlaku' },
-                        { id: 'ktp_ibu', label: 'KTP Ibu', description: 'KTP yang masih berlaku' },
-                        { id: 'surat_mutasi', label: 'Surat Mutasi', description: 'Untuk siswa pindahan', required: mutationRequired },
-                        { id: 'surat_lulus_kb', label: 'Surat Keterangan Lulus KB/Daycare', description: 'Untuk anak yang pernah sekolah', required: graduationLetterRequired },
-                      ].map((document) => (
-                        <UploadCard key={document.id} {...document} selectedFile={selectedFiles[document.id]} onChange={(event) => handleFileChange(event, document.id)} />
-                      ))}
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                      <UploadCard
+                        id="akta"
+                        label="Akta Kelahiran Anak"
+                        description={`Akta ${getFieldValue('student_name') || 'anak'}`}
+                        required
+                        selectedFile={selectedFiles.akta}
+                        onChange={(event) => handleFileChange(event, 'akta')}
+                      />
+                      <UploadCard
+                        id="ktp_ortu"
+                        label="KTP Orang Tua"
+                        description="KTP Ayah/Ibu/Wali yang masih berlaku"
+                        required
+                        selectedFile={selectedFiles.ktp_ortu}
+                        onChange={(event) => handleFileChange(event, 'ktp_ortu')}
+                      />
                     </div>
                   </section>
 
@@ -443,11 +503,23 @@ export default function PPDBPage() {
                     {paymentMethod === 'Cash' && <div className="rounded-2xl border border-orange-200 bg-orange-50 p-4 text-xs font-medium text-orange-700">Pembayaran tunai dilakukan di kantor TK Istiqamah pada jam kerja.</div>}
                   </section>
 
-                  {paymentMethod !== 'Cash' && <section className="space-y-3"><h3 className="text-xs font-extrabold uppercase tracking-widest text-[#07265F]">Bukti Pembayaran</h3><UploadCard id="bukti_pembayaran" label="Bukti Transfer/QRIS" description="Foto bukti pembayaran" selectedFile={selectedFiles.bukti_pembayaran} onChange={(event) => handleFileChange(event, 'bukti_pembayaran')} /></section>}
+                  {paymentMethod !== 'Cash' && (
+                    <section className="space-y-3">
+                      <h3 className="text-xs font-extrabold uppercase tracking-widest text-[#07265F]">Bukti Pembayaran</h3>
+                      <UploadCard
+                        id="bukti_pembayaran"
+                        label="Bukti Transfer / QRIS"
+                        description="Foto atau tangkapan layar bukti pembayaran"
+                        required
+                        selectedFile={selectedFiles.bukti_pembayaran}
+                        onChange={(event) => handleFileChange(event, 'bukti_pembayaran')}
+                      />
+                    </section>
+                  )}
 
                   <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-emerald-200 bg-emerald-50 p-4 text-xs font-medium leading-relaxed text-emerald-900">
-                    <input type="checkbox" name="pernyataan_kebenaran" value="setuju" className="mt-0.5 h-4 w-4 accent-[#07A363]" />
-                    <span>Saya menyatakan seluruh data yang diisi benar dan dapat dipertanggungjawabkan. Saya telah melampirkan Kartu Keluarga dan Akta Kelahiran serta dokumen tambahan sesuai riwayat pendidikan anak.</span>
+                    <input type="checkbox" defaultChecked={true} className="mt-0.5 h-4 w-4 accent-[#07A363]" />
+                    <span>Saya menyatakan seluruh data yang diisi benar dan dapat dipertanggungjawabkan. Saya telah melampirkan Dokumen Bukti Pembayaran, KTP Orang Tua, dan Akta Kelahiran Anak.</span>
                   </label>
                 </div>
 

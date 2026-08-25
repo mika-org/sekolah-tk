@@ -74,7 +74,7 @@ function localStorageUrl(value: string) {
   if (skipStorage) return value
   const match = value.match(/\/storage\/v1\/object\/(?:public|authenticated)\/([^/]+)\/(.+)$/)
   if (!match) return value
-  const base = (process.env.NEXT_PUBLIC_STORAGE_URL || '/api/uploads').replace(/\/$/, '')
+  const base = (process.env.NEXT_PUBLIC_STORAGE_URL || 'https://istiqamah.elevore.web.id/uploads').replace(/\/$/, '')
   const bucket = decodeURIComponent(match[1])
   const objectName = match[2].split('/').map(decodeURIComponent).join('/')
   return `${base}/${encodeURIComponent(bucket)}/${objectName.split('/').map(encodeURIComponent).join('/')}`

@@ -92,10 +92,12 @@ const DOCUMENT_LABELS: Record<string, string> = {
   kk: 'Kartu Keluarga',
   akta: 'Akta Kelahiran',
   foto_anak: 'Foto Anak',
+  ktp_ortu: 'KTP Orang Tua',
   ktp_ayah: 'KTP Ayah',
   ktp_ibu: 'KTP Ibu',
   surat_mutasi: 'Surat Mutasi',
   surat_lulus_kb: 'Surat Keterangan Lulus KB/Daycare',
+  bukti_pembayaran: 'Bukti Pembayaran',
 }
 
 function documentLabel(type: string) {

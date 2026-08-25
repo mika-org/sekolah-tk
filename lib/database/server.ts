@@ -36,6 +36,9 @@ export function createAdminClient() {
           })
           return { data: { users, total: users.length }, error: null }
         },
+        async deleteUser(_id: string) {
+          return { data: null, error: null }
+        },
       },
     },
   }
