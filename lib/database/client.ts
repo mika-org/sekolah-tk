@@ -47,7 +47,7 @@ const browserClient = {
           return response.ok ? { data: result, error: null } : { data: null, error: { message: result.error || 'Upload gagal.' } }
         },
         getPublicUrl(path: string) {
-          const base = (process.env.NEXT_PUBLIC_STORAGE_URL || '/uploads').replace(/\/$/, '')
+          const base = (process.env.NEXT_PUBLIC_STORAGE_URL || 'https://istiqamah.elevore.web.id/uploads').replace(/\/$/, '')
           return { data: { publicUrl: `${base}/${encodeURIComponent(bucket)}/${path.split('/').map(encodeURIComponent).join('/')}` } }
         },
       }

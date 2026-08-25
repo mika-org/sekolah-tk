@@ -33,7 +33,7 @@ export async function listStorageBuckets() {
 }
 
 export function getStorageUrl(bucket: string, objectPath: string) {
-  const base = (process.env.NEXT_PUBLIC_STORAGE_URL || '/uploads').replace(/\/$/, '')
+  const base = (process.env.NEXT_PUBLIC_STORAGE_URL || 'https://istiqamah.elevore.web.id/uploads').replace(/\/$/, '')
   const encodedPath = objectPath.replace(/\\/g, '/').split('/').filter(Boolean).map(encodeURIComponent).join('/')
   return `${base}/${encodeURIComponent(bucket)}/${encodedPath}`
 }
