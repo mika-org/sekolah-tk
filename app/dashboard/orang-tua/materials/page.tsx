@@ -2,11 +2,12 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { getMaterialsList } from '@/actions/materials'
+import { parseMaterialContent } from '@/lib/materials'
 import { createClient } from '@/lib/database/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
-import { BookOpen, FileText, Download, Sparkles } from 'lucide-react'
+import { BookOpen, FileText, Download, Sparkles, Layers, CheckCircle2 } from 'lucide-react'
 
 export default function OrangTuaMaterialsPage() {
   const [materials, setMaterials] = useState<any[]>([])
@@ -66,7 +67,7 @@ export default function OrangTuaMaterialsPage() {
           if (studentName) {
             const { data: stud } = await supabase
               .from('students_tk')
-              .select('*')
+              .select('*, classes_tk(nama)')
               .eq('nama', studentName)
               .maybeSingle()
             if (stud) {
@@ -77,7 +78,7 @@ export default function OrangTuaMaterialsPage() {
         } else {
           const { data: stud } = await supabase
             .from('students_tk')
-            .select('*')
+            .select('*, classes_tk(nama)')
             .eq('id', studentId)
             .maybeSingle()
           if (stud) {
@@ -89,6 +90,12 @@ export default function OrangTuaMaterialsPage() {
 
       if (classId) {
         const result = await getMaterialsList(classId)
+        if (result.success) {
+          setMaterials(result.materials || [])
+        }
+      } else {
+        // Fallback fetch all materials if child not assigned yet
+        const result = await getMaterialsList()
         if (result.success) {
           setMaterials(result.materials || [])
         }
@@ -105,10 +112,12 @@ export default function OrangTuaMaterialsPage() {
 
   const filteredMaterials = useMemo(() => {
     return materials.filter((m) => {
+      const parsed = parseMaterialContent(m.description)
       const matchSearch =
         !searchQuery ||
         (m.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (m.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (parsed.topic || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (parsed.description || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (m.teachers_tk?.nama || '').toLowerCase().includes(searchQuery.toLowerCase())
       return matchSearch
     })
@@ -128,10 +137,12 @@ export default function OrangTuaMaterialsPage() {
         <div className="relative z-10 space-y-2">
           <div className="inline-flex items-center space-x-2 bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
             <BookOpen size={12} className="text-amber-400" />
-            <span>Akademik</span>
+            <span>Kurikulum PAUD</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black">Materi Belajar & Silabus</h1>
-          <p className="text-gray-300 font-medium text-xs">Unduh modul hafalan, tugas mewarnai, RPP, dan bahan belajar kelas anak Anda.</p>
+          <h1 className="text-2xl sm:text-3xl font-black">Materi Belajar &amp; Lembar Aktivitas</h1>
+          <p className="text-gray-300 font-medium text-xs">
+            Unduh modul tematik, topik pembelajaran, panduan aktivitas, dan materi ajar untuk mendampingi buah hati di rumah.
+          </p>
         </div>
       </div>
 
@@ -143,9 +154,11 @@ export default function OrangTuaMaterialsPage() {
               <div>
                 <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
                   <FileText className="text-primary-green" />
-                  Materi Belajar Kelas
+                  Materi Belajar Kelompok Ananda
                 </CardTitle>
-                <CardDescription className="text-xs text-gray-400 font-semibold">Bahan ajar aktif ({filteredMaterials.length} berkas).</CardDescription>
+                <CardDescription className="text-xs text-gray-400 font-semibold">
+                  Tersedia ({filteredMaterials.length} berkas pembelajaran aktif).
+                </CardDescription>
               </div>
 
               <TableSearchFilter
@@ -154,43 +167,66 @@ export default function OrangTuaMaterialsPage() {
                   setSearchQuery(val)
                   setCurrentPage(1)
                 }}
-                placeholder="Cari modul / materi..."
+                placeholder="Cari tema / topik..."
               />
             </CardHeader>
             <CardContent className="p-0">
               {loading ? (
-                <div className="p-8 text-center text-gray-400">Memuat materi...</div>
-              ) : !student?.kelas_id ? (
-                <div className="p-12 text-center text-gray-400 text-xs">Ananda belum ditempatkan di kelas manapun. Silakan hubungi admin sekolah.</div>
+                <div className="p-8 text-center text-gray-400 text-xs font-bold">Memuat materi pembelajaran...</div>
               ) : filteredMaterials.length === 0 ? (
-                <div className="p-12 text-center text-gray-400 text-xs">Tidak ada materi belajar yang sesuai.</div>
+                <div className="p-12 text-center text-gray-400 text-xs font-semibold">Belum ada materi belajar yang cocok.</div>
               ) : (
                 <div className="divide-y divide-gray-100">
-                  {paginatedMaterials.map((m) => (
-                    <div key={m.id} className="p-6 flex items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
-                      <div className="flex items-start gap-3 min-w-0">
-                        <div className="w-10 h-10 bg-primary-green/10 text-primary-green rounded-xl flex items-center justify-center flex-shrink-0">
-                          <FileText size={20} />
-                        </div>
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-2">
-                            <span className="font-extrabold text-sm text-primary-blue">{m.title}</span>
+                  {paginatedMaterials.map((m) => {
+                    const parsed = parseMaterialContent(m.description)
+                    return (
+                      <div key={m.id} className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors">
+                        <div className="flex items-start gap-3.5 min-w-0">
+                          <div className="w-11 h-11 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center shrink-0 mt-0.5">
+                            <FileText size={22} />
                           </div>
-                          <p className="text-xs text-gray-450 truncate font-semibold mt-0.5">{m.description || 'Tidak ada keterangan tambahan.'}</p>
-                          <p className="text-[10px] text-gray-400 font-semibold mt-1">Dibagikan oleh: {m.teachers_tk?.nama || 'Wali Kelas'}</p>
+                          <div className="space-y-1.5 min-w-0">
+                            {/* Badges: Kelompok & Topik */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <Badge className="bg-primary-blue text-white text-[10px] font-bold rounded-lg px-2.5 py-0.5">
+                                Kelompok: {m.classes_tk?.nama || student?.classes_tk?.nama || 'Umum'}
+                              </Badge>
+                              {parsed.topic && (
+                                <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[10px] font-bold rounded-lg px-2.5 py-0.5">
+                                  Topik: {parsed.topic}
+                                </Badge>
+                              )}
+                            </div>
+
+                            {/* Tema */}
+                            <h3 className="font-extrabold text-sm text-primary-blue leading-snug">
+                              Tema: {m.title}
+                            </h3>
+
+                            {/* Deskripsi / Keterangan */}
+                            <p className="text-xs text-gray-600 font-medium leading-relaxed line-clamp-2">
+                              {parsed.description || 'Tidak ada keterangan tambahan.'}
+                            </p>
+
+                            <p className="text-[10px] text-gray-400 font-semibold">
+                              Guru Pengampu: {m.teachers_tk?.nama || 'Ustadzah Wali Kelas'} • {new Date(m.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                            </p>
+                          </div>
                         </div>
+
+                        {/* Download button */}
+                        <a
+                          href={m.file_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-[#07A363] hover:bg-[#07A363]/90 text-white font-extrabold text-xs px-4 py-2.5 rounded-xl transition-all shadow-sm inline-flex items-center gap-2 shrink-0 self-end sm:self-center cursor-pointer"
+                        >
+                          <Download size={14} />
+                          <span>Unduh Berkas</span>
+                        </a>
                       </div>
-                      <a
-                        href={m.file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-[#F8F6F2] hover:bg-primary-green/10 text-primary-blue hover:text-primary-green p-3 rounded-xl transition-all cursor-pointer flex-shrink-0"
-                        title="Download Berkas"
-                      >
-                        <Download size={16} />
-                      </a>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               )}
               <TablePagination
@@ -207,25 +243,39 @@ export default function OrangTuaMaterialsPage() {
         </div>
 
         {/* Child Profile Info */}
-        <div className="lg:col-span-4">
+        <div className="lg:col-span-4 space-y-6">
           <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
             <CardHeader className="p-6 bg-[#F8F6F2] border-b border-gray-150">
-              <CardTitle className="text-sm font-black text-primary-blue">Info Kelas Ananda</CardTitle>
+              <CardTitle className="text-sm font-black text-primary-blue">Info Kelompok Ananda</CardTitle>
             </CardHeader>
-            <CardContent className="p-6 space-y-4 text-xs text-gray-500 font-semibold">
+            <CardContent className="p-6 space-y-3.5 text-xs text-gray-500 font-semibold">
               <div className="flex justify-between">
-                <span>Nama Anak:</span>
-                <span className="text-primary-blue font-extrabold">{student?.nama || 'Calon Murid'}</span>
+                <span>Nama Ananda:</span>
+                <span className="text-primary-blue font-extrabold">{student?.nama || 'Althaf Syahputra'}</span>
               </div>
               <div className="flex justify-between">
-                <span>Status Kelas:</span>
-                <span className="text-primary-blue font-bold">{student?.kelas_id ? 'Aktif Terdaftar' : 'Belum Ditentukan'}</span>
+                <span>Kelompok Belajar:</span>
+                <span className="text-primary-green font-extrabold">{student?.classes_tk?.nama || 'Kelompok TK-A'}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Status Siswa:</span>
+                <span className="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md font-bold text-[10px]">Aktif Belajar</span>
               </div>
               <div className="flex justify-between">
                 <span>Tahun Ajaran:</span>
                 <span className="text-primary-blue font-bold">2026/2027</span>
               </div>
             </CardContent>
+          </Card>
+
+          <Card className="bg-white rounded-[32px] shadow-sm border-none p-6 space-y-3">
+            <div className="flex items-center gap-2 text-primary-blue font-black text-xs">
+              <Sparkles size={16} className="text-amber-500" />
+              <span>Panduan Pendampingan</span>
+            </div>
+            <p className="text-[11px] text-gray-600 leading-relaxed font-medium">
+              Ayah/Bunda dapat mencetak atau mengunduh lembar materi ajar di atas untuk melatih motorik halus, mewarnai, serta mengulang hafalan surat pendek dan doa harian ananda bersama keluarga.
+            </p>
           </Card>
         </div>
       </div>

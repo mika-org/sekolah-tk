@@ -120,7 +120,24 @@ export async function getChatPartners() {
         where: { role: 'orang_tua', status: 'active' },
       })
 
-      const partnersMap = new Map<string, { id: string; name: string; role: string; email: string; studentName?: string; phone?: string; className?: string }>()
+      // Fetch PPDB schedule synchronization
+      let ppdbMap = new Map<string, any>()
+      try {
+        const { createAdminClient } = await import('@/lib/database/server')
+        const supabase = createAdminClient()
+        const { data: ppdbList } = await supabase.from('ppdb_tk').select('student_name, child_details')
+        if (ppdbList) {
+          for (const item of ppdbList) {
+            if (item.student_name) {
+              ppdbMap.set(item.student_name.toLowerCase().trim(), item.child_details?.schedules || null)
+            }
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching PPDB schedules for chat:', err)
+      }
+
+      const partnersMap = new Map<string, { id: string; name: string; role: string; email: string; studentName?: string; phone?: string; className?: string; schedules?: any }>()
 
       for (const p of parents) {
         const partnerId = p.user_id || p.users_tk?.id || p.id
@@ -129,6 +146,7 @@ export async function getChatPartners() {
           .join(' / ') || 'Orang Tua'
         const childName = p.students_tk?.nama || ''
         const className = p.students_tk?.classes_tk?.nama || ''
+        const schedules = childName ? ppdbMap.get(childName.toLowerCase().trim()) : null
 
         partnersMap.set(partnerId, {
           id: partnerId,
@@ -138,6 +156,7 @@ export async function getChatPartners() {
           studentName: childName,
           phone: p.hp || '',
           className,
+          schedules,
         })
       }
 

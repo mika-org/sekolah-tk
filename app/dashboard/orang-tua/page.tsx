@@ -238,13 +238,13 @@ export default function OrangTuaDashboard() {
 
       {/* Menu Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {/* Card 1: PPDB Status */}
+        {/* Card 1: SPMB Status */}
         <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:-translate-y-1 transition-all duration-300">
           <CardHeader className="pb-4">
             <div className="w-10 h-10 bg-blue-50 text-primary-blue rounded-2xl flex items-center justify-center mb-2">
               <FileText size={20} />
             </div>
-            <CardTitle className="text-sm font-black text-primary-blue">Status PPDB</CardTitle>
+            <CardTitle className="text-sm font-black text-primary-blue">Status SPMB</CardTitle>
             <CardDescription className="text-[10px] font-semibold text-gray-400">Pendaftaran & registrasi berkas.</CardDescription>
           </CardHeader>
           <CardContent className="pt-0 space-y-4">
@@ -254,7 +254,7 @@ export default function OrangTuaDashboard() {
             </div>
             <Link href="/dashboard/orang-tua/ppdb-status" className="w-full">
               <Button variant="outline" className="w-full justify-between border-gray-100 hover:border-gray-200 text-primary-blue text-xs font-bold py-2 h-auto rounded-xl">
-                <span>Lihat Detail PPDB</span>
+                <span>Lihat Detail SPMB</span>
                 <ArrowRight size={14} />
               </Button>
             </Link>

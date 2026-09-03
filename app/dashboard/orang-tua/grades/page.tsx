@@ -7,19 +7,26 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
-import { GraduationCap, Printer, Sparkles, Award, BookOpen, Calendar } from 'lucide-react'
-import { CRITERIA_MAP, type TKGradeCriteria, parseGradeDescription } from '@/lib/grades'
+import { GraduationCap, Printer, Sparkles, Award, BookOpen, Calendar, CheckCircle2, HeartHandshake } from 'lucide-react'
+import {
+  CRITERIA_MAP,
+  MONTHS_SEMESTER_1,
+  MONTHS_SEMESTER_2,
+  ALL_MONTHS,
+  type TKGradeCriteria,
+  parseGradeDescription,
+} from '@/lib/grades'
 import { cn } from '@/lib/utils'
 
-export default function GradesPage() {
+export default function OrangTuaGradesPage() {
   const [studentData, setStudentData] = useState<any>(null)
   const [gradeLogs, setGradeLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
   // Filter & Pagination
   const [searchQuery, setSearchQuery] = useState('')
-  const [filterSemester, setFilterSemester] = useState<'all' | 'Ganjil' | 'Genap'>('all')
-  const [filterTrimester, setFilterTrimester] = useState<'all' | '1' | '2'>('all')
+  const [filterSemester, setFilterSemester] = useState<'all' | 'Semester 1' | 'Semester 2'>('all')
+  const [filterMonth, setFilterMonth] = useState<string>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(8)
 
@@ -27,8 +34,8 @@ export default function GradesPage() {
 
   const loadData = async () => {
     setLoading(true)
-    
-    // 1. Try to read from cookie first (custom POS-style auth)
+
+    // 1. Try to read from cookie first
     let user = null
     const match = document.cookie.match(new RegExp('(^| )sekolah_tk_token=([^;]+)'))
     if (match) {
@@ -43,8 +50,8 @@ export default function GradesPage() {
           user_metadata: {
             role: payload.role,
             username: payload.username,
-            student_name: payload.username === 'orangtua' ? 'Althaf Syahputra' : ''
-          }
+            student_name: payload.username === 'orangtua' ? 'Althaf Syahputra' : '',
+          },
         }
       } catch (e) {
         console.error('Error decoding cookie token:', e)
@@ -55,11 +62,10 @@ export default function GradesPage() {
       const { data: { user: authUser } } = await supabase.auth.getUser()
       user = authUser
     }
-    
+
     let studentId = ''
 
     if (user) {
-      // 1. First, try to query parents_tk by user_id to get linked student_id
       const { data: parent } = await supabase
         .from('parents_tk')
         .select('student_id')
@@ -73,11 +79,8 @@ export default function GradesPage() {
           .select('*, classes_tk(nama)')
           .eq('id', studentId)
           .maybeSingle()
-        if (stud) {
-          setStudentData(stud)
-        }
+        if (stud) setStudentData(stud)
       } else {
-        // 2. Fallback to name-based match for mock/seeded logins
         const studentName = user.user_metadata?.student_name || (user.user_metadata?.username === 'orangtua' ? 'Althaf Syahputra' : '')
         if (studentName) {
           const { data: stud } = await supabase
@@ -112,14 +115,18 @@ export default function GradesPage() {
   const filteredLogs = useMemo(() => {
     return gradeLogs.filter((grade) => {
       const parsed = parseGradeDescription(grade.description)
-      if (searchQuery && !grade.subject.toLowerCase().includes(searchQuery.toLowerCase()) && !(parsed.notes || '').toLowerCase().includes(searchQuery.toLowerCase())) {
+      if (
+        searchQuery &&
+        !grade.subject.toLowerCase().includes(searchQuery.toLowerCase()) &&
+        !(parsed.notes || '').toLowerCase().includes(searchQuery.toLowerCase())
+      ) {
         return false
       }
       if (filterSemester !== 'all' && parsed.semester !== filterSemester) return false
-      if (filterTrimester !== 'all' && parsed.trimester !== parseInt(filterTrimester, 10)) return false
+      if (filterMonth !== 'all' && parsed.month !== filterMonth) return false
       return true
     })
-  }, [gradeLogs, searchQuery, filterSemester, filterTrimester])
+  }, [gradeLogs, searchQuery, filterSemester, filterMonth])
 
   const totalPages = Math.ceil(filteredLogs.length / pageSize) || 1
   const paginatedLogs = useMemo(() => {
@@ -142,7 +149,7 @@ export default function GradesPage() {
   }
 
   if (loading) {
-    return <div className="p-12 text-center text-gray-400 font-bold text-xs">Memuat capaian perkembangan & rapor ananda...</div>
+    return <div className="p-12 text-center text-gray-400 font-bold text-xs">Memuat capaian pembelajaran &amp; rapor ananda...</div>
   }
 
   return (
@@ -184,11 +191,11 @@ export default function GradesPage() {
         <div className="relative z-10 space-y-2">
           <div className="inline-flex items-center space-x-2 bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
             <Award size={12} className="text-amber-400" />
-            <span>Rapor & Portofolio Perkembangan Anak</span>
+            <span>Kurikulum Merdeka PAUD</span>
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black">Capaian Perkembangan Ananda</h1>
+          <h1 className="text-2xl sm:text-3xl font-black">Capaian Pembelajaran Ananda</h1>
           <p className="text-gray-300 font-medium text-xs">
-            Laporan observasi mingguan kompetensi anak berbasis kriteria PAUD/TK Nasional (BB, MB, BSH, BSB).
+            Laporan observasi bulanan kompetensi anak: Capaian Pembelajaran &amp; Jati Diri berbasis standar PAUD/TK Nasional.
           </p>
         </div>
         {filteredLogs.length > 0 && (
@@ -218,7 +225,7 @@ export default function GradesPage() {
         <Card className="bg-emerald-50/60 border-emerald-100 rounded-2xl p-4 text-center">
           <div className="text-[10px] font-bold text-emerald-600 uppercase">4. Sangat Baik</div>
           <div className="text-2xl font-black text-emerald-700 mt-1">{summaryCounts.BSB}</div>
-          <div className="text-[10px] text-emerald-500 font-semibold mt-0.5">BSB (Mandiri & Teladan)</div>
+          <div className="text-[10px] text-emerald-500 font-semibold mt-0.5">BSB (Mandiri &amp; Teladan)</div>
         </Card>
       </div>
 
@@ -230,10 +237,10 @@ export default function GradesPage() {
               <div>
                 <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
                   <BookOpen className="text-primary-green" />
-                  Riwayat Penilaian & Catatan Guru
+                  Capaian Pembelajaran Terdaftar
                 </CardTitle>
                 <CardDescription className="text-xs text-gray-400 font-semibold">
-                  Observasi capaian mingguan ananda {studentData?.nama || ''}.
+                  Observasi capaian ananda {studentData?.nama || ''} per bulan.
                 </CardDescription>
               </div>
 
@@ -245,7 +252,7 @@ export default function GradesPage() {
                     setSearchQuery(val)
                     setCurrentPage(1)
                   }}
-                  placeholder="Cari aspek / catatan..."
+                  placeholder="Cari TP / catatan..."
                 />
 
                 <Select value={filterSemester} onValueChange={(val: any) => { setFilterSemester(val); setCurrentPage(1) }}>
@@ -254,19 +261,20 @@ export default function GradesPage() {
                   </SelectTrigger>
                   <SelectContent className="rounded-xl">
                     <SelectItem value="all">Semua Semester</SelectItem>
-                    <SelectItem value="Ganjil">Semester Ganjil</SelectItem>
-                    <SelectItem value="Genap">Semester Genap</SelectItem>
+                    <SelectItem value="Semester 1">Semester 1</SelectItem>
+                    <SelectItem value="Semester 2">Semester 2</SelectItem>
                   </SelectContent>
                 </Select>
 
-                <Select value={filterTrimester} onValueChange={(val: any) => { setFilterTrimester(val); setCurrentPage(1) }}>
+                <Select value={filterMonth} onValueChange={(val: any) => { setFilterMonth(val); setCurrentPage(1) }}>
                   <SelectTrigger className="bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold h-9 w-32">
-                    <SelectValue placeholder="Triwulan" />
+                    <SelectValue placeholder="Bulan" />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    <SelectItem value="all">Semua TW</SelectItem>
-                    <SelectItem value="1">Triwulan 1</SelectItem>
-                    <SelectItem value="2">Triwulan 2</SelectItem>
+                  <SelectContent className="rounded-xl max-h-56">
+                    <SelectItem value="all">Semua Bulan</SelectItem>
+                    {ALL_MONTHS.map((m) => (
+                      <SelectItem key={m} value={m}>{m}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -274,7 +282,7 @@ export default function GradesPage() {
             <CardContent className="p-0">
               <div className="divide-y divide-gray-100">
                 {filteredLogs.length === 0 ? (
-                  <div className="p-12 text-center text-gray-400 font-semibold text-xs">Belum ada data nilai atau observasi terdaftar.</div>
+                  <div className="p-12 text-center text-gray-400 font-semibold text-xs">Belum ada data nilai atau observasi capaian terdaftar.</div>
                 ) : (
                   paginatedLogs.map((grade) => {
                     const parsed = parseGradeDescription(grade.description)
@@ -282,14 +290,24 @@ export default function GradesPage() {
                     return (
                       <div key={grade.id} className="p-6 flex flex-col sm:flex-row justify-between items-start gap-4 hover:bg-gray-50/50 transition-colors">
                         <div className="space-y-1.5 min-w-0">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-extrabold text-sm text-primary-blue">{grade.subject}</span>
-                            <span className="font-mono text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md font-semibold">
-                              Minggu ke-{parsed.week} • TW {parsed.trimester}
+                            <span className="font-mono text-[10px] text-primary-blue bg-blue-50 px-2.5 py-0.5 rounded-md font-bold">
+                              Bulan {parsed.month} • {parsed.semester}
                             </span>
+                            {parsed.tpObj && (
+                              <Badge className="bg-gray-100 text-gray-600 border-none text-[9px] font-semibold">
+                                {parsed.tpObj.category}
+                              </Badge>
+                            )}
                           </div>
-                          <div className="text-xs text-gray-600 font-medium leading-relaxed">
-                            {parsed.notes ? `"${parsed.notes}"` : <span className="italic text-gray-400">Observasi capaian tercatat mandiri.</span>}
+                          {parsed.tpObj && (
+                            <p className="text-[11px] text-gray-500 font-medium">
+                              Indikator: {parsed.tpObj.indicator}
+                            </p>
+                          )}
+                          <div className="text-xs text-gray-700 font-medium leading-relaxed pt-1">
+                            {parsed.notes ? `"${parsed.notes}"` : <span className="italic text-gray-400">Observasi capaian ananda tercatat mandiri.</span>}
                           </div>
                         </div>
                         <Badge className={cn('font-black text-xs rounded-xl px-3.5 py-1.5 border shrink-0', item.badge)}>
@@ -325,8 +343,8 @@ export default function GradesPage() {
                 <span className="text-primary-blue font-extrabold">{studentData?.nama || '-'}</span>
               </div>
               <div className="flex justify-between">
-                <span>Kelas:</span>
-                <span className="text-primary-green font-extrabold">{studentData?.classes_tk?.nama || 'KB / TK - A'}</span>
+                <span>Kelompok / Kelas:</span>
+                <span className="text-primary-green font-extrabold">{studentData?.classes_tk?.nama || 'Kelompok A'}</span>
               </div>
               <div className="flex justify-between">
                 <span>NIK / NISN:</span>
@@ -345,28 +363,28 @@ export default function GradesPage() {
               <span>Keterangan Kriteria Penilaian</span>
             </div>
             <div className="space-y-2 text-[11px] text-gray-600 leading-relaxed font-medium">
-              <div><strong className="text-red-600">BB (Belum Berkembang):</strong> Perlu bimbingan penuh guru.</div>
-              <div><strong className="text-amber-600">MB (Mulai Berkembang):</strong> Sudah mulai bisa namun masih perlu diingatkan.</div>
-              <div><strong className="text-blue-600">BSH (Berkembang Sesuai Harapan):</strong> Sudah mampu secara mandiri.</div>
-              <div><strong className="text-emerald-600">BSB (Berkembang Sangat Baik):</strong> Sudah sangat mandiri dan dapat mencontohkan teman.</div>
+              <div><strong className="text-red-600">BB (Belum Berkembang):</strong> Anak melakukannya harus dengan bimbingan penuh guru.</div>
+              <div><strong className="text-amber-600">MB (Mulai Berkembang):</strong> Sudah mulai bisa namun masih perlu diingatkan berkala.</div>
+              <div><strong className="text-blue-600">BSH (Berkembang Sesuai Harapan):</strong> Sudah mampu secara mandiri dan konsisten.</div>
+              <div><strong className="text-emerald-600">BSB (Berkembang Sangat Baik):</strong> Sudah mandiri dan menjadi teladan bagi kawan.</div>
             </div>
           </Card>
         </div>
       </div>
 
-      {/* PRINT-ONLY RAPOR LAYOUT */}
+      {/* ─── PRINT-ONLY RAPOR LAYOUT ─── */}
       <div id="print-rapor" className="bg-white text-black font-serif text-sm">
         {/* School Letterhead */}
         <div className="text-center border-b-4 border-double border-black pb-4 mb-6">
-          <h2 className="text-xl font-bold uppercase tracking-tight">KB & TK ISTIQAMAH BANDUNG</h2>
-          <p className="text-xs font-semibold italic mt-1">Alamat: Jl. Istiqamah No. 12, Cihapit, Kec. Bandung Wetan, Kota Bandung</p>
-          <p className="text-[10px] font-medium text-gray-600">Telp: (022) 4208008 | Email: tkistiqamahbandung@gmail.com</p>
+          <h2 className="text-xl font-bold uppercase tracking-tight">KB &amp; TK ISTIQAMAH BANDUNG</h2>
+          <p className="text-xs font-semibold italic mt-1">Alamat: Jl. Taman Citarum, Kec. Bandung Wetan, Kota Bandung, Jawa Barat</p>
+          <p className="text-[10px] font-medium text-gray-600">Telp: (022) 4241799 / 0811 2198 853 | Email: info@tkistiqamah.sch.id</p>
         </div>
 
         {/* Report Card Title */}
         <div className="text-center my-6">
-          <h3 className="text-lg font-bold underline uppercase">LAPORAN CAPAIAN PERKEMBANGAN SISWA PAUD</h3>
-          <p className="text-xs font-bold mt-1">TAHUN AJARAN 2026/2027</p>
+          <h3 className="text-lg font-bold underline uppercase">LAPORAN CAPAIAN PEMBELAJARAN SISWA PAUD</h3>
+          <p className="text-xs font-bold mt-1">KURIKULUM MERDEKA • TAHUN AJARAN 2026/2027</p>
         </div>
 
         {/* Student Meta Details */}
@@ -376,8 +394,8 @@ export default function GradesPage() {
             <div className="flex"><span className="w-28">NISN / NIK</span><span>: {studentData?.nisn || studentData?.nik || '-'}</span></div>
           </div>
           <div className="space-y-1">
-            <div className="flex"><span className="w-28">Kelas</span><span>: {studentData?.classes_tk?.nama || 'KB / TK - A'}</span></div>
-            <div className="flex"><span className="w-28">Total Penilaian</span><span>: {filteredLogs.length} Aspek Tercatat</span></div>
+            <div className="flex"><span className="w-28">Kelompok</span><span>: {studentData?.classes_tk?.nama || 'Kelompok A'}</span></div>
+            <div className="flex"><span className="w-28">Total Penilaian</span><span>: {filteredLogs.length} TP Tercatat</span></div>
           </div>
         </div>
 
@@ -386,15 +404,16 @@ export default function GradesPage() {
           <thead>
             <tr className="bg-gray-100">
               <th className="border border-black p-2.5 text-center w-10">No</th>
-              <th className="border border-black p-2.5 text-left w-52">Aspek Perkembangan</th>
-              <th className="border border-black p-2.5 text-center w-28">Kriteria Capaian</th>
-              <th className="border border-black p-2.5 text-left">Deskripsi / Catatan Observasi Guru</th>
+              <th className="border border-black p-2.5 text-left w-64">Tujuan Pembelajaran (TP) &amp; Kategori</th>
+              <th className="border border-black p-2.5 text-center w-24">Bulan</th>
+              <th className="border border-black p-2.5 text-center w-28">Capaian</th>
+              <th className="border border-black p-2.5 text-left">Deskripsi &amp; Catatan Guru</th>
             </tr>
           </thead>
           <tbody>
             {filteredLogs.length === 0 ? (
               <tr>
-                <td colSpan={4} className="border border-black p-4 text-center italic text-gray-500">Belum ada data nilai.</td>
+                <td colSpan={5} className="border border-black p-4 text-center italic text-gray-500">Belum ada data nilai.</td>
               </tr>
             ) : (
               filteredLogs.map((grade, idx) => {
@@ -403,12 +422,19 @@ export default function GradesPage() {
                 return (
                   <tr key={grade.id}>
                     <td className="border border-black p-2.5 text-center">{idx + 1}</td>
-                    <td className="border border-black p-2.5 font-bold">
-                      {grade.subject}
-                      <div className="text-[10px] font-normal text-gray-600">Minggu {parsed.week} (TW {parsed.trimester})</div>
+                    <td className="border border-black p-2.5">
+                      <div className="font-bold">{grade.subject}</div>
+                      {parsed.tpObj && (
+                        <div className="text-[10px] text-gray-600 italic">Kategori: {parsed.tpObj.category}</div>
+                      )}
+                    </td>
+                    <td className="border border-black p-2.5 text-center font-bold">
+                      {parsed.month}
                     </td>
                     <td className="border border-black p-2.5 text-center font-bold">{item.label}</td>
-                    <td className="border border-black p-2.5 leading-relaxed">{parsed.notes || 'Ananda berkembang dengan baik dalam aspek ini.'}</td>
+                    <td className="border border-black p-2.5 leading-relaxed">
+                      {parsed.notes || 'Ananda berkembang sesuai harapan dalam aspek ini.'}
+                    </td>
                   </tr>
                 )
               })
@@ -424,7 +450,7 @@ export default function GradesPage() {
           </div>
           <div className="space-y-16">
             <div>Mengetahui,<br />Kepala Sekolah</div>
-            <div className="font-bold underline">Ustadzah Nurul Hidayah, S.Pd</div>
+            <div className="font-bold underline">Ustadzah Hj. Nurul Hidayah, S.Pd.I</div>
           </div>
           <div className="space-y-16">
             <div>Bandung, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}<br />Guru Kelas,</div>
@@ -432,7 +458,6 @@ export default function GradesPage() {
           </div>
         </div>
       </div>
-
     </div>
   )
 }

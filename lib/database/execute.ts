@@ -188,18 +188,30 @@ function buildWhere(table: TableName, query: DatabaseQuery) {
     })
   }
   if (query.rawOr) {
-    const groups = [...query.rawOr.matchAll(/and\(([^)]+)\)/g)].map((match) => {
-      const conditions = match[1].split(',').map((condition) => {
+    const andGroups = [...query.rawOr.matchAll(/and\(([^)]+)\)/g)]
+    if (andGroups.length > 0) {
+      const groups = andGroups.map((match) => {
+        const conditions = match[1].split(',').map((condition) => {
+          const parts = condition.split('.')
+          if (parts.length < 3 || parts[1] !== 'eq') throw new Error('Ekspresi OR tidak didukung.')
+          const field = parts[0]
+          assertField(table, field)
+          return { [field]: coerceValue(table, field, parts.slice(2).join('.')) }
+        })
+        return { AND: conditions }
+      })
+      where.OR = groups
+    } else {
+      const conditions = query.rawOr.split(',').map((condition) => {
         const parts = condition.split('.')
         if (parts.length < 3 || parts[1] !== 'eq') throw new Error('Ekspresi OR tidak didukung.')
         const field = parts[0]
         assertField(table, field)
         return { [field]: coerceValue(table, field, parts.slice(2).join('.')) }
       })
-      return { AND: conditions }
-    })
-    if (!groups.length) throw new Error('Ekspresi OR tidak valid.')
-    where.OR = groups
+      if (!conditions.length) throw new Error('Ekspresi OR tidak valid.')
+      where.OR = conditions
+    }
   }
   return where
 }

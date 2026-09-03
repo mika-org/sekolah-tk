@@ -141,14 +141,43 @@ export default function GuruChatPage() {
             {selectedPartner ? (
               <>
                 {/* Active Partner Header */}
-                <CardHeader className="p-6 border-b border-gray-50 flex flex-row items-center justify-between flex-shrink-0">
-                  <div>
-                    <CardTitle className="text-sm font-black text-primary-blue">{selectedPartner.name}</CardTitle>
-                    <CardDescription className="text-[10px] font-bold text-primary-green uppercase tracking-wide">Orang Tua / Wali Murid</CardDescription>
+                <CardHeader className="p-5 border-b border-gray-100 flex flex-col gap-3 flex-shrink-0 bg-white">
+                  <div className="flex flex-row items-center justify-between">
+                    <div>
+                      <CardTitle className="text-sm font-black text-primary-blue">{selectedPartner.name}</CardTitle>
+                      <CardDescription className="text-[10px] font-bold text-primary-green uppercase tracking-wide">
+                        Orang Tua / Wali Murid {selectedPartner.className ? `· ${selectedPartner.className}` : ''}
+                      </CardDescription>
+                    </div>
+                    <Button onClick={() => loadMessages(selectedPartner.id)} variant="ghost" className="p-2 h-auto hover:bg-[#F8F6F2] rounded-xl text-gray-400 hover:text-primary-blue">
+                      <RefreshCw size={14} />
+                    </Button>
                   </div>
-                  <Button onClick={() => loadMessages(selectedPartner.id)} variant="ghost" className="p-2 h-auto hover:bg-[#F8F6F2] rounded-xl text-gray-400 hover:text-primary-blue">
-                    <RefreshCw size={14} />
-                  </Button>
+
+                  {/* Synchronized SPMB Schedule Strip */}
+                  {selectedPartner.schedules && (
+                    <div className="bg-[#F8F6F2] rounded-xl p-2.5 text-[10px] font-semibold text-gray-600 flex flex-wrap items-center gap-3 border border-gray-200/60">
+                      <span className="font-extrabold text-primary-blue uppercase text-[9px] tracking-wider">📅 Agenda SPMB:</span>
+                      {selectedPartner.schedules.observation_date && (
+                        <span>
+                          Observasi: <strong className="text-primary-blue">{selectedPartner.schedules.observation_date}</strong>
+                        </span>
+                      )}
+                      {selectedPartner.schedules.uniform_size && (
+                        <span>
+                          Seragam: <strong className="text-purple-700">Ukuran {selectedPartner.schedules.uniform_size}</strong>
+                        </span>
+                      )}
+                      {selectedPartner.schedules.uniform_pickup_status && (
+                        <span>
+                          Pengambilan: <strong className="text-emerald-700">{selectedPartner.schedules.uniform_pickup_status}</strong>
+                        </span>
+                      )}
+                      {!selectedPartner.schedules.observation_date && !selectedPartner.schedules.uniform_size && !selectedPartner.schedules.uniform_pickup_status && (
+                        <span className="text-gray-400 italic">Belum ada agenda jadwal SPMB khusus</span>
+                      )}
+                    </div>
+                  )}
                 </CardHeader>
 
                 {/* Messages Body */}

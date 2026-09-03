@@ -123,12 +123,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           },
           {
             id: 'ppdb',
-            title: 'PPDB & Kesiswaan',
+            title: 'SPMB & Kesiswaan',
             collapsible: true,
             items: [
-              { name: 'Pendaftar PPDB', href: '/dashboard/admin/ppdb', icon: UserCheck },
+              { name: 'Pendaftar SPMB', href: '/dashboard/admin/ppdb', icon: UserCheck },
               { name: 'Verifikasi Pembayaran', href: '/dashboard/admin/payments', icon: DollarSign },
-              { name: 'Laporan PPDB', href: '/dashboard/super-admin/reports', icon: FileSpreadsheet },
+              { name: 'Laporan SPMB', href: '/dashboard/super-admin/reports', icon: FileSpreadsheet },
             ],
           },
           {
@@ -165,10 +165,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           },
           {
             id: 'ppdb',
-            title: 'PPDB & Kesiswaan',
+            title: 'SPMB & Kesiswaan',
             collapsible: true,
             items: [
-              { name: 'Pendaftar PPDB', href: '/dashboard/admin/ppdb', icon: UserCheck },
+              { name: 'Pendaftar SPMB', href: '/dashboard/admin/ppdb', icon: UserCheck },
               { name: 'Verifikasi Pembayaran', href: '/dashboard/admin/payments', icon: DollarSign },
             ],
           },
@@ -246,7 +246,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             title: 'Administrasi & Keuangan',
             collapsible: true,
             items: [
-              { name: 'Status PPDB', href: '/dashboard/orang-tua/ppdb-status', icon: FileText },
+              { name: 'Status SPMB', href: '/dashboard/orang-tua/ppdb-status', icon: FileText },
               { name: 'Tagihan & Bayar', href: '/dashboard/orang-tua/billing', icon: DollarSign },
             ],
           },
@@ -410,6 +410,52 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {renderNav(false)}
         </nav>
 
+        {/* Social Media & Contact Redirect Footer */}
+        <div className="px-4 py-3 border-t border-white/10 bg-primary-blue/90 space-y-1.5">
+          <span className="text-[9px] font-extrabold uppercase tracking-wider text-white/50 block">Media Sosial &amp; Kontak Resmi</span>
+          <div className="flex items-center gap-2">
+            <a
+              href="https://www.instagram.com/kbtkistiqamah"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Instagram @kbtkistiqamah"
+              className="w-7 h-7 rounded-lg bg-white/10 hover:bg-pink-600 flex items-center justify-center text-white transition-colors cursor-pointer"
+            >
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+              </svg>
+            </a>
+            <a
+              href="https://www.facebook.com/TK-Istiqamah-Bandung"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="Facebook TK Istiqamah Bandung"
+              className="w-7 h-7 rounded-lg bg-white/10 hover:bg-blue-600 flex items-center justify-center text-white transition-colors cursor-pointer"
+            >
+              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M9 8H6v4h3v12h5V12h3.642L18 8h-4V6.333C14 5.374 14.5 5 15.5 5H18V0h-3.808C10.592 0 9 1.583 9 4.615V8z" />
+              </svg>
+            </a>
+            <a
+              href="https://wa.me/628112198853"
+              target="_blank"
+              rel="noopener noreferrer"
+              title="WhatsApp Narahubung"
+              className="w-7 h-7 rounded-lg bg-white/10 hover:bg-emerald-600 flex items-center justify-center text-white transition-colors cursor-pointer"
+            >
+              <MessageSquare size={13} />
+            </a>
+            <a
+              href="https://www.instagram.com/kbtkistiqamah"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[10px] text-white/70 hover:text-white font-semibold ml-1 hover:underline"
+            >
+              @kbtkistiqamah ↗
+            </a>
+          </div>
+        </div>
+
         {/* Logout Footer */}
         <div className="p-3.5 border-t border-white/10 bg-primary-blue/95">
           <Button 
@@ -465,6 +511,49 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <nav className="flex-grow px-3.5 py-4 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10">
                 {renderNav(true)}
               </nav>
+
+              {/* Mobile Social Media Redirect Footer */}
+              <div className="px-4 py-3 border-t border-white/10 bg-primary-blue space-y-1.5">
+                <span className="text-[9px] font-extrabold uppercase tracking-wider text-white/50 block">Media Sosial &amp; Kontak Resmi</span>
+                <div className="flex items-center gap-2">
+                  <a
+                    href="https://www.instagram.com/kbtkistiqamah"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-7 h-7 rounded-lg bg-white/10 hover:bg-pink-600 flex items-center justify-center text-white transition-colors cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                    </svg>
+                  </a>
+                  <a
+                    href="https://www.facebook.com/TK-Istiqamah-Bandung"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-7 h-7 rounded-lg bg-white/10 hover:bg-blue-600 flex items-center justify-center text-white transition-colors cursor-pointer"
+                  >
+                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M9 8H6v4h3v12h5V12h3.642L18 8h-4V6.333C14 5.374 14.5 5 15.5 5H18V0h-3.808C10.592 0 9 1.583 9 4.615V8z" />
+                    </svg>
+                  </a>
+                  <a
+                    href="https://wa.me/628112198853"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-7 h-7 rounded-lg bg-white/10 hover:bg-emerald-600 flex items-center justify-center text-white transition-colors cursor-pointer"
+                  >
+                    <MessageSquare size={13} />
+                  </a>
+                  <a
+                    href="https://www.instagram.com/kbtkistiqamah"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-white/70 hover:text-white font-semibold ml-1 hover:underline"
+                  >
+                    @kbtkistiqamah ↗
+                  </a>
+                </div>
+              </div>
 
               <div className="p-3.5 border-t border-white/10 bg-primary-blue">
                 <Button 

@@ -5,13 +5,13 @@ import { createClient } from '@/lib/database/client'
 import { Star, Image as ImageIcon, X, Play } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-const CATEGORIES = ['Semua', 'Kegiatan', 'Sarana', 'Prestasi']
+const CATEGORIES = ['Semua', 'Kegiatan Pembelajaran', 'Sarana', 'Prestasi']
 
 const FALLBACK_GALLERY = [
-  { id: 'f1', title: 'Kegiatan Belajar di Kelas', image: '/images/gallery_1.png', category: 'Kegiatan' },
+  { id: 'f1', title: 'Kegiatan Belajar di Kelas', image: '/images/gallery_1.png', category: 'Kegiatan Pembelajaran' },
   { id: 'f2', title: 'Sarana Bermain Outdoor', image: '/images/gallery_2.png', category: 'Sarana' },
   { id: 'f3', title: 'Penghargaan Lomba Mewarnai', image: '/images/gallery_3.png', category: 'Prestasi' },
-  { id: 'f4', title: 'Pentas Seni Akhir Tahun', image: '/images/gallery_4.png', category: 'Kegiatan' },
+  { id: 'f4', title: 'Pentas Seni Akhir Tahun', image: '/images/gallery_4.png', category: 'Kegiatan Pembelajaran' },
 ]
 
 export default function GaleriPage() {
@@ -32,7 +32,11 @@ export default function GaleriPage() {
         .order('created_at', { ascending: false })
 
       if (!error && data && data.length > 0) {
-        setGalleryItems(data)
+        const mapped = data.map((item: any) => ({
+          ...item,
+          category: item.category === 'Kegiatan' ? 'Kegiatan Pembelajaran' : item.category
+        }))
+        setGalleryItems(mapped)
       }
       setLoading(false)
     }
@@ -41,7 +45,12 @@ export default function GaleriPage() {
 
   const filteredItems = galleryItems.filter((item) => {
     if (selectedCategory === 'Semua') return true
-    return item.category?.toLowerCase() === selectedCategory.toLowerCase()
+    const cat = item.category?.toLowerCase()
+    const sel = selectedCategory.toLowerCase()
+    if (sel === 'kegiatan pembelajaran') {
+      return cat === 'kegiatan pembelajaran' || cat === 'kegiatan'
+    }
+    return cat === sel
   })
 
   return (

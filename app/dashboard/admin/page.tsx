@@ -100,7 +100,7 @@ export default function AdminDashboard() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-3xl font-black text-primary-blue">Dashboard Admin</h1>
-          <p className="text-gray-500 font-semibold text-xs mt-1">Mengelola PPDB, Pembayaran, dan Publikasi Sekolah.</p>
+          <p className="text-gray-500 font-semibold text-xs mt-1">Mengelola SPMB, Pembayaran, dan Publikasi Sekolah.</p>
         </div>
         <div className="flex items-center space-x-2">
           <Button onClick={loadData} variant="outline" className="border-gray-200 hover:border-gray-300 font-bold rounded-xl text-xs cursor-pointer">
@@ -153,7 +153,7 @@ export default function AdminDashboard() {
               <XCircle size={24} />
             </div>
             <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Siswa Ditolak</div>
+              <div className="text-[10px] uppercase font-bold text-gray-400">Pendaftaran Ditolak</div>
               <div className="text-2xl font-black text-rose-600">{rejected}</div>
             </div>
           </CardContent>
@@ -163,12 +163,12 @@ export default function AdminDashboard() {
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         
-        {/* PPDB Applicants List */}
+        {/* SPMB Applicants List */}
         <div className="lg:col-span-8 space-y-6">
           <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
             <CardHeader className="p-8 border-b border-gray-50 flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-lg font-black text-primary-blue">Aplikasi PPDB Aktif</CardTitle>
+                <CardTitle className="text-lg font-black text-primary-blue">Aplikasi SPMB Aktif</CardTitle>
                 <CardDescription className="text-xs font-semibold text-gray-400">Daftar calon siswa baru yang mendaftar secara daring.</CardDescription>
               </div>
               <TrendingUp className="text-primary-green" />
@@ -212,7 +212,7 @@ export default function AdminDashboard() {
                                   disabled={actionPendingId === app.id}
                                   className="bg-primary-green hover:bg-primary-green/90 text-white font-extrabold rounded-lg text-xs py-1.5 px-3 h-auto cursor-pointer"
                                 >
-                                  {actionPendingId === app.id ? 'Memproses...' : 'Terima PPDB'}
+                                  {actionPendingId === app.id ? 'Memproses...' : 'Terima SPMB'}
                                 </Button>
                                 <Button
                                   onClick={async () => {
@@ -256,7 +256,7 @@ export default function AdminDashboard() {
             <CardContent className="text-xs text-gray-500 font-semibold space-y-4">
               <div className="flex items-start space-x-3">
                 <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500 mt-0.5">1</div>
-                <div>Orang tua mendaftarkan anak secara online di halaman PPDB.</div>
+                <div>Orang tua mendaftarkan anak secara online di halaman SPMB.</div>
               </div>
               <div className="flex items-start space-x-3">
                 <div className="w-5 h-5 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-500 mt-0.5">2</div>
@@ -264,7 +264,7 @@ export default function AdminDashboard() {
               </div>
               <div className="flex items-start space-x-3">
                 <div className="w-5 h-5 bg-primary-green/10 text-primary-green rounded-full flex items-center justify-center font-bold mt-0.5">3</div>
-                <div>Admin mengklik <strong>Terima PPDB</strong> untuk membuat akun orang tua otomatis dan mengirim kredensial login via email.</div>
+                <div>Admin mengklik <strong>Terima SPMB</strong> untuk membuat akun orang tua otomatis dan mengirim kredensial login via email.</div>
               </div>
             </CardContent>
           </Card>

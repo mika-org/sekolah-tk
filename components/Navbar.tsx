@@ -9,8 +9,8 @@ import { Menu, X } from 'lucide-react'
 const NAV_ITEMS = [
   { name: 'Beranda', href: '/' },
   { name: 'Tentang Kami', href: '/tentang-kami' },
-  { name: 'Program', href: '/program' },
-  { name: 'Aktivitas', href: '/aktivitas' },
+  { name: 'Program Unggulan', href: '/program' },
+  { name: 'Kegiatan Pembelajaran', href: '/aktivitas' },
   { name: 'Galeri', href: '/galeri' },
   { name: 'Kontak', href: '/kontak' },
 ]
@@ -75,7 +75,7 @@ export default function Navbar() {
               Portal Akun
             </Link>
             <Link href="/ppdb" className="bg-[#07A363] hover:bg-[#07A363]/90 text-white font-extrabold text-xs tracking-wider uppercase px-7 py-3.5 rounded-full transition-all shadow-md">
-              Daftar Sekarang
+              Daftar SPMB
             </Link>
           </div>
 
@@ -118,7 +118,7 @@ export default function Navbar() {
               href="/ppdb"
               className="w-full text-center py-3 bg-[#07A363] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl hover:bg-[#07A363]/90"
             >
-              Daftar Sekarang
+              Daftar SPMB Online
             </Link>
           </div>
         </div>

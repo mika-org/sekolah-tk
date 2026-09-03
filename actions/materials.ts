@@ -20,49 +20,54 @@ async function getCurrentUser() {
 export async function uploadMaterial(formData: FormData) {
   try {
     const user = await getCurrentUser()
-    if (!user || user.role !== 'guru') {
-      return { error: 'Hanya guru yang dapat mengunggah materi pelajaran.' }
+    if (!user || !['guru', 'admin', 'super_admin'].includes(user.role)) {
+      return { error: 'Hanya guru atau admin yang dapat mengunggah materi pelajaran.' }
     }
 
-    const title = formData.get('title') as string
-    const description = formData.get('description') as string
-    const classId = formData.get('classId') as string
+    const title = (formData.get('title') as string)?.trim() // Tema
+    const topic = (formData.get('topic') as string)?.trim() // Topik Pembelajaran
+    const description = (formData.get('description') as string)?.trim() // Keterangan
+    const classId = formData.get('classId') as string // Kelompok
     const file = formData.get('file') as File
 
     if (!title || !classId || !file || file.size === 0) {
-      return { error: 'Semua field dan file materi wajib diisi.' }
+      return { error: 'Tema, Kelompok, dan File materi wajib diisi.' }
     }
 
     const supabase = createAdminClient()
 
     // 1. Get teacher id from current user
+    let teacherId: string | null = null
     const { data: teacher } = await supabase
       .from('teachers_tk')
       .select('id')
       .eq('user_id', user.id)
       .maybeSingle()
 
-    if (!teacher) {
-      return { error: 'Profil guru Anda tidak ditemukan.' }
+    if (teacher) {
+      teacherId = teacher.id
     }
 
-    // 2. Upload file to the configured local/shared storage.
+    // 2. Upload file
     const bucketName = 'bucket_tk'
-
     const fileExtension = file.name.split('.').pop() || 'pdf'
     const fileName = `${classId}/material_${Date.now()}.${fileExtension}`
-
     const fileUrl = await saveStoredFile(bucketName, fileName, Buffer.from(await file.arrayBuffer()))
 
-    // 3. Save message log/record into database
+    // 3. Format description containing [Topik: ...]
+    const finalDescription = topic
+      ? `[Topik: ${topic}] ${description || ''}`.trim()
+      : (description || '')
+
+    // 4. Save into database
     const { data: materialData, error: dbError } = await supabase
       .from('materials_tk')
       .insert({
-        title,
-        description,
+        title, // Tema
+        description: finalDescription,
         file_url: fileUrl,
         class_id: classId,
-        teacher_id: teacher.id
+        teacher_id: teacherId,
       })
       .select()
       .single()
@@ -81,7 +86,7 @@ export async function uploadMaterial(formData: FormData) {
 export async function deleteMaterial(id: string, fileUrl: string) {
   try {
     const user = await getCurrentUser()
-    if (!user || user.role !== 'guru') {
+    if (!user || !['guru', 'admin', 'super_admin'].includes(user.role)) {
       return { error: 'Tidak memiliki izin.' }
     }
 
@@ -95,14 +100,14 @@ export async function deleteMaterial(id: string, fileUrl: string) {
 
     if (dbError) throw dbError
 
-    // 2. Delete file from storage.
+    // 2. Delete file from storage
     try {
       const stored = storagePathFromUrl(fileUrl)
       if (stored) {
-        await deleteStoredFile(stored.bucket, stored.objectPath)
+        await deleteStoredFile(stored.bucket, stored.path)
       }
-    } catch (storageError) {
-      console.warn('Failed to delete stored material:', storageError)
+    } catch (err) {
+      console.warn('Could not delete storage file:', err)
     }
 
     revalidatePath('/dashboard/guru/materials')
@@ -117,17 +122,31 @@ export async function deleteMaterial(id: string, fileUrl: string) {
 export async function getMaterialsList(classId?: string) {
   try {
     const supabase = createAdminClient()
-    let query = supabase.from('materials_tk').select('*, classes_tk(nama), teachers_tk(nama)')
+    let query = supabase
+      .from('materials_tk')
+      .select('*, classes_tk(nama, tahun_ajaran), teachers_tk(nama)')
+      .order('created_at', { ascending: false })
 
     if (classId) {
       query = query.eq('class_id', classId)
     }
 
-    const { data, error } = await query.order('created_at', { ascending: false })
+    const { data, error } = await query
     if (error) throw error
-    return { success: true, materials: data || [] }
+
+    // Map parsed topic and description
+    const mapped = (data || []).map((m: any) => {
+      const parsed = parseMaterialContent(m.description)
+      return {
+        ...m,
+        topic: parsed.topic,
+        cleanDescription: parsed.description,
+      }
+    })
+
+    return { success: true, materials: mapped }
   } catch (e: any) {
     console.error('Error fetching materials:', e)
-    return { error: e.message, materials: [] }
+    return { error: 'Gagal memuat materi: ' + e.message, materials: [] }
   }
 }

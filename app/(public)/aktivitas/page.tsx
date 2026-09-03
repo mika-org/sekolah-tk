@@ -65,8 +65,8 @@ export default function AktivitasPage() {
       {/* ─── ACTIVITIES GRID ────────────────────── */}
       <section className="py-8 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         <div className="text-center mb-10">
-          <h2 className="text-2xl sm:text-3xl font-black text-[#07265F]">Aktivitas Murid</h2>
-          <p className="text-sm text-gray-500 font-semibold mt-1">Kegiatan seru harian dan tahunan sekolah</p>
+          <h2 className="text-2xl sm:text-3xl font-black text-[#07265F]">Kegiatan Pembelajaran</h2>
+          <p className="text-sm text-gray-500 font-semibold mt-1">Kegiatan seru harian dan tahunan pembelajaran sekolah</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -82,7 +82,7 @@ export default function AktivitasPage() {
                     <div className="p-1.5 bg-[#07A363]/10 rounded-lg">
                       <IconComponent size={16} />
                     </div>
-                    <span className="font-bold text-xs uppercase tracking-wide">Kegiatan</span>
+                    <span className="font-bold text-xs uppercase tracking-wide">Kegiatan Pembelajaran</span>
                   </div>
                   <h3 className="font-extrabold text-[#07265F] text-base leading-tight">{act.title}</h3>
                   <p className="text-xs font-semibold text-[#07265F]/85 leading-relaxed">{act.desc}</p>

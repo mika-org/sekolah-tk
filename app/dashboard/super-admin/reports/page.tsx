@@ -86,8 +86,8 @@ export default function ReportsPage() {
     <div className="space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-black text-primary-blue">Laporan PPDB</h1>
-        <p className="text-gray-500 font-semibold text-xs mt-1">Ringkasan statistik penerimaan peserta didik baru dan keuangan.</p>
+        <h1 className="text-3xl font-black text-primary-blue">Laporan SPMB</h1>
+        <p className="text-gray-500 font-semibold text-xs mt-1">Ringkasan statistik seleksi penerimaan murid baru dan keuangan.</p>
       </div>
 
       {/* Stats Grid */}
@@ -154,12 +154,12 @@ export default function ReportsPage() {
         </Card>
       </div>
 
-      {/* PPDB Table */}
+      {/* SPMB Table */}
       <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
         <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-lg font-black text-primary-blue">Semua Pendaftaran PPDB</CardTitle>
-            <CardDescription className="text-xs font-semibold text-gray-400">Rekap seluruh pendaftaran peserta didik baru ({filteredPPDB.length} pendaftar).</CardDescription>
+            <CardTitle className="text-lg font-black text-primary-blue">Semua Pendaftaran SPMB</CardTitle>
+            <CardDescription className="text-xs font-semibold text-gray-400">Rekap seluruh pendaftaran seleksi penerimaan murid baru ({filteredPPDB.length} pendaftar).</CardDescription>
           </div>
 
           <div className="flex flex-wrap items-center gap-2.5">

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState, useMemo } from 'react'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/database/client'
 import { approvePPDB, resendCredentialsEmail, updatePPDB, type UpdatePPDBPayload } from '@/actions/admin'
+import { updatePpdbSchedule, verifyPpdbPayment } from '@/actions/ppdb'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -42,6 +43,12 @@ import {
   HeartHandshake,
   CreditCard,
   School,
+  Calendar,
+  Ruler,
+  PackageCheck,
+  Printer,
+  CheckCircle2,
+  Copy,
 } from 'lucide-react'
 
 type SnapshotRecord = Record<string, unknown>
@@ -122,11 +129,11 @@ export function getWaTemplateText(
   const studentName = app.student_name
 
   if (type === 'observasi') {
-    return `Assalamu'alaikum Warahmatullahi Wabarakatuh,\n\nYth. ${recipientType === 'ayah' ? 'Bapak' : 'Ibu'} ${parentName} (Orang Tua/Wali dari ananda *${studentName}*),\n\nKami dari Panitia PPDB KB & TK Istiqamah Bandung menginformasikan bahwa ananda dijadwalkan untuk mengikuti kegiatan *Observasi Anak & Wawancara Orang Tua* pada:\n\n📅 *Hari/Tanggal* : [Tentukan Tanggal]\n⏰ *Waktu*        : 08.30 - 10.30 WIB\n📍 *Tempat*       : Kampus TK Istiqamah Bandung (Jl. Taman Citarum, Bandung Wetan)\n\nMohon hadir tepat waktu dan membawa kelengkapan berkas fisik yang diperlukan.\n\nTerima kasih.\nWassalamu'alaikum Warahmatullahi Wabarakatuh.\n_Panitia PPDB TK Istiqamah Bandung_`
+    return `Assalamu'alaikum Warahmatullahi Wabarakatuh,\n\nYth. ${recipientType === 'ayah' ? 'Bapak' : 'Ibu'} ${parentName} (Orang Tua/Wali dari ananda *${studentName}*),\n\nKami dari Panitia SPMB KB & TK Istiqamah Bandung menginformasikan bahwa ananda dijadwalkan untuk mengikuti kegiatan *Observasi Anak & Wawancara Orang Tua* pada:\n\n📅 *Hari/Tanggal* : [Tentukan Tanggal]\n⏰ *Waktu*        : 08.30 - 10.30 WIB\n📍 *Tempat*       : Kampus TK Istiqamah Bandung (Jl. Taman Citarum, Bandung Wetan)\n\nMohon hadir tepat waktu dan membawa kelengkapan berkas fisik yang diperlukan.\n\nTerima kasih.\nWassalamu'alaikum Warahmatullahi Wabarakatuh.\n_Panitia SPMB TK Istiqamah Bandung_`
   }
 
   if (type === 'ukur_seragam') {
-    return `Assalamu'alaikum Warahmatullahi Wabarakatuh,\n\nYth. ${recipientType === 'ayah' ? 'Bapak' : 'Ibu'} ${parentName} (Orang Tua/Wali dari ananda *${studentName}*),\n\nSehubungan dengan kelulusan pendaftaran PPDB ananda di KB & TK Istiqamah Bandung, kami mengundang Bapak/Ibu untuk hadir dalam sesi *Pengukuran Seragam Sekolah* ananda pada:\n\n📅 *Hari/Tanggal* : [Tentukan Tanggal]\n⏰ *Waktu*        : 08.00 - 14.00 WIB\n📍 *Tempat*       : Ruang Koperasi / TU TK Istiqamah Bandung\n\nMohon membawa ananda agar ukuran seragam sesuai dan nyaman saat dikenakan.\n\nTerima kasih.\nWassalamu'alaikum Warahmatullahi Wabarakatuh.\n_Panitia PPDB TK Istiqamah Bandung_`
+    return `Assalamu'alaikum Warahmatullahi Wabarakatuh,\n\nYth. ${recipientType === 'ayah' ? 'Bapak' : 'Ibu'} ${parentName} (Orang Tua/Wali dari ananda *${studentName}*),\n\nSehubungan dengan kelulusan pendaftaran SPMB ananda di KB & TK Istiqamah Bandung, kami mengundang Bapak/Ibu untuk hadir dalam sesi *Pengukuran Seragam Sekolah* ananda pada:\n\n📅 *Hari/Tanggal* : [Tentukan Tanggal]\n⏰ *Waktu*        : 08.00 - 14.00 WIB\n📍 *Tempat*       : Ruang Koperasi / TU TK Istiqamah Bandung\n\nMohon membawa ananda agar ukuran seragam sesuai dan nyaman saat dikenakan.\n\nTerima kasih.\nWassalamu'alaikum Warahmatullahi Wabarakatuh.\n_Panitia SPMB TK Istiqamah Bandung_`
   }
 
   if (type === 'ambil_seragam') {
@@ -279,6 +286,127 @@ export default function AdminPPDBPage() {
   const [waTemplateType, setWaTemplateType] = useState<WaTemplateType>('observasi')
   const [waMessageText, setWaMessageText] = useState('')
 
+  // SPMB Schedule modal state
+  const [scheduleModalOpen, setScheduleModalOpen] = useState(false)
+  const [scheduleApp, setScheduleApp] = useState<PPDBApplication | null>(null)
+  const [savingSchedule, setSavingSchedule] = useState(false)
+  const [scheduleForm, setScheduleForm] = useState({
+    observation_date: '',
+    observation_time: '08:30 - 10:00 WIB',
+    observation_notes: '',
+    uniform_measure_date: '',
+    uniform_size: 'M',
+    uniform_measure_notes: '',
+    uniform_pickup_date: '',
+    uniform_pickup_status: 'Belum Siap',
+    uniform_pickup_notes: '',
+  })
+
+  // SPMB Recap filters & pagination
+  const [recapSearch, setRecapSearch] = useState('')
+  const [recapUniformFilter, setRecapUniformFilter] = useState('all')
+  const [recapObsFilter, setRecapObsFilter] = useState('all')
+  const [recapPage, setRecapPage] = useState(1)
+  const [recapPageSize, setRecapPageSize] = useState(10)
+
+  const handleOpenSchedule = (app: PPDBApplication) => {
+    setScheduleApp(app)
+    const child = (app.child_details as Record<string, any>) || {}
+    const sch = child.schedules || {}
+    setScheduleForm({
+      observation_date: sch.observation_date || '',
+      observation_time: sch.observation_time || '08:30 - 10:00 WIB',
+      observation_notes: sch.observation_notes || '',
+      uniform_measure_date: sch.uniform_measure_date || '',
+      uniform_size: sch.uniform_size || 'M',
+      uniform_measure_notes: sch.uniform_measure_notes || '',
+      uniform_pickup_date: sch.uniform_pickup_date || '',
+      uniform_pickup_status: sch.uniform_pickup_status || 'Belum Siap',
+      uniform_pickup_notes: sch.uniform_pickup_notes || '',
+    })
+    setScheduleModalOpen(true)
+  }
+
+  const handleSaveSchedule = async () => {
+    if (!scheduleApp) return
+    setSavingSchedule(true)
+    try {
+      const res = await updatePpdbSchedule({
+        ppdbId: scheduleApp.id,
+        observationDate: scheduleForm.observation_date,
+        observationTime: scheduleForm.observation_time,
+        observationNotes: scheduleForm.observation_notes,
+        uniformMeasureDate: scheduleForm.uniform_measure_date,
+        uniformSize: scheduleForm.uniform_size,
+        uniformMeasureNotes: scheduleForm.uniform_measure_notes,
+        uniformPickupDate: scheduleForm.uniform_pickup_date,
+        uniformPickupStatus: scheduleForm.uniform_pickup_status,
+        uniformPickupNotes: scheduleForm.uniform_pickup_notes,
+      })
+
+      if (res.error) {
+        toast.error(res.error)
+      } else {
+        toast.success('Jadwal Observasi & Seragam SPMB berhasil disimpan!')
+        setScheduleModalOpen(false)
+        await loadData()
+      }
+    } catch (err: any) {
+      toast.error('Gagal: ' + err.message)
+    } finally {
+      setSavingSchedule(false)
+    }
+  }
+
+  // Payment Verification modal & token state
+  const [paymentModalOpen, setPaymentModalOpen] = useState(false)
+  const [verifiedPaymentData, setVerifiedPaymentData] = useState<{
+    studentName: string
+    parentName: string
+    phone: string
+    token: string
+  } | null>(null)
+  const [verifyingPaymentId, setVerifyingPaymentId] = useState<string | null>(null)
+
+  const handleVerifyPayment = async (ppdbId: string) => {
+    setVerifyingPaymentId(ppdbId)
+    try {
+      const res = await verifyPpdbPayment(ppdbId)
+      if (res.error) {
+        toast.error(res.error)
+      } else {
+        toast.success('Pembayaran berhasil diverifikasi! Kode akses formulir telah digenerate.')
+        setVerifiedPaymentData({
+          studentName: res.studentName || '',
+          parentName: res.parentName || '',
+          phone: res.phone || '',
+          token: res.token || '',
+        })
+        setPaymentModalOpen(true)
+        await loadData()
+      }
+    } catch (err: any) {
+      toast.error('Gagal memverifikasi pembayaran: ' + err.message)
+    } finally {
+      setVerifyingPaymentId(null)
+    }
+  }
+
+  const handleSendTokenViaWa = (phone: string, studentName: string, parentName: string, token: string) => {
+    if (!phone) {
+      toast.error('Nomor WhatsApp orang tua belum terdata.')
+      return
+    }
+    let clean = phone.replace(/[^0-9]/g, '')
+    if (clean.startsWith('0')) {
+      clean = '62' + clean.slice(1)
+    } else if (!clean.startsWith('62')) {
+      clean = '62' + clean
+    }
+    const message = `*PEMBAYARAN FORMULIR PPDB DIVERIFIKASI*\nKB & TK Istiqamah Bandung\n\nHalo Ayah/Bunda ${parentName},\nAlhamdulillah pembayaran uang pendaftaran PPDB ananda *${studentName}* telah berhasil diverifikasi oleh Panitia.\n\nBerikut adalah *Kode Akses Formulir* Anda:\n🔑 *${token}*\n\nSilakan buka halaman pendaftaran online kami:\nhttps://sekolah-tk.istiqamah.sch.id/ppdb\nPilih tombol *"Sudah Beli Formulir? Masukkan Kode Akses"*, lalu masukkan kode di atas untuk melanjutkan pengisian Biodata Lengkap ananda.\n\nTerima kasih,\nPanitia PPDB TK Istiqamah Bandung`
+    window.open(`https://wa.me/${clean}?text=${encodeURIComponent(message)}`, '_blank')
+  }
+
   // Custom confirmation dialog state
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [confirmTitle, setConfirmTitle] = useState('')
@@ -305,7 +433,7 @@ export default function AdminPPDBPage() {
   }, [loadData])
 
   useEffect(() => {
-    if (detailsModalOpen || confirmOpen || credsModalOpen || waModalOpen || editModalOpen) {
+    if (detailsModalOpen || confirmOpen || credsModalOpen || waModalOpen || editModalOpen || scheduleModalOpen || paymentModalOpen) {
       document.body.style.overflow = 'hidden'
     } else {
       document.body.style.overflow = ''
@@ -313,7 +441,7 @@ export default function AdminPPDBPage() {
     return () => {
       document.body.style.overflow = ''
     }
-  }, [detailsModalOpen, confirmOpen, credsModalOpen, waModalOpen, editModalOpen])
+  }, [detailsModalOpen, confirmOpen, credsModalOpen, waModalOpen, editModalOpen, scheduleModalOpen, paymentModalOpen])
 
   const handleOpenEdit = (app: PPDBApplication) => {
     const child = (app.child_details as Record<string, any>) || {}
@@ -474,26 +602,31 @@ export default function AdminPPDBPage() {
 
   const handleApprove = async (id: string) => {
     setActionPendingId(id)
-    const result = await approvePPDB(id)
-    setActionPendingId(null)
+    try {
+      const result = await approvePPDB(id)
+      setActionPendingId(null)
 
-    if (result.success) {
-      setGeneratedCreds({
-        studentName: ppdbList.find(app => app.id === id)?.student_name,
-        username: result.username,
-        password: result.password
-      })
-      setCredsModalOpen(true)
-      
-      // Update local state status
-      setPpdbList(prev => prev.map(app => 
-        app.id === id 
-          ? { ...app, status: 'Diterima', payment_status: 'Verified' }
-          : app
-      ))
-      toast.success('Pendaftaran diterima & data murid aktif berhasil disinkronkan!')
-    } else {
-      toast.error(result.error || 'Terjadi kesalahan.')
+      if (result.success) {
+        setGeneratedCreds({
+          studentName: ppdbList.find(app => app.id === id)?.student_name,
+          username: result.username,
+          password: result.password
+        })
+        setCredsModalOpen(true)
+        
+        // Update local state status
+        setPpdbList(prev => prev.map(app => 
+          app.id === id 
+            ? { ...app, status: 'Diterima', payment_status: 'Verified' }
+            : app
+        ))
+        toast.success('Pendaftaran diterima & data murid aktif berhasil disinkronkan!')
+      } else {
+        toast.error(result.error || 'Terjadi kesalahan.')
+      }
+    } catch (err: any) {
+      setActionPendingId(null)
+      toast.error('Gagal memproses pendaftaran: ' + (err?.message || 'Server error'))
     }
   }
 
@@ -587,13 +720,18 @@ export default function AdminPPDBPage() {
 
   const handleResendCreds = async (id: string) => {
     setActionPendingId(id)
-    const result = await resendCredentialsEmail(id)
-    setActionPendingId(null)
+    try {
+      const result = await resendCredentialsEmail(id)
+      setActionPendingId(null)
 
-    if (result.success) {
-      toast.success('Kredensial login berhasil dikirim ulang ke email orang tua!')
-    } else {
-      toast.error(result.error || 'Gagal mengirim ulang kredensial.')
+      if (result.success) {
+        toast.success('Kredensial login berhasil dikirim ulang ke email orang tua!')
+      } else {
+        toast.error(result.error || 'Gagal mengirim ulang kredensial.')
+      }
+    } catch (err: any) {
+      setActionPendingId(null)
+      toast.error('Gagal mengirim ulang kredensial: ' + (err?.message || 'Server error'))
     }
   }
 
@@ -618,14 +756,73 @@ export default function AdminPPDBPage() {
     return filteredList.slice(start, start + pageSize)
   }, [filteredList, currentPage, pageSize])
 
+  // Filtered list for SPMB Recap Tab (Point 2, 3, 4, 5)
+  const filteredRecapList = useMemo(() => {
+    return ppdbList.filter((app) => {
+      const child = (app.child_details as Record<string, any>) || {}
+      const sch = child.schedules || {}
+      const father = (app.father_details as Record<string, any>) || {}
+      const mother = (app.mother_details as Record<string, any>) || {}
+
+      if (recapSearch) {
+        const query = recapSearch.toLowerCase()
+        const matchName = app.student_name.toLowerCase().includes(query)
+        const matchFather = (father.nama_ayah || '').toLowerCase().includes(query)
+        const matchMother = (mother.nama_ibu || '').toLowerCase().includes(query)
+        if (!matchName && !matchFather && !matchMother) return false
+      }
+
+      if (recapUniformFilter !== 'all') {
+        const curStatus = sch.uniform_pickup_status || 'Belum Siap'
+        if (curStatus !== recapUniformFilter) return false
+      }
+
+      if (recapObsFilter !== 'all') {
+        const hasObs = !!sch.observation_date
+        if (recapObsFilter === 'sudah' && !hasObs) return false
+        if (recapObsFilter === 'belum' && hasObs) return false
+      }
+
+      return true
+    })
+  }, [ppdbList, recapSearch, recapUniformFilter, recapObsFilter])
+
+  const totalRecapPages = Math.ceil(filteredRecapList.length / recapPageSize) || 1
+  const paginatedRecapList = useMemo(() => {
+    const start = (recapPage - 1) * recapPageSize
+    return filteredRecapList.slice(start, start + recapPageSize)
+  }, [filteredRecapList, recapPage, recapPageSize])
+
+  // Statistics for SPMB Recap
+  const spmbStats = useMemo(() => {
+    let obsCount = 0
+    let measuredCount = 0
+    let pickupReadyOrDone = 0
+
+    ppdbList.forEach((app) => {
+      const child = (app.child_details as Record<string, any>) || {}
+      const sch = child.schedules || {}
+      if (sch.observation_date) obsCount++
+      if (sch.uniform_size) measuredCount++
+      if (sch.uniform_pickup_status === 'Siap Diambil' || sch.uniform_pickup_status === 'Sudah Diambil') pickupReadyOrDone++
+    })
+
+    return {
+      total: ppdbList.length,
+      obsCount,
+      measuredCount,
+      pickupReadyOrDone,
+    }
+  }, [ppdbList])
+
   return (
     <div className="space-y-8">
       
       {/* Page Title */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-primary-blue">Kelola Pendaftar PPDB</h1>
-          <p className="text-gray-500 font-semibold text-xs mt-1">Verifikasi dokumen dan kelulusan calon siswa baru.</p>
+          <h1 className="text-3xl font-black text-primary-blue">Kelola Pendaftar SPMB</h1>
+          <p className="text-gray-500 font-semibold text-xs mt-1">Verifikasi berkas, jadwal observasi, serta pengukuran &amp; pengambilan seragam.</p>
         </div>
         <div className="flex items-center space-x-2">
           <Button onClick={loadData} variant="outline" className="border-gray-200 hover:border-gray-300 font-bold rounded-xl text-xs cursor-pointer gap-2">
@@ -634,11 +831,22 @@ export default function AdminPPDBPage() {
         </div>
       </div>
 
-      {/* PPDB Applicants List */}
-      <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
+      <Tabs defaultValue="applicants" className="w-full space-y-6">
+        <TabsList className="bg-[#F8F6F2] p-1.5 rounded-2xl border border-gray-200/80 w-full sm:w-auto grid grid-cols-2 max-w-md print:hidden">
+          <TabsTrigger value="applicants" className="rounded-xl font-bold text-xs data-[state=active]:bg-primary-blue data-[state=active]:text-white">
+            📋 Pendaftar SPMB
+          </TabsTrigger>
+          <TabsTrigger value="recap_spmb" className="rounded-xl font-bold text-xs data-[state=active]:bg-primary-blue data-[state=active]:text-white">
+            📏 Rekap Seragam &amp; Observasi
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="applicants" className="space-y-6">
+          {/* SPMB Applicants List */}
+          <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
         <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <CardTitle className="text-lg font-black text-primary-blue">Aplikasi PPDB Aktif</CardTitle>
+            <CardTitle className="text-lg font-black text-primary-blue">Aplikasi SPMB Aktif</CardTitle>
             <CardDescription className="text-xs font-semibold text-gray-400">Daftar calon siswa baru yang mendaftar secara daring ({filteredList.length} pendaftar).</CardDescription>
           </div>
 
@@ -687,47 +895,122 @@ export default function AdminPPDBPage() {
                   <tr className="bg-[#F8F6F2] text-xs font-extrabold text-primary-blue uppercase border-b border-gray-100">
                     <th className="p-4 pl-8">Nama Calon Siswa</th>
                     <th className="p-4">Tanggal Lahir</th>
-                    <th className="p-4">Status</th>
+                    <th className="p-4">Status PPDB</th>
+                    <th className="p-4">Pembayaran &amp; Kode Akses</th>
                     <th className="p-4 pr-8 text-right">Aksi</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {paginatedList.map((app) => (
-                    <tr key={app.id} className="hover:bg-gray-50/50 transition-colors">
-                      <td className="p-4 pl-8">
-                        <div className="font-bold text-primary-blue">{app.student_name}</div>
-                        <div className="text-[10px] text-gray-400 font-semibold mt-0.5">ID: {app.id.substring(0, 8)}...</div>
-                      </td>
-                      <td className="p-4 font-semibold text-gray-600">
-                        {new Date(app.birth_date).toLocaleDateString('id-ID', {
-                          day: 'numeric',
-                          month: 'long',
-                          year: 'numeric'
-                        })}
-                      </td>
-                      <td className="p-4">{getStatusBadge(app.status)}</td>
-                      <td className="p-4 pr-8 text-right">
-                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
-                          <Button
-                            onClick={() => openWaModal(app)}
-                            className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
-                          >
-                            <MessageCircle size={13} /> WA Ortu
-                          </Button>
-                          <Button
-                            onClick={() => handleViewDetails(app)}
-                            variant="outline"
-                            className="h-8 border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-primary-blue font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1"
-                          >
-                            Detail
-                          </Button>
-                          <Button
-                            onClick={() => handleOpenEdit(app)}
-                            variant="outline"
-                            className="h-8 border-gray-200 text-primary-blue hover:bg-primary-blue/5 font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1"
-                          >
-                            <Edit3 size={13} /> Edit
-                          </Button>
+                  {paginatedList.map((app) => {
+                    const child = (app.child_details as Record<string, any>) || {}
+                    const father = (app.father_details as Record<string, any>) || {}
+                    const mother = (app.mother_details as Record<string, any>) || {}
+                    const parentPhone = child.phone || father.hp_ayah || mother.hp_ibu || ''
+                    const parentName = child.parent_name || father.nama_ayah || mother.nama_ibu || 'Orang Tua'
+                    const formToken = child.form_token
+
+                    return (
+                      <tr key={app.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="p-4 pl-8">
+                          <div className="font-bold text-primary-blue">{app.student_name}</div>
+                          <div className="text-[10px] text-gray-400 font-semibold mt-0.5">ID: {app.id.substring(0, 8)}...</div>
+                        </td>
+                        <td className="p-4 font-semibold text-gray-600">
+                          {new Date(app.birth_date).toLocaleDateString('id-ID', {
+                            day: 'numeric',
+                            month: 'long',
+                            year: 'numeric'
+                          })}
+                        </td>
+                        <td className="p-4">{getStatusBadge(app.status)}</td>
+                        <td className="p-4">
+                          <div className="space-y-1">
+                            <div>
+                              {app.payment_status === 'Verified' ? (
+                                <Badge className="bg-emerald-50 text-emerald-800 border-emerald-200 text-[10px] font-bold">
+                                  Lunas / Terverifikasi
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-amber-50 text-amber-800 border-amber-200 text-[10px] font-bold">
+                                  Menunggu Verifikasi
+                                </Badge>
+                              )}
+                            </div>
+                            {formToken ? (
+                              <div className="inline-flex items-center gap-1.5 font-mono font-black text-xs text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md border border-purple-200">
+                                <KeyRound size={11} />
+                                <span>{formToken}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(formToken)
+                                    toast.success('Kode akses disalin!')
+                                  }}
+                                  title="Salin Kode Akses"
+                                  className="text-gray-400 hover:text-purple-700 cursor-pointer"
+                                >
+                                  <Copy size={11} />
+                                </button>
+                              </div>
+                            ) : (
+                              app.payment_status === 'Verified' ? (
+                                <Button
+                                  onClick={() => handleVerifyPayment(app.id)}
+                                  disabled={verifyingPaymentId === app.id}
+                                  className="h-6 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 text-[10px] font-bold px-2 rounded-lg cursor-pointer inline-flex items-center gap-1"
+                                >
+                                  <KeyRound size={10} /> Buat Kode
+                                </Button>
+                              ) : null
+                            )}
+                          </div>
+                        </td>
+                        <td className="p-4 pr-8 text-right">
+                          <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                            {app.payment_status !== 'Verified' && (
+                              <Button
+                                onClick={() => handleVerifyPayment(app.id)}
+                                disabled={verifyingPaymentId === app.id}
+                                className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                              >
+                                <CheckCircle2 size={13} /> {verifyingPaymentId === app.id ? 'Memproses...' : 'Verifikasi Bayar'}
+                              </Button>
+                            )}
+                            {formToken && (
+                              <Button
+                                onClick={() => handleSendTokenViaWa(parentPhone, app.student_name, parentName, formToken)}
+                                title="Kirim Kode Akses via WA"
+                                className="h-8 bg-purple-50 text-purple-700 hover:bg-purple-100 border border-purple-200 font-bold rounded-xl text-xs px-2 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                              >
+                                <KeyRound size={12} /> WA Kode
+                              </Button>
+                            )}
+                            <Button
+                              onClick={() => openWaModal(app)}
+                              className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                            >
+                              <MessageCircle size={13} /> WA Ortu
+                            </Button>
+                            <Button
+                              onClick={() => handleViewDetails(app)}
+                              variant="outline"
+                              className="h-8 border-gray-200 text-gray-700 hover:bg-gray-50 hover:text-primary-blue font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1"
+                            >
+                              Detail
+                            </Button>
+                            <Button
+                              onClick={() => handleOpenEdit(app)}
+                              variant="outline"
+                              className="h-8 border-gray-200 text-primary-blue hover:bg-primary-blue/5 font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1"
+                            >
+                              <Edit3 size={13} /> Edit
+                            </Button>
+                            <Button
+                              onClick={() => handleOpenSchedule(app)}
+                              className="h-8 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                            >
+                              <Calendar size={13} /> Jadwal SPMB
+                            </Button>
                           {['Submitted', 'Verifikasi Berkas'].includes(app.status) && (
                             <>
                               <Button
@@ -735,7 +1018,7 @@ export default function AdminPPDBPage() {
                                 disabled={actionPendingId === app.id}
                                 className="h-8 bg-primary-green hover:bg-primary-green/90 text-white font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
                               >
-                                {actionPendingId === app.id ? 'Memproses...' : 'Terima PPDB'}
+                                {actionPendingId === app.id ? 'Memproses...' : 'Terima SPMB'}
                               </Button>
                               <Button
                                 onClick={() => handleRejectClick(app.id)}
@@ -778,8 +1061,9 @@ export default function AdminPPDBPage() {
                         </div>
                       </td>
                     </tr>
-                  ))}
-                </tbody>
+                  )
+                })}
+              </tbody>
               </table>
             </div>
           )}
@@ -793,6 +1077,401 @@ export default function AdminPPDBPage() {
           />
         </CardContent>
       </Card>
+    </TabsContent>
+
+        {/* ─── TAB 2: REKAP SERAGAM & OBSERVASI (SPMB) ─── */}
+        <TabsContent value="recap_spmb" className="space-y-6">
+          {/* SPMB Statistics Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 print:hidden">
+            <Card className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100">
+              <div className="text-[10px] font-bold text-gray-400 uppercase">Total Pendaftar PPDB</div>
+              <div className="text-2xl font-black text-primary-blue mt-1">{spmbStats.total}</div>
+              <div className="text-[10px] text-gray-400 font-semibold mt-0.5">Calon Siswa Terdata</div>
+            </Card>
+
+            <Card className="bg-blue-50/60 rounded-2xl p-4 shadow-sm border border-blue-100">
+              <div className="text-[10px] font-bold text-blue-600 uppercase">Observasi Terjadwal</div>
+              <div className="text-2xl font-black text-blue-700 mt-1">{spmbStats.obsCount}</div>
+              <div className="text-[10px] text-blue-500 font-semibold mt-0.5">{spmbStats.total - spmbStats.obsCount} Belum Dijadwalkan</div>
+            </Card>
+
+            <Card className="bg-purple-50/60 rounded-2xl p-4 shadow-sm border border-purple-100">
+              <div className="text-[10px] font-bold text-purple-600 uppercase">Ukuran Seragam Terdata</div>
+              <div className="text-2xl font-black text-purple-700 mt-1">{spmbStats.measuredCount}</div>
+              <div className="text-[10px] text-purple-500 font-semibold mt-0.5">Siswa Sudah Diukur</div>
+            </Card>
+
+            <Card className="bg-emerald-50/60 rounded-2xl p-4 shadow-sm border border-emerald-100">
+              <div className="text-[10px] font-bold text-emerald-600 uppercase">Seragam Siap / Diambil</div>
+              <div className="text-2xl font-black text-emerald-700 mt-1">{spmbStats.pickupReadyOrDone}</div>
+              <div className="text-[10px] text-emerald-500 font-semibold mt-0.5">Siap / Sudah Diterima</div>
+            </Card>
+          </div>
+
+          {/* Recap Card */}
+          <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden print:shadow-none print:rounded-none">
+            <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div>
+                <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
+                  <Ruler className="text-primary-green" />
+                  Rekapitulasi Penjadwalan Observasi &amp; Seragam Sekolah
+                </CardTitle>
+                <CardDescription className="text-xs font-semibold text-gray-400">
+                  Data rekapitulasi observasi anak, pengukuran seragam, serta status pengambilan seragam di SPMB.
+                </CardDescription>
+              </div>
+
+              {/* Filters & Print */}
+              <div className="flex flex-wrap items-center gap-2.5 print:hidden">
+                <TableSearchFilter
+                  value={recapSearch}
+                  onChange={(val) => {
+                    setRecapSearch(val)
+                    setRecapPage(1)
+                  }}
+                  placeholder="Cari nama calon siswa / orang tua..."
+                />
+
+                <Select
+                  value={recapObsFilter}
+                  onValueChange={(val) => {
+                    setRecapObsFilter(val || 'all')
+                    setRecapPage(1)
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-40 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
+                    <SelectValue placeholder="Status Observasi" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="all">Semua Observasi</SelectItem>
+                    <SelectItem value="sudah">Sudah Terjadwal</SelectItem>
+                    <SelectItem value="belum">Belum Terjadwal</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select
+                  value={recapUniformFilter}
+                  onValueChange={(val) => {
+                    setRecapUniformFilter(val || 'all')
+                    setRecapPage(1)
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-44 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
+                    <SelectValue placeholder="Pengambilan Seragam" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="all">Semua Status Seragam</SelectItem>
+                    <SelectItem value="Belum Siap">Belum Siap</SelectItem>
+                    <SelectItem value="Siap Diambil">Siap Diambil</SelectItem>
+                    <SelectItem value="Sudah Diambil">Sudah Diambil</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Button
+                  onClick={() => window.print()}
+                  variant="outline"
+                  className="border-gray-200 hover:border-gray-300 font-bold rounded-xl text-xs cursor-pointer gap-1.5 h-9"
+                >
+                  <Printer size={14} /> Cetak Rekap
+                </Button>
+              </div>
+            </CardHeader>
+
+            <CardContent className="p-0">
+              {filteredRecapList.length === 0 ? (
+                <div className="p-12 text-center text-gray-400 text-xs font-bold">Tidak ada data rekap yang sesuai.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs border-collapse">
+                    <thead>
+                      <tr className="bg-[#F8F6F2] text-[11px] font-black text-primary-blue uppercase border-b border-gray-100">
+                        <th className="p-4 pl-8 w-12">No</th>
+                        <th className="p-4">Calon Siswa &amp; Kontak</th>
+                        <th className="p-4">Observasi &amp; Wawancara</th>
+                        <th className="p-4">Pengukuran Seragam</th>
+                        <th className="p-4">Pengambilan Seragam</th>
+                        <th className="p-4 pr-8 text-right print:hidden">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 font-medium">
+                      {paginatedRecapList.map((app, idx) => {
+                        const child = (app.child_details as Record<string, any>) || {}
+                        const sch = child.schedules || {}
+                        const father = (app.father_details as Record<string, any>) || {}
+                        const mother = (app.mother_details as Record<string, any>) || {}
+                        const parentPhone = father.hp_ayah || mother.hp_ibu || '-'
+                        const parentName = father.nama_ayah || mother.nama_ibu || 'Orang Tua'
+
+                        return (
+                          <tr key={app.id} className="hover:bg-gray-50/60 transition-colors">
+                            <td className="p-4 pl-8 font-bold text-gray-400">
+                              {(recapPage - 1) * recapPageSize + idx + 1}
+                            </td>
+                            <td className="p-4">
+                              <div className="font-extrabold text-primary-blue text-sm">{app.student_name}</div>
+                              <div className="text-[10px] text-gray-500 font-semibold mt-0.5">
+                                Ortu: {parentName} ({parentPhone})
+                              </div>
+                            </td>
+                            <td className="p-4 max-w-xs">
+                              {sch.observation_date ? (
+                                <div className="space-y-1">
+                                  <div className="font-bold text-blue-700 bg-blue-50 px-2.5 py-0.5 rounded-md inline-block text-[11px]">
+                                    📅 {new Date(sch.observation_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  </div>
+                                  <div className="text-[10px] text-gray-500 font-mono">⏰ {sch.observation_time || '08.30 WIB'}</div>
+                                  {sch.observation_notes && (
+                                    <div className="text-[10px] text-gray-600 italic line-clamp-2">
+                                      Catatan: &ldquo;{sch.observation_notes}&rdquo;
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <span className="text-gray-400 italic text-[11px]">Belum Dijadwalkan</span>
+                              )}
+                            </td>
+                            <td className="p-4 max-w-xs">
+                              <div className="space-y-1">
+                                <Badge className={cn('text-[10px] font-bold', sch.uniform_size ? 'bg-purple-50 text-purple-700 border-purple-200' : 'bg-gray-100 text-gray-400 border-none')}>
+                                  Ukuran: {sch.uniform_size || 'Belum Diukur'}
+                                </Badge>
+                                {sch.uniform_measure_date && (
+                                  <div className="text-[10px] text-gray-500">
+                                    Tgl: {new Date(sch.uniform_measure_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  </div>
+                                )}
+                                {sch.uniform_measure_notes && (
+                                  <div className="text-[10px] text-gray-500 italic line-clamp-1">
+                                    {sch.uniform_measure_notes}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-4 max-w-xs">
+                              <div className="space-y-1">
+                                <Badge
+                                  className={cn(
+                                    'text-[10px] font-black',
+                                    sch.uniform_pickup_status === 'Sudah Diambil' && 'bg-emerald-50 text-emerald-800 border-emerald-200',
+                                    sch.uniform_pickup_status === 'Siap Diambil' && 'bg-blue-50 text-blue-800 border-blue-200',
+                                    (!sch.uniform_pickup_status || sch.uniform_pickup_status === 'Belum Siap') && 'bg-amber-50 text-amber-800 border-amber-200'
+                                  )}
+                                >
+                                  {sch.uniform_pickup_status || 'Belum Siap'}
+                                </Badge>
+                                {sch.uniform_pickup_date && (
+                                  <div className="text-[10px] text-gray-500">
+                                    Tgl: {new Date(sch.uniform_pickup_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                  </div>
+                                )}
+                                {sch.uniform_pickup_notes && (
+                                  <div className="text-[10px] text-gray-500 italic line-clamp-1">
+                                    {sch.uniform_pickup_notes}
+                                  </div>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-4 pr-8 text-right print:hidden">
+                              <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                                <Button
+                                  onClick={() => handleOpenSchedule(app)}
+                                  className="h-8 bg-purple-600 hover:bg-purple-700 text-white font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                >
+                                  <Calendar size={13} /> Atur Jadwal
+                                </Button>
+                                <Button
+                                  onClick={() => openWaModal(app)}
+                                  className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs px-2.5 cursor-pointer inline-flex items-center gap-1 shadow-2xs"
+                                >
+                                  <MessageCircle size={13} /> WA Ortu
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        )
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              <TablePagination
+                currentPage={recapPage}
+                totalPages={totalRecapPages}
+                totalItems={filteredRecapList.length}
+                pageSize={recapPageSize}
+                onPageChange={setRecapPage}
+                onPageSizeChange={setRecapPageSize}
+                className="print:hidden"
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
+
+      {/* ─── SPMB SCHEDULE DIALOG (Observasi & Seragam) ─── */}
+      <Dialog open={scheduleModalOpen} onOpenChange={setScheduleModalOpen}>
+        <DialogContent className="rounded-[32px] w-full sm:max-w-2xl bg-white p-7 max-h-[92vh] overflow-y-auto">
+          <DialogHeader className="space-y-1">
+            <div className="flex items-center gap-2">
+              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-50 text-purple-600">
+                <Calendar size={20} />
+              </div>
+              <div>
+                <DialogTitle className="text-lg font-black text-primary-blue">Kelola Penjadwalan SPMB &amp; Seragam</DialogTitle>
+                <DialogDescription className="text-xs font-semibold text-gray-400">
+                  Sinkronisasi jadwal observasi, pengukuran, dan pengambilan seragam ananda <span className="font-bold text-primary-blue">{scheduleApp?.student_name}</span>.
+                </DialogDescription>
+              </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-6 pt-3 text-xs">
+            {/* Section 1: Observasi */}
+            <div className="bg-[#F8F6F2] rounded-2xl p-4 space-y-3 border border-gray-100">
+              <h4 className="font-extrabold text-primary-blue text-xs uppercase tracking-wider flex items-center gap-1.5">
+                <Calendar size={15} className="text-blue-600" /> 1. Jadwal Observasi &amp; Wawancara Anak
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-bold text-gray-600">Hari / Tanggal Observasi</Label>
+                  <Input
+                    type="date"
+                    value={scheduleForm.observation_date}
+                    onChange={(e) => setScheduleForm(prev => ({ ...prev, observation_date: e.target.value }))}
+                    className="bg-white rounded-xl text-xs h-9"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-bold text-gray-600">Waktu Observasi</Label>
+                  <Input
+                    type="text"
+                    value={scheduleForm.observation_time}
+                    placeholder="Contoh: 08.30 - 10.30 WIB"
+                    onChange={(e) => setScheduleForm(prev => ({ ...prev, observation_time: e.target.value }))}
+                    className="bg-white rounded-xl text-xs h-9"
+                  />
+                </div>
+                <div className="sm:col-span-2 space-y-1">
+                  <Label className="text-[11px] font-bold text-gray-600">Catatan Observasi</Label>
+                  <Textarea
+                    value={scheduleForm.observation_notes}
+                    placeholder="Catatan perkembangan, kesiapan emosi anak, atau instruksi khusus..."
+                    onChange={(e) => setScheduleForm(prev => ({ ...prev, observation_notes: e.target.value }))}
+                    className="bg-white rounded-xl text-xs min-h-[60px] resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 2: Pengukuran Seragam */}
+            <div className="bg-[#F8F6F2] rounded-2xl p-4 space-y-3 border border-gray-100">
+              <h4 className="font-extrabold text-primary-blue text-xs uppercase tracking-wider flex items-center gap-1.5">
+                <Ruler size={15} className="text-purple-600" /> 2. Penjadwalan Pengukuran Seragam
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-bold text-gray-600">Hari / Tanggal Pengukuran</Label>
+                  <Input
+                    type="date"
+                    value={scheduleForm.uniform_measure_date}
+                    onChange={(e) => setScheduleForm(prev => ({ ...prev, uniform_measure_date: e.target.value }))}
+                    className="bg-white rounded-xl text-xs h-9"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-bold text-gray-600">Ukuran Seragam</Label>
+                  <Select
+                    value={scheduleForm.uniform_size}
+                    onValueChange={(val) => setScheduleForm(prev => ({ ...prev, uniform_size: val || 'M' }))}
+                  >
+                    <SelectTrigger className="bg-white rounded-xl text-xs h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="XS">XS (Ekstra Kecil)</SelectItem>
+                      <SelectItem value="S">S (Kecil)</SelectItem>
+                      <SelectItem value="M">M (Sedang / Standar)</SelectItem>
+                      <SelectItem value="L">L (Besar)</SelectItem>
+                      <SelectItem value="XL">XL (Ekstra Besar)</SelectItem>
+                      <SelectItem value="XXL">XXL</SelectItem>
+                      <SelectItem value="Custom">Custom / Khusus</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="sm:col-span-2 space-y-1">
+                  <Label className="text-[11px] font-bold text-gray-600">Catatan Pengukuran Seragam</Label>
+                  <Textarea
+                    value={scheduleForm.uniform_measure_notes}
+                    placeholder="Catatan ukuran: lingkar dada, panjang rok/celana khusus, dll..."
+                    onChange={(e) => setScheduleForm(prev => ({ ...prev, uniform_measure_notes: e.target.value }))}
+                    className="bg-white rounded-xl text-xs min-h-[60px] resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 3: Pengambilan Seragam (SPMB Rekap) */}
+            <div className="bg-[#F8F6F2] rounded-2xl p-4 space-y-3 border border-gray-100">
+              <h4 className="font-extrabold text-primary-blue text-xs uppercase tracking-wider flex items-center gap-1.5">
+                <PackageCheck size={15} className="text-emerald-600" /> 3. Tanggal &amp; Status Pengambilan Seragam (SPMB)
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-bold text-gray-600">Hari / Tanggal Pengambilan</Label>
+                  <Input
+                    type="date"
+                    value={scheduleForm.uniform_pickup_date}
+                    onChange={(e) => setScheduleForm(prev => ({ ...prev, uniform_pickup_date: e.target.value }))}
+                    className="bg-white rounded-xl text-xs h-9"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px] font-bold text-gray-600">Status Pengambilan</Label>
+                  <Select
+                    value={scheduleForm.uniform_pickup_status}
+                    onValueChange={(val) => setScheduleForm(prev => ({ ...prev, uniform_pickup_status: val || 'Belum Siap' }))}
+                  >
+                    <SelectTrigger className="bg-white rounded-xl text-xs h-9">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl">
+                      <SelectItem value="Belum Siap">Belum Siap</SelectItem>
+                      <SelectItem value="Siap Diambil">Siap Diambil</SelectItem>
+                      <SelectItem value="Sudah Diambil">Sudah Diambil</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="sm:col-span-2 space-y-1">
+                  <Label className="text-[11px] font-bold text-gray-600">Catatan Pengambilan Seragam</Label>
+                  <Textarea
+                    value={scheduleForm.uniform_pickup_notes}
+                    placeholder="Contoh: Diambil oleh Ibu di loket Tata Usaha, kelengkapan 3 set seragam..."
+                    onChange={(e) => setScheduleForm(prev => ({ ...prev, uniform_pickup_notes: e.target.value }))}
+                    className="bg-white rounded-xl text-xs min-h-[60px] resize-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2.5 pt-2">
+              <Button
+                variant="outline"
+                onClick={() => setScheduleModalOpen(false)}
+                className="rounded-xl text-xs font-bold"
+              >
+                Batal
+              </Button>
+              <Button
+                onClick={handleSaveSchedule}
+                disabled={savingSchedule}
+                className="bg-primary-blue hover:bg-primary-blue/90 text-white font-bold rounded-xl text-xs cursor-pointer shadow-md"
+              >
+                {savingSchedule ? 'Menyimpan...' : 'Simpan Jadwal SPMB'}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* CREDENTIALS SUCCESS DIALOG */}
       <Dialog open={credsModalOpen} onOpenChange={setCredsModalOpen}>
@@ -838,6 +1517,73 @@ export default function AdminPPDBPage() {
             )}
             <Button onClick={() => setCredsModalOpen(false)} className="flex-1 bg-primary-blue hover:bg-primary-blue/90 text-white rounded-xl font-bold text-xs">
               Tutup & Selesai
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ─── PAYMENT VERIFICATION & GENERATED TOKEN DIALOG ─── */}
+      <Dialog open={paymentModalOpen} onOpenChange={setPaymentModalOpen}>
+        <DialogContent className="rounded-[32px] w-full sm:max-w-md bg-white p-7 text-center space-y-4">
+          <div className="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto shadow-inner">
+            <CheckCircle2 size={32} />
+          </div>
+          <div className="space-y-1">
+            <DialogTitle className="text-lg font-black text-primary-blue">Pembayaran Terverifikasi!</DialogTitle>
+            <DialogDescription className="text-xs text-gray-500 font-semibold leading-relaxed">
+              Uang pendaftaran calon siswa ananda <strong className="text-primary-blue">{verifiedPaymentData?.studentName}</strong> telah berhasil diverifikasi.
+            </DialogDescription>
+          </div>
+
+          <div className="bg-[#F8F6F2] rounded-2xl p-5 border border-purple-200 space-y-3 text-left">
+            <div className="text-[10px] font-bold uppercase tracking-wider text-purple-700">Kode Akses Formulir (Token):</div>
+            <div className="flex items-center justify-between bg-white px-4 py-3 rounded-xl border border-purple-200">
+              <span className="font-mono font-black text-xl text-purple-700 tracking-wider">
+                {verifiedPaymentData?.token}
+              </span>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (verifiedPaymentData?.token) {
+                    navigator.clipboard.writeText(verifiedPaymentData.token)
+                    toast.success('Kode akses berhasil disalin!')
+                  }
+                }}
+                className="h-8 rounded-lg text-xs font-bold gap-1 border-purple-200 text-purple-700 hover:bg-purple-50 cursor-pointer"
+              >
+                <Copy size={12} /> Salin
+              </Button>
+            </div>
+            <p className="text-[11px] text-gray-500 leading-relaxed font-medium">
+              Orang tua dapat memasukkan kode ini pada tombol <strong>&ldquo;Sudah Beli Formulir? Masukkan Kode Akses&rdquo;</strong> di form pendaftaran untuk membuka dan melanjutkan pengisian <strong>Biodata Lengkap</strong> ananda.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row gap-2">
+            {verifiedPaymentData?.phone && (
+              <Button
+                onClick={() => {
+                  handleSendTokenViaWa(
+                    verifiedPaymentData.phone,
+                    verifiedPaymentData.studentName,
+                    verifiedPaymentData.parentName,
+                    verifiedPaymentData.token
+                  )
+                  setPaymentModalOpen(false)
+                }}
+                className="flex-1 bg-[#25D366] hover:bg-[#20bd5a] text-white rounded-xl font-bold text-xs gap-1.5 h-10 shadow-md cursor-pointer"
+              >
+                <MessageCircle size={14} /> Kirim Kode via WhatsApp
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              onClick={() => setPaymentModalOpen(false)}
+              className="flex-1 rounded-xl font-bold text-xs h-10 cursor-pointer"
+            >
+              Tutup
             </Button>
           </div>
         </DialogContent>

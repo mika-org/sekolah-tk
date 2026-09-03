@@ -1,5 +1,6 @@
 'use server'
 
+import { randomUUID } from 'node:crypto'
 import { createClient } from '@/lib/database/server'
 import { createAdminClient } from '@/lib/database/server'
 import { revalidatePath } from 'next/cache'
@@ -48,11 +49,11 @@ async function sendCredentialEmail(email: string, studentName: string, username:
         <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 25px; border: 1px solid #e5e7eb; border-radius: 16px; background-color: #ffffff;">
           <div style="text-align: center; margin-bottom: 24px;">
             <h2 style="color: #07265F; margin: 0; font-size: 20px; font-weight: 800; text-transform: uppercase;">Selamat! Pendaftaran Diterima</h2>
-            <p style="color: #6b7280; font-size: 13px; margin-top: 4px;">KB & TK Istiqamah Balikpapan</p>
+            <p style="color: #6b7280; font-size: 13px; margin-top: 4px;">KB & TK Istiqamah Bandung</p>
           </div>
           
           <p style="color: #374151; font-size: 14px; line-height: 1.6;">Halo Bapak/Ibu Orang Tua/Wali dari <strong>${studentName}</strong>,</p>
-          <p style="color: #374151; font-size: 14px; line-height: 1.6;">Dengan hormat, kami menginformasikan bahwa pendaftaran PPDB ananda <strong>${studentName}</strong> telah <strong>Diterima</strong>.</p>
+          <p style="color: #374151; font-size: 14px; line-height: 1.6;">Dengan hormat, kami menginformasikan bahwa pendaftaran SPMB ananda <strong>${studentName}</strong> telah <strong>Diterima</strong>.</p>
           <p style="color: #374151; font-size: 14px; line-height: 1.6;">Untuk memantau perkembangan belajar, kehadiran, dan nilai ananda, kami telah mengaktifkan akun Portal Orang Tua Anda. Berikut adalah detail login Anda:</p>
           
           <div style="background-color: #F8F6F2; padding: 18px; border-radius: 12px; margin: 24px 0; border: 1px dashed #e5e7eb;">
@@ -122,11 +123,25 @@ export async function syncPpdbToStudent(ppdbId: string) {
     let authId = ''
     let passwordStr = ''
 
-    const { data: existingUser } = await supabase
-      .from('users_tk')
-      .select('id, username')
-      .or(`email.eq.${parentEmail},username.eq.${username}`)
-      .maybeSingle()
+    // 1. Cek apakah user sudah ada berdasarkan email atau username
+    let existingUser: any = null
+    if (parentEmail) {
+      const { data: byEmail } = await supabase
+        .from('users_tk')
+        .select('id, username, email')
+        .eq('email', parentEmail)
+        .maybeSingle()
+      if (byEmail) existingUser = byEmail
+    }
+
+    if (!existingUser && username) {
+      const { data: byUsername } = await supabase
+        .from('users_tk')
+        .select('id, username, email')
+        .eq('username', username)
+        .maybeSingle()
+      if (byUsername) existingUser = byUsername
+    }
 
     if (existingUser) {
       authId = existingUser.id
@@ -136,16 +151,37 @@ export async function syncPpdbToStudent(ppdbId: string) {
         .update({ status: 'active' })
         .eq('id', authId)
     } else {
+      // Pastikan username unik
       while (true) {
         const { data: exists } = await supabase
           .from('users_tk')
-          .select('username')
+          .select('id')
           .eq('username', username)
           .maybeSingle()
 
         if (!exists) break
         username = `${baseUsername}${counter.toString().padStart(2, '0')}`
         counter++
+      }
+
+      // Pastikan email unik agar tidak melanggar unique constraint
+      let finalEmail = parentEmail
+      let emailCounter = 1
+      while (true) {
+        const { data: existsEmail } = await supabase
+          .from('users_tk')
+          .select('id')
+          .eq('email', finalEmail)
+          .maybeSingle()
+
+        if (!existsEmail) break
+        const atIdx = parentEmail.indexOf('@')
+        if (atIdx !== -1) {
+          finalEmail = `${parentEmail.slice(0, atIdx)}${emailCounter}${parentEmail.slice(atIdx)}`
+        } else {
+          finalEmail = `${parentEmail}${emailCounter}`
+        }
+        emailCounter++
       }
 
       const dateObj = new Date(ppdb.birth_date)
@@ -155,33 +191,51 @@ export async function syncPpdbToStudent(ppdbId: string) {
       passwordStr = `${dd}${mm}${yyyy}`
 
       const passwordHash = await bcrypt.hash(passwordStr, 10)
+      authId = randomUUID()
 
-      const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
-        email: parentEmail,
-        password: passwordStr,
-        user_metadata: {
-          role: 'orang_tua',
-          username: username,
-          student_name: ppdb.student_name,
-        },
-      })
-
-      if (authError || !authUser.user) {
-        console.error('Local User Creation Error:', authError)
-        return { error: 'Gagal membuat user: ' + (authError?.message || 'unknown error') }
-      }
-      authId = authUser.user.id
-
-      await supabase
+      const { data: newUser, error: insertUserError } = await supabase
         .from('users_tk')
         .insert({
           id: authId,
           username,
-          email: parentEmail,
+          email: finalEmail,
           password_hash: passwordHash,
           role: 'orang_tua',
           status: 'active',
         })
+        .select('id')
+        .single()
+
+      if (insertUserError) {
+        console.error('Local User Creation Error in users_tk:', insertUserError)
+        // Coba temukan fallback jika ternyata sudah tersimpan
+        const { data: fallbackUser } = await supabase
+          .from('users_tk')
+          .select('id, username')
+          .eq('email', finalEmail)
+          .maybeSingle()
+        if (fallbackUser) {
+          authId = fallbackUser.id
+          username = fallbackUser.username
+        } else {
+          authId = ''
+        }
+      } else if (newUser?.id) {
+        authId = newUser.id
+      }
+    }
+
+    // Verifikasi authId benar-benar ada di users_tk sebelum dijadikan foreign key
+    let verifiedUserId: string | null = null
+    if (authId) {
+      const { data: checkUser } = await supabase
+        .from('users_tk')
+        .select('id')
+        .eq('id', authId)
+        .maybeSingle()
+      if (checkUser?.id) {
+        verifiedUserId = checkUser.id
+      }
     }
 
     // 3. Upsert Student Record in students_tk
@@ -219,7 +273,7 @@ export async function syncPpdbToStudent(ppdbId: string) {
       agama: childDetails.agama || 'Islam',
       alamat: childDetails.alamat || fatherDetails.alamat_ayah || motherDetails.alamat_ibu || null,
       status: 'active',
-      user_id: authId || null,
+      user_id: verifiedUserId,
     }
 
     if (existingStudent) {
@@ -262,7 +316,7 @@ export async function syncPpdbToStudent(ppdbId: string) {
         email: parentEmail || null,
         alamat: fatherDetails.alamat_ayah || motherDetails.alamat_ibu || childDetails.alamat || null,
         pekerjaan: parentJob,
-        user_id: authId || null,
+        user_id: verifiedUserId,
       }
 
       if (existingParent) {
@@ -362,7 +416,7 @@ export async function updatePPDB(ppdbId: string, payload: UpdatePPDBPayload) {
 
     try {
       await supabase.from('activity_logs_tk').insert({
-        activity: `Data pendaftaran PPDB ${payload.student_name.trim()} diperbarui oleh admin.`,
+        activity: `Data pendaftaran SPMB ${payload.student_name.trim()} diperbarui oleh admin.`,
       })
     } catch {}
 
