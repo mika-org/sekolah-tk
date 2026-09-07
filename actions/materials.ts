@@ -6,6 +6,16 @@ import { cookies } from 'next/headers'
 import { decodeJWT } from '@/lib/jwt'
 import { deleteStoredFile, saveStoredFile, storagePathFromUrl } from '@/lib/storage'
 
+function parseMaterialContent(content?: string) {
+  if (!content) return { topic: '', description: '' }
+  try {
+    const parsed = JSON.parse(content)
+    return { topic: parsed.topic || '', description: parsed.description || '' }
+  } catch {
+    return { topic: '', description: content }
+  }
+}
+
 async function getCurrentUser() {
   const cookieStore = await cookies()
   const token = cookieStore.get('sekolah_tk_token')?.value
@@ -104,7 +114,7 @@ export async function deleteMaterial(id: string, fileUrl: string) {
     try {
       const stored = storagePathFromUrl(fileUrl)
       if (stored) {
-        await deleteStoredFile(stored.bucket, stored.path)
+        await deleteStoredFile(stored.bucket, stored.objectPath)
       }
     } catch (err) {
       console.warn('Could not delete storage file:', err)

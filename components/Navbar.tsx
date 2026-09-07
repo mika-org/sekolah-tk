@@ -31,12 +31,12 @@ export default function Navbar() {
   }, [pathname])
 
   return (
-    <header className="fixed top-3 sm:top-5 left-0 w-full z-50 px-4 sm:px-6 pointer-events-none transition-all duration-300">
+    <header className="fixed top-2.5 sm:top-5 left-0 w-full z-50 px-2.5 sm:px-6 pointer-events-none transition-all duration-300">
       <div className="max-w-5xl mx-auto flex items-center justify-center pointer-events-auto">
         
         {/* Floating Pill Container */}
         <nav
-          className={`w-full max-w-4xl bg-white/95 backdrop-blur-md rounded-full shadow-[0_4px_25px_rgba(0,0,0,0.06)] border border-white/80 py-2 sm:py-2.5 px-5 sm:px-8 flex items-center justify-between transition-all duration-300 ${
+          className={`w-full max-w-4xl bg-white/95 backdrop-blur-md rounded-full shadow-[0_4px_25px_rgba(0,0,0,0.06)] border border-white/80 py-2 sm:py-2.5 px-3.5 sm:px-8 flex items-center justify-between transition-all duration-300 ${
             scrolled ? 'shadow-[0_8px_30px_rgba(0,0,0,0.12)] bg-white/98 py-2' : ''
           }`}
         >

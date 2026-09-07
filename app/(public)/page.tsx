@@ -105,6 +105,45 @@ const DEVELOPMENT_PILLARS = [
   },
 ]
 
+const LEARNING_APPROACHES = [
+  {
+    id: 'islamic-learning',
+    title: 'Islamic Learning',
+    desc: 'Menanamkan nilai-nilai Islam dan kecintaan kepada Allah SWT melalui pembelajaran Al-Qur\'an, ibadah, doa harian, dan pembiasaan sejak dini.',
+    iconType: 'quran'
+  },
+  {
+    id: 'character-building',
+    title: 'Moslem Character Building',
+    desc: 'Membangun karakter Islami melalui pembiasaan adab mulia, akhlakul karimah, pilar SMART dan kepedulian terhadap sesama.',
+    iconType: 'character'
+  },
+  {
+    id: 'life-skill',
+    title: 'Life Skill & Kemandirian',
+    desc: 'Melatih kemandirian, tanggung jawab, kerapian, dan keterampilan hidup praktis melalui aktivitas nyata sesuai usia anak.',
+    iconType: 'lifeskill'
+  },
+  {
+    id: 'bilingual-literacy',
+    title: 'Bilingual & Smart Literacy',
+    desc: 'Mengenalkan dasar literasi, bahasa Arab dan Inggris sederhana melalui dongeng islami, bernyanyi ceria, dan komunikasi interaktif.',
+    iconType: 'literacy'
+  },
+  {
+    id: 'creative-science',
+    title: 'Creative & Science Exploration',
+    desc: 'Membuka wawasan rasa ingin tahu dan daya cipta anak melalui percobaan sains seru, melukis kreatif, dan bermain terarah.',
+    iconType: 'science'
+  },
+  {
+    id: 'motoric-development',
+    title: 'Physical & Motoric Fun',
+    desc: 'Mengoptimalkan pertumbuhan motorik kasar dan halus melalui senam ceria, permainan fisik ketangkasan, dan olahraga ramah anak.',
+    iconType: 'motoric'
+  },
+]
+
 const FACILITIES = [
   {
     title: 'Ruang Belajar',
@@ -191,6 +230,60 @@ export default function HomePage() {
   const [activePillar, setActivePillar] = useState(0)
   const [galleryCategory, setGalleryCategory] = useState<'all' | 'kegiatan' | 'program'>('all')
   const [openFaq, setOpenFaq] = useState<number | null>(0)
+
+  // Pendekatan Pembelajaran horizontal carousel state & ref
+  const [activePendekatanIndex, setActivePendekatanIndex] = useState(0)
+  const pendekatanScrollRef = useRef<HTMLDivElement>(null)
+
+  const scrollToPendekatan = useCallback((index: number) => {
+    if (!pendekatanScrollRef.current) return
+    const container = pendekatanScrollRef.current
+    const cards = container.querySelectorAll<HTMLElement>('.pendekatan-card')
+    if (cards[index]) {
+      const card = cards[index]
+      const cardRect = card.getBoundingClientRect()
+      const containerRect = container.getBoundingClientRect()
+      const currentScrollLeft = container.scrollLeft
+      const targetScroll = currentScrollLeft + (cardRect.left - containerRect.left) - (containerRect.width - cardRect.width) / 2
+      container.scrollTo({
+        left: Math.max(0, targetScroll),
+        behavior: 'smooth'
+      })
+    }
+    setActivePendekatanIndex(index)
+  }, [])
+
+  const handlePendekatanScroll = useCallback(() => {
+    if (!pendekatanScrollRef.current) return
+    const container = pendekatanScrollRef.current
+    const cards = container.querySelectorAll<HTMLElement>('.pendekatan-card')
+    if (cards.length === 0) return
+
+    const containerRect = container.getBoundingClientRect()
+    const containerCenter = containerRect.left + containerRect.width / 2
+
+    let closestIdx = 0
+    let minDiff = Infinity
+
+    cards.forEach((card, idx) => {
+      const cardRect = card.getBoundingClientRect()
+      const cardCenter = cardRect.left + cardRect.width / 2
+      const diff = Math.abs(cardCenter - containerCenter)
+      if (diff < minDiff) {
+        minDiff = diff
+        closestIdx = idx
+      }
+    })
+
+    setActivePendekatanIndex(closestIdx)
+  }, [])
+
+  const scrollPendekatanDir = useCallback((direction: 'left' | 'right') => {
+    const nextIdx = direction === 'left'
+      ? Math.max(0, activePendekatanIndex - 1)
+      : Math.min(LEARNING_APPROACHES.length - 1, activePendekatanIndex + 1)
+    scrollToPendekatan(nextIdx)
+  }, [activePendekatanIndex, scrollToPendekatan])
 
   // Program Unggulan horizontal carousel state & ref
   const [activeProgramIndex, setActiveProgramIndex] = useState(0)
@@ -361,11 +454,14 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── SECTION 2: PENDEKATAN PEMBELAJARAN ─── */}
+      {/* ─── SECTION 2: PENDEKATAN PEMBELAJARAN (SCROLLABLE MULTI-CARD CAROUSEL) ─── */}
       <section className="gsap-reveal relative w-full bg-[#054A2C] pb-8 sm:pb-12 px-4 sm:px-6 lg:px-8 z-20">
         <div className="max-w-6xl xl:max-w-7xl mx-auto bg-[#102A4E] rounded-[26px] sm:rounded-[34px] p-5 sm:p-8 lg:p-10 shadow-2xl border border-white/10">
           {/* Section Header */}
           <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 border border-white/15 text-amber-300 text-xs font-bold mb-3 uppercase tracking-wider">
+              <span>Kurikulum &amp; Metode</span>
+            </div>
             <h2 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-white tracking-tight">
               Pendekatan Pembelajaran
             </h2>
@@ -374,50 +470,125 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* 3 Pillar Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
-            {/* Card 1: Islamic Learning */}
-            <div className="bg-white rounded-[22px] p-5 sm:p-6 flex flex-col items-center text-center shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group">
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full bg-[#DCE8FA] flex items-center justify-center text-[#1B3B6F] mb-3.5 shadow-inner group-hover:scale-105 transition-transform">
-                <svg viewBox="0 0 40 40" fill="currentColor" className="w-7 h-7 sm:w-8 sm:h-8 text-[#1B3B6F]">
-                  <rect x="8" y="8" width="24" height="24" rx="4" fill="#1B3B6F"/>
-                  <rect x="11" y="27" width="18" height="3" rx="1.5" fill="#DCE8FA"/>
-                  <path d="M21.5 14C19.5 14 18 15.5 18 17.5C18 19.5 19.5 21 21.5 21C22.2 21 22.8 20.8 23.3 20.5C22.5 21.2 21.5 21.7 20.3 21.7C17.9 21.7 16 19.8 16 17.4C16 15 17.9 13.1 20.3 13.1C20.7 13.1 21.1 13.2 21.5 13.3V14Z" fill="#FFFFFF"/>
-                  <polygon points="22.5,16.5 23.2,17.7 24.5,17.8 23.5,18.7 23.8,20 22.5,19.3 21.2,20 21.5,18.7 20.5,17.8 21.8,17.7" fill="#FFFFFF"/>
-                </svg>
-              </div>
-              <h3 className="font-extrabold text-[#1B3B6F] text-sm sm:text-base">Islamic Learning</h3>
-              <p className="mt-1.5 text-xs sm:text-[13px] text-[#4A607A] font-medium leading-[1.65]">
-                Menanamkan nilai-nilai Islam dan kecintaan kepada Allah SWT melalui pembelajaran Al-Qur&apos;an, ibadah, doa, dan pembiasaan sehari-hari
-              </p>
+          {/* Carousel Track with Left/Right Buttons and Native Smooth Scroll */}
+          <div className="relative">
+            {/* Prev Button (Desktop & Tablet) */}
+            <button
+              type="button"
+              onClick={() => scrollPendekatanDir('left')}
+              disabled={activePendekatanIndex === 0}
+              aria-label="Pendekatan Sebelumnya"
+              className="hidden sm:flex absolute -left-3 lg:-left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 lg:w-11 lg:h-11 items-center justify-center rounded-full bg-white text-[#102A4E] shadow-xl hover:bg-amber-400 hover:text-white transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer border border-slate-100"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+              </svg>
+            </button>
+
+            {/* Next Button (Desktop & Tablet) */}
+            <button
+              type="button"
+              onClick={() => scrollPendekatanDir('right')}
+              disabled={activePendekatanIndex === LEARNING_APPROACHES.length - 1}
+              aria-label="Pendekatan Berikutnya"
+              className="hidden sm:flex absolute -right-3 lg:-right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 lg:w-11 lg:h-11 items-center justify-center rounded-full bg-white text-[#102A4E] shadow-xl hover:bg-amber-400 hover:text-white transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer border border-slate-100"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+              </svg>
+            </button>
+
+            {/* Scrollable Track */}
+            <div
+              ref={pendekatanScrollRef}
+              onScroll={handlePendekatanScroll}
+              className="flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4 pt-2 px-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {LEARNING_APPROACHES.map((item, idx) => (
+                <div
+                  key={item.id}
+                  className="pendekatan-card w-[270px] sm:w-[300px] md:w-[330px] flex-shrink-0 snap-center bg-white rounded-[22px] p-5 sm:p-6 flex flex-col items-center text-center shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1.5 border border-white/50 group cursor-default"
+                >
+                  {/* Icon Circle */}
+                  <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full bg-[#DCE8FA] flex items-center justify-center text-[#1B3B6F] mb-3.5 shadow-inner group-hover:scale-110 transition-transform">
+                    {item.iconType === 'quran' && (
+                      <svg viewBox="0 0 40 40" fill="currentColor" className="w-7 h-7 sm:w-8 sm:h-8 text-[#1B3B6F]">
+                        <rect x="8" y="8" width="24" height="24" rx="4" fill="#1B3B6F"/>
+                        <rect x="11" y="27" width="18" height="3" rx="1.5" fill="#DCE8FA"/>
+                        <path d="M21.5 14C19.5 14 18 15.5 18 17.5C18 19.5 19.5 21 21.5 21C22.2 21 22.8 20.8 23.3 20.5C22.5 21.2 21.5 21.7 20.3 21.7C17.9 21.7 16 19.8 16 17.4C16 15 17.9 13.1 20.3 13.1C20.7 13.1 21.1 13.2 21.5 13.3V14Z" fill="#FFFFFF"/>
+                        <polygon points="22.5,16.5 23.2,17.7 24.5,17.8 23.5,18.7 23.8,20 22.5,19.3 21.2,20 21.5,18.7 20.5,17.8 21.8,17.7" fill="#FFFFFF"/>
+                      </svg>
+                    )}
+                    {item.iconType === 'character' && (
+                      <svg viewBox="0 0 40 40" fill="currentColor" className="w-7 h-7 sm:w-8 sm:h-8 text-[#1B3B6F]">
+                        <path d="M20 9C15.5 9 13 12.5 13 17C13 22 14.5 27 15.5 30H24.5C25.5 27 27 22 27 17C27 12.5 24.5 9 20 9Z" fill="#1B3B6F"/>
+                        <ellipse cx="20" cy="18" rx="4.5" ry="5.5" fill="#DCE8FA"/>
+                        <path d="M20 15L21 17.5H23.5L21.5 19L22.2 21.5L20 20L17.8 21.5L18.5 19L16.5 17.5H19L20 15Z" fill="#1B3B6F"/>
+                      </svg>
+                    )}
+                    {item.iconType === 'lifeskill' && (
+                      <svg viewBox="0 0 40 40" fill="none" stroke="#1B3B6F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 sm:w-8 sm:h-8">
+                        <path d="M19 14.5C17.5 12.5 14.5 12.5 13 14C11.5 15.5 11.5 18.5 13.5 20.5L19 26L24.5 20.5C26.5 18.5 26.5 15.5 25 14C23.5 12.5 20.5 12.5 19 14.5Z" />
+                        <ellipse cx="23" cy="20" rx="5.5" ry="7" transform="rotate(30 23 20)" stroke="#1B3B6F" strokeWidth="2" fill="none"/>
+                      </svg>
+                    )}
+                    {item.iconType === 'literacy' && (
+                      <svg viewBox="0 0 40 40" fill="none" stroke="#1B3B6F" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 sm:w-8 sm:h-8">
+                        <path d="M10 12C10 12 14 10 20 12C26 10 30 12 30 12V28C30 28 26 26 20 28C14 26 10 28 10 28V12Z" fill="#DCE8FA" />
+                        <path d="M20 12V28" />
+                        <path d="M14 17H17M14 21H18" stroke="#1B3B6F" strokeWidth="2" />
+                        <circle cx="25" cy="18" r="1.5" fill="#1B3B6F" />
+                        <path d="M23 23L27 19" stroke="#1B3B6F" strokeWidth="1.8" />
+                      </svg>
+                    )}
+                    {item.iconType === 'science' && (
+                      <svg viewBox="0 0 40 40" fill="none" stroke="#1B3B6F" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 sm:w-8 sm:h-8">
+                        <path d="M17 10H23M18 10V16L12 28C11 30 12.5 32 15 32H25C27.5 32 29 30 28 28L22 16V10" />
+                        <path d="M14 24H26" strokeDasharray="1.5 2" />
+                        <circle cx="18" cy="27" r="1" fill="#1B3B6F" />
+                        <circle cx="22" cy="25" r="1.5" fill="#1B3B6F" />
+                        <path d="M25 8L27 11L29 9" stroke="#F5B744" strokeWidth="2" />
+                      </svg>
+                    )}
+                    {item.iconType === 'motoric' && (
+                      <svg viewBox="0 0 40 40" fill="none" stroke="#1B3B6F" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 sm:w-8 sm:h-8">
+                        <circle cx="20" cy="12" r="3.5" fill="#DCE8FA" />
+                        <path d="M15 20L20 17L25 19L28 24" />
+                        <path d="M20 17V24L16 31" />
+                        <path d="M20 24L24 31" />
+                        <circle cx="29" cy="15" r="2" fill="#F5B744" stroke="none" />
+                      </svg>
+                    )}
+                  </div>
+
+                  {/* Title */}
+                  <h3 className="font-extrabold text-[#1B3B6F] text-sm sm:text-base group-hover:text-emerald-700 transition-colors">
+                    {item.title}
+                  </h3>
+
+                  {/* Description */}
+                  <p className="mt-1.5 text-xs sm:text-[13px] text-[#4A607A] font-medium leading-[1.65]">
+                    {item.desc}
+                  </p>
+                </div>
+              ))}
             </div>
 
-            {/* Card 2: Moslem Character Building */}
-            <div className="bg-white rounded-[22px] p-5 sm:p-6 flex flex-col items-center text-center shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group">
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full bg-[#DCE8FA] flex items-center justify-center text-[#1B3B6F] mb-3.5 shadow-inner group-hover:scale-105 transition-transform">
-                <svg viewBox="0 0 40 40" fill="currentColor" className="w-7 h-7 sm:w-8 sm:h-8 text-[#1B3B6F]">
-                  <path d="M20 9C15.5 9 13 12.5 13 17C13 22 14.5 27 15.5 30H24.5C25.5 27 27 22 27 17C27 12.5 24.5 9 20 9Z" fill="#1B3B6F"/>
-                  <ellipse cx="20" cy="18" rx="4.5" ry="5.5" fill="#DCE8FA"/>
-                </svg>
-              </div>
-              <h3 className="font-extrabold text-[#1B3B6F] text-sm sm:text-base">Moslem Character Building</h3>
-              <p className="mt-1.5 text-xs sm:text-[13px] text-[#4A607A] font-medium leading-[1.65]">
-                Membangun karakter Islami melalui pembiasaan adab, akhlakul karimah, karakter SMART dan kepedulian terhadap sesama
-              </p>
-            </div>
-
-            {/* Card 3: Life Skill */}
-            <div className="bg-white rounded-[22px] p-5 sm:p-6 flex flex-col items-center text-center shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group">
-              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full bg-[#DCE8FA] flex items-center justify-center text-[#1B3B6F] mb-3.5 shadow-inner group-hover:scale-105 transition-transform">
-                <svg viewBox="0 0 40 40" fill="none" stroke="#1B3B6F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 sm:w-8 sm:h-8">
-                  <path d="M19 14.5C17.5 12.5 14.5 12.5 13 14C11.5 15.5 11.5 18.5 13.5 20.5L19 26L24.5 20.5C26.5 18.5 26.5 15.5 25 14C23.5 12.5 20.5 12.5 19 14.5Z" />
-                  <ellipse cx="23" cy="20" rx="5.5" ry="7" transform="rotate(30 23 20)" stroke="#1B3B6F" strokeWidth="2" fill="none"/>
-                </svg>
-              </div>
-              <h3 className="font-extrabold text-[#1B3B6F] text-sm sm:text-base">Life Skill</h3>
-              <p className="mt-1.5 text-xs sm:text-[13px] text-[#4A607A] font-medium leading-[1.65]">
-                Melatih kemandirian dan keterampilan melalui aktivitas nyata sesuai usia dan perkembangannya
-              </p>
+            {/* Clickable Pagination Dots */}
+            <div className="flex items-center justify-center gap-2 mt-4 sm:mt-6">
+              {LEARNING_APPROACHES.map((_, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => scrollToPendekatan(idx)}
+                  aria-label={`Lihat pendekatan ${idx + 1}`}
+                  className={`transition-all duration-300 rounded-full cursor-pointer ${
+                    activePendekatanIndex === idx
+                      ? 'w-7 h-2.5 bg-[#F5B744] shadow-[0_2px_8px_rgba(245,183,68,0.5)]'
+                      : 'w-2.5 h-2.5 bg-white/35 hover:bg-white/70'
+                  }`}
+                />
+              ))}
             </div>
           </div>
         </div>
