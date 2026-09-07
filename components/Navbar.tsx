@@ -9,120 +9,146 @@ import { Menu, X } from 'lucide-react'
 const NAV_ITEMS = [
   { name: 'Beranda', href: '/' },
   { name: 'Tentang Kami', href: '/tentang-kami' },
-  { name: 'Program Unggulan', href: '/program' },
-  { name: 'Kegiatan Pembelajaran', href: '/aktivitas' },
+  { name: 'Program', href: '/program' },
   { name: 'Galeri', href: '/galeri' },
   { name: 'Kontak', href: '/kontak' },
 ]
 
 export default function Navbar() {
   const pathname = usePathname()
+  const isHome = pathname === '/'
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
   useEffect(() => {
-    const handleScroll = () => setScrolled(window.scrollY > 50)
+    const handleScroll = () => setScrolled(window.scrollY > 30)
     window.addEventListener('scroll', handleScroll)
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
-  // Close mobile drawer when route changes
   useEffect(() => {
     setMobileMenuOpen(false)
   }, [pathname])
 
   return (
-    <nav className={`fixed top-0 left-0 w-full z-50 transition-all duration-300 ${
-      scrolled
-        ? 'bg-white/95 backdrop-blur-md shadow-md py-2 border-b border-gray-100'
-        : 'bg-[#F8F6F2]/60 py-4'
-    }`}>
-      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-        <div className="flex justify-between items-center h-16">
+    <header className="fixed top-3 sm:top-5 left-0 w-full z-50 px-4 sm:px-6 pointer-events-none transition-all duration-300">
+      <div className="max-w-5xl mx-auto flex items-center justify-center pointer-events-auto">
+        
+        {/* Floating Pill Container */}
+        <nav
+          className={`w-full max-w-4xl bg-white/95 backdrop-blur-md rounded-full shadow-[0_4px_25px_rgba(0,0,0,0.06)] border border-white/80 py-2 sm:py-2.5 px-5 sm:px-8 flex items-center justify-between transition-all duration-300 ${
+            scrolled ? 'shadow-[0_8px_30px_rgba(0,0,0,0.12)] bg-white/98 py-2' : ''
+          }`}
+        >
+          {/* Logo (shown on non-home pages, or when scrolled on home) */}
+          {(!isHome || scrolled) && (
+            <Link
+              href="/"
+              className="flex items-center gap-2.5 transition-all duration-300 flex-shrink-0 mr-4"
+            >
+              <div className="relative w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0">
+                <Image src="/images/school_logo.png" alt="Logo" fill className="object-contain" />
+              </div>
+              <span className="font-extrabold text-xs sm:text-sm text-[#16325C] tracking-tight hidden lg:inline">
+                KB &amp; TK Istiqamah
+              </span>
+            </Link>
+          )}
 
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 cursor-pointer">
-            <div className="relative w-11 h-11">
-              <Image src="/images/school_logo.png" alt="Logo" fill className="object-contain" />
-            </div>
-            <div className="relative h-9 w-44">
-              <Image src="/images/Asset 12.png" alt="KB & TK ISTIQAMAH" fill className="object-contain object-left" />
-            </div>
-          </Link>
-
-          {/* Desktop nav */}
-          <div className="hidden lg:flex items-center gap-8">
+          {/* Desktop Nav Items */}
+          <div className="hidden md:flex items-center gap-7 lg:gap-9">
             {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href
+              const active = pathname === item.href && !isHome
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`font-bold text-sm cursor-pointer relative py-1 transition-colors ${
-                    active ? 'text-[#07A363]' : 'text-[#07265F] hover:text-[#07A363]'
+                  className={`text-xs sm:text-sm font-semibold transition-colors py-1 ${
+                    active
+                      ? 'text-[#07A363] font-bold'
+                      : 'text-[#1B3B6F] hover:text-[#07A363]'
                   }`}
                 >
                   {item.name}
-                  {active && <span className="absolute bottom-0 left-0 w-full h-[3px] bg-[#07A363] rounded-full" />}
                 </Link>
               )
             })}
           </div>
 
-          {/* Desktop CTA */}
-          <div className="hidden lg:flex items-center gap-4">
-            <Link href="/login" className="font-bold text-sm text-[#07265F] hover:text-[#07A363] transition-colors">
-              Portal Akun
-            </Link>
-            <Link href="/ppdb" className="bg-[#07A363] hover:bg-[#07A363]/90 text-white font-extrabold text-xs tracking-wider uppercase px-7 py-3.5 rounded-full transition-all shadow-md">
-              Daftar SPMB
+          {/* Right Action Button: Amber Yellow 'Daftar Sekarang' */}
+          <div className="hidden md:flex items-center gap-3 flex-shrink-0 ml-auto">
+            <Link
+              href="/ppdb"
+              className="bg-[#F5B744] hover:bg-[#F59E0B] text-white font-bold text-xs sm:text-sm px-6 py-2.5 rounded-full shadow-sm hover:shadow-md transition-all transform hover:scale-[1.02] active:scale-95 whitespace-nowrap"
+            >
+              Daftar Sekarang
             </Link>
           </div>
 
-          {/* Mobile hamburger */}
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="lg:hidden text-[#07265F] hover:text-[#07A363] transition-colors cursor-pointer"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X size={26} /> : <Menu size={26} />}
-          </button>
-        </div>
+          {/* Mobile Bar: Logo on left, CTA + Hamburger on right */}
+          <div className="flex md:hidden items-center justify-between w-full gap-2">
+            <Link href="/" className="flex items-center gap-2 min-w-0">
+              <div className="relative w-7 h-7 flex-shrink-0">
+                <Image src="/images/school_logo.png" alt="Logo" fill className="object-contain" />
+              </div>
+              <span className="font-extrabold text-xs text-[#16325C] truncate">Istiqamah</span>
+            </Link>
+
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Link
+                href="/ppdb"
+                className="bg-[#F5B744] hover:bg-[#F59E0B] text-white font-bold text-xs px-3.5 py-1.5 rounded-full shadow-sm whitespace-nowrap"
+              >
+                Daftar
+              </Link>
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="p-1.5 text-[#16325C] hover:text-[#07A363] transition-colors"
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? <X size={19} /> : <Menu size={19} />}
+              </button>
+            </div>
+          </div>
+        </nav>
       </div>
 
-      {/* Mobile drawer */}
+      {/* Mobile Dropdown Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-white border-t border-gray-100 shadow-xl py-4 px-6 space-y-3">
+        <div className="pointer-events-auto max-w-sm mx-auto mt-2 bg-white/98 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-4 space-y-2 transition-all">
           {NAV_ITEMS.map((item) => {
             const active = pathname === item.href
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`block w-full text-left py-2 font-bold transition-colors ${
-                  active ? 'text-[#07A363]' : 'text-[#07265F] hover:text-[#07A363]'
+                className={`block py-2 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                  active
+                    ? 'bg-[#07A363]/10 text-[#07A363]'
+                    : 'text-[#16325C] hover:bg-gray-50'
                 }`}
               >
                 {item.name}
               </Link>
             )
           })}
-          <div className="pt-4 border-t border-gray-100 flex flex-col gap-3">
+          <div className="pt-2 border-t border-gray-100 flex flex-col gap-2">
             <Link
               href="/login"
-              className="w-full text-center py-2.5 font-bold text-sm text-[#07265F] border border-gray-200 rounded-xl hover:bg-gray-50"
+              className="w-full text-center py-2 font-bold text-xs text-[#16325C] border border-gray-200 rounded-full hover:bg-gray-50"
             >
               Portal Akun
             </Link>
             <Link
               href="/ppdb"
-              className="w-full text-center py-3 bg-[#07A363] text-white font-extrabold text-xs uppercase tracking-wider rounded-xl hover:bg-[#07A363]/90"
+              className="w-full text-center py-2.5 bg-[#F5B744] hover:bg-[#F59E0B] text-white font-extrabold text-xs uppercase tracking-wider rounded-full shadow-sm"
             >
-              Daftar SPMB Online
+              Daftar Sekarang
             </Link>
           </div>
         </div>
       )}
-    </nav>
+    </header>
   )
 }
+

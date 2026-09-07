@@ -1,449 +1,272 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { motion, AnimatePresence } from 'framer-motion'
+import gsap from 'gsap'
+import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import { createClient } from '@/lib/database/client'
+import GsapHeroBanner from '@/components/GsapHeroBanner'
 import {
   MapPin,
   Phone,
   Mail,
   ChevronRight,
   ChevronLeft,
+  ChevronDown,
   Star,
   Quote,
   ArrowRight,
-  BookOpen,
-  HeartHandshake,
-  Sparkles,
-  Atom,
-  Music,
-  Palette,
-  Dumbbell,
-  Languages,
-  CheckCircle2,
-  X,
-  Building2,
-  PhoneCall,
-  MessageCircle,
-  Clock,
-  ShieldCheck
+  Clock
 } from 'lucide-react'
 
-const slideVariants = {
-  enter: (direction: number) => ({
-    x: direction > 0 ? '100%' : '-100%',
-    opacity: 0
-  }),
-  center: {
-    x: 0,
-    opacity: 1
-  },
-  exit: (direction: number) => ({
-    x: direction < 0 ? '100%' : '-100%',
-    opacity: 0
-  })
-}
-
-const heroVariants = {
-  enter: { opacity: 0 },
-  center: { opacity: 1 },
-  exit: { opacity: 0 }
-}
-
-// 4 Program Pembelajaran Inti (Point 9)
-const LEARNING_PROGRAMS = [
+const FEATURED_PROGRAMS = [
   {
-    id: 'islamic-learning',
-    title: 'Islamic Learning',
-    category: 'Nilai Agama & Moral',
-    icon: BookOpen,
-    color: 'emerald',
-    badgeColor: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    iconBg: 'bg-emerald-500 text-white',
-    desc: 'Pengenalan nilai Tauhid, adab Islami, hafalan surat-surat pendek, doa praktis harian, serta bimbingan membaca Al-Qur\'an metode Tilawati dengan lagu Rost.',
-    features: ['Tilawati & Tahfidz Juz 30', 'Praktik Wudhu & Shalat Cilik', 'Doa & Kalimat Thayyibah Harian'],
-    image: '/images/ChatGPT Image Jun 17, 2026, 10_17_46 PM (3).png'
+    title: "Al-Qur'an Metode Tilawati",
+    desc: "Mengenalkan dan menumbuhkan kecintaan anak terhadap Al-Qur'an melalui pembelajaran yang menyenangkan dan sesuai tahap perkembangan.",
+    image: '/images/activity_haji.png',
+    layout: 'text-top' as const
   },
   {
-    id: 'muslimic-character',
-    title: 'Muslimic Character Building',
-    category: 'Karakter & Budi Pekerti',
-    icon: HeartHandshake,
-    color: 'blue',
-    badgeColor: 'bg-blue-50 text-blue-700 border-blue-200',
-    iconBg: 'bg-blue-600 text-white',
-    desc: 'Membentuk pondasi kepribadian muslim sejak dini melalui pembiasaan 5S (Salam, Senyum, Sapa, Sopan, Santun), empati berbagi, dan kejujuran bergaul.',
-    features: ['Infaq & Jumat Berbagi', 'Pembiasaan Adab & Kedisiplinan', 'Kisah Teladan Rasulullah & Sahabat'],
-    image: '/images/ChatGPT Image Jun 17, 2026, 10_17_44 PM (2).png'
+    title: "Qur'an Camp",
+    desc: "Pengalaman belajar Islami yang memadukan kegiatan Al-Qur'an, ibadah, kemandirian, kebersamaan, dan aktivitas menyenangkan.",
+    image: '/images/galeri_3.png',
+    layout: 'image-top' as const
   },
   {
-    id: 'life-skill',
-    title: 'Life Skill',
-    category: 'Kemandirian & Motorik',
-    icon: Sparkles,
-    color: 'amber',
-    badgeColor: 'bg-amber-50 text-amber-700 border-amber-200',
-    iconBg: 'bg-amber-500 text-white',
-    desc: 'Melatih kemandirian dan kecakapan motorik fungsional anak: toilet training, merapikan mainan dan perlengkapan sendiri, serta kebiasaan makan sehat beradab.',
-    features: ['Kemandirian Diri (Self-Help)', 'Keterampilan Motorik Halus & Kasar', 'Pola Hidup Bersih & Sehat (PHBS)'],
-    image: '/images/Cover.png'
+    title: "Outbound",
+    desc: "Aktivitas luar ruangan yang melatih keberanian, kemandirian, kerja sama, serta kemampuan motorik anak melalui berbagai tantangan yang menyenangkan.",
+    image: '/images/galeri_5.png',
+    layout: 'text-top' as const
   },
   {
-    id: 'stem-pbl',
-    title: 'Project Based Learning / STEM',
-    category: 'Sains & Eksplorasi Kreatif',
-    icon: Atom,
-    color: 'purple',
-    badgeColor: 'bg-purple-50 text-purple-700 border-purple-200',
-    iconBg: 'bg-purple-600 text-white',
-    desc: 'Mendorong rasa ingin tahu alami anak melalui eksplorasi ilmiah sederhana, pengenalan logika berhitung sensorik, percobaan sains warna, dan karya proyek seru.',
-    features: ['Eksperimen Sains Ceria', 'Logika Berhitung & Sensori Bentuk', 'Proyek Karya Kolaboratif Tematik'],
-    image: '/images/ChatGPT Image Jun 17, 2026, 10_17_48 PM (5).png'
-  }
-]
-
-// Section Ekstrakurikuler (Point 11)
-const EXTRACURRICULARS = [
-  {
-    title: 'Tahfidz & Tilawati Cilik',
-    desc: 'Bimbingan intensif hafalan Al-Qur\'an juz 30 dan pengenalan makhraj huruf dengan lagu Rost.',
-    icon: BookOpen,
-    schedule: 'Selasa & Kamis',
-    instructor: 'Ustadzah Khadijah',
-    color: 'emerald'
+    title: "Calistung & Literasi Ceria",
+    desc: "Pondasi literasi membaca, menulis, dan berhitung melalui pendekatan bermain interaktif tanpa membebani anak.",
+    image: '/images/Cover.png',
+    layout: 'image-top' as const
   },
   {
-    title: 'Seni Lukis & Kriya Anak',
-    desc: 'Eksplorasi warna, kanvas finger painting, kriya kertas, dan merangsang kreativitas imajinasi bebas.',
-    icon: Palette,
-    schedule: 'Rabu',
-    instructor: 'Kak Salma Art',
-    color: 'pink'
+    title: "Seni & Kreativitas Anak",
+    desc: "Mengeksplorasi bakat seni, melukis, kriya, dan pertunjukan islami untuk mengasah imajinasi serta rasa percaya diri.",
+    image: '/images/galeri_2.png',
+    layout: 'text-top' as const
   },
   {
-    title: 'Gerak & Lagu Islami',
-    desc: 'Melatih ritme musikalitas, kelenturan koordinasi tubuh, serta kepercayaan diri unjuk ekspresi.',
-    icon: Music,
-    schedule: 'Senin',
-    instructor: 'Bunda Fitri',
-    color: 'amber'
-  },
-  {
-    title: 'Drumband Cilik (Marching Kids)',
-    desc: 'Melatih konsentrasi tempo musik, kerjasama kelompok, kepemimpinan, dan rasa kebersamaan.',
-    icon: Sparkles,
-    schedule: 'Jumat',
-    instructor: 'Coach Rian',
-    color: 'blue'
-  },
-  {
-    title: 'English for Early Learners',
-    desc: 'Pengenalan kosakata bahasa Inggris dasar secara interaktif melalui dongeng, flashcard, dan lagu riang.',
-    icon: Languages,
-    schedule: 'Rabu',
-    instructor: 'Miss Sarah',
-    color: 'violet'
-  },
-  {
-    title: 'Futsal & Olahraga Ceria',
-    desc: 'Pengembangan ketangkasan fisik motorik kasar, stamina tubuh, serta sportivitas bermain bersama kawan.',
-    icon: Dumbbell,
-    schedule: 'Sabtu Pagi',
-    instructor: 'Coach Deni',
-    color: 'orange'
-  }
-]
-
-// Fasilitas Sekolah dengan Multi-Foto Swipe & Popup Detail (Point 10)
-const SCHOOL_FACILITIES = [
-  {
-    id: 'fac-1',
-    title: 'Ruang Kelas Ber-AC & Ramah Anak',
-    category: 'Ruang Belajar',
-    badge: 'Kapasitas 15 Siswa / Kelas',
-    shortDesc: 'Ruang belajar berpendingin udara dengan pencahayaan alami, karpet bermain edukatif, dan meja-kursi ergonomis aman tanpa sudut tajam.',
-    fullDesc: 'Setiap ruang kelas di KB & TK Istiqamah dirancang untuk kenyamanan maksimal anak usia dini. Dilengkapi dengan pendingin ruangan (AC), sirkulasi udara alami yang segar, proyektor interaktif, pojok sensory play, serta loker pribadi untuk menumbuhkan rasa tanggung jawab merapikan perlengkapan sendiri.',
-    specs: [
-      'Dilengkapi AC & Exhaust Air Filter',
-      'Lantai beralas karpet lembut anti-alergi',
-      'Meja & kursi ergonomis ramah balita',
-      'Pojok alat peraga edukasi mandiri'
-    ],
-    images: [
-      '/images/gallery_1.png',
-      '/images/ChatGPT Image Jun 17, 2026, 10_17_44 PM (2).png',
-      '/images/Cover.png'
-    ]
-  },
-  {
-    id: 'fac-2',
-    title: 'Playground & Area Bermain Outdoor',
-    category: 'Sarana Bermain',
-    badge: 'Standar Keamanan Tinggi',
-    shortDesc: 'Wahana perosotan terowongan, ayunan, monkey bar mini dengan rumput sintetis higienis untuk melatih motorik kasar anak.',
-    fullDesc: 'Area bermain luar ruangan (*playground*) menyediakan stimulasi fisik yang menyenangkan. Dikelilingi pagar pengaman, dilapisi rumput sintetis empuk bersertifikasi aman jika anak terjatuh, serta dilengkapi beragam wahana ketangkasan motorik kasar yang diawasi langsung oleh guru pendamping.',
-    specs: [
-      'Rumput sintetis empuk dengan shock-pad',
-      'Wahana perosotan terowongan & ayunan tertutup',
-      'Peralatan permainan dibersihkan berkala',
-      'Pengawasan penuh guru dan CCTV 24 jam'
-    ],
-    images: [
-      '/images/gallery_2.png',
-      '/images/gallery_4.png',
-      '/images/Asset 9.png'
-    ]
-  },
-  {
-    id: 'fac-3',
-    title: 'Pojok Baca & Perpustakaan Cilik',
-    category: 'Literasi & Dongeng',
-    badge: 'Ratusan Buku Bergambar',
-    shortDesc: 'Ruang membaca nyaman dengan bantal empuk (*bean bag*), koleksi dongeng Islam, buku pop-up, dan ensiklopedia anak bergambar.',
-    fullDesc: 'Pojok Baca kami menumbuhkan kecintaan terhadap buku sejak usia emas. Anak-anak dibimbing dalam sesi *storytelling* (mendongeng interaktif) mingguan yang melatih imajinasi, perbendaharaan kosakata bahasa, serta pesan-pesan moral akhlak karimah.',
-    specs: [
-      'Koleksi buku dongeng Islami & sains cilik',
-      'Area lesehan dengan beanbag warna-warni',
-      'Alat peraga boneka tangan untuk mendongeng',
-      'Peminjaman buku mingguan untuk di rumah'
-    ],
-    images: [
-      '/images/ChatGPT Image Jun 17, 2026, 10_17_46 PM (4).png',
-      '/images/Cover.png'
-    ]
-  },
-  {
-    id: 'fac-4',
-    title: 'Musholla Cilik & Tempat Wudhu Anak',
-    category: 'Spiritual & Ibadah',
-    badge: 'Kran Wudhu Khusus Balita',
-    shortDesc: 'Musholla bersih dan tempat wudhu dengan tinggi kran khusus anak untuk pembiasaan shalat berjamaah dan praktik berwudhu mandiri.',
-    fullDesc: 'Sarana ibadah yang dirancang khusus sesuai tinggi badan anak-anak. Menjadi laboratorium spiritual harian untuk pembiasaan antre saat berwudhu, adab masuk tempat ibadah, serta praktik shalat dhuha dan dhuhur berjamaah dengan bimbingan ustadzah.',
-    specs: [
-      'Kran air dengan ketinggian ergonomis anak',
-      'Lantai antiselip aman dari bahaya terpeleset',
-      'Mukena dan sajadah cilik higienis',
-      'Suasana tenang, sejuk, dan wangi'
-    ],
-    images: [
-      '/images/ChatGPT Image Jun 17, 2026, 10_17_46 PM (3).png',
-      '/images/gallery_1.png'
-    ]
-  },
-  {
-    id: 'fac-5',
-    title: 'UKS Cilik & Ruang Tumbuh Kembang',
-    category: 'Kesehatan & Gizi',
-    badge: 'Pemeriksaan Rutin Berkala',
-    shortDesc: 'Ruang penanganan medis darurat pertama, tempat istirahat anak sakit, serta pemantauan tinggi dan berat badan secara berkala.',
-    fullDesc: 'Kesehatan dan keselamatan anak adalah prioritas utama kami. UKS Cilik dilengkapi kotak P3K lengkap, tempat tidur istirahat yang nyaman, alat ukur tinggi badan dan timbangan digital untuk mencatat kurva tumbuh kembang siswa setiap bulan.',
-    specs: [
-      'Tempat tidur istirahat bersih & nyaman',
-      'Kelengkapan obat-obatan P3K standar PAUD',
-      'Timbangan digital & mikrotoise pengukur tinggi',
-      'Bekerjasama dengan Puskesmas / dokter anak'
-    ],
-    images: [
-      '/images/gallery_3.png',
-      '/images/Cover.png'
-    ]
-  },
-  {
-    id: 'fac-6',
-    title: 'Area Sensori & Kebun Eksplorasi Sains',
-    category: 'Alam & Sensori',
-    badge: 'Belajar Bersama Alam',
-    shortDesc: 'Lahan mini bercocok tanam, pengenalan tanaman herbal/sayur, serta wadah sensori pasir dan air untuk melatih sensomotorik.',
-    fullDesc: 'Anak diajak berinteraksi langsung dengan alam sekitarnya. Melalui kegiatan menanam bibit sayur, menyiram tanaman setiap pagi, serta bermain pasir dan air terarah, anak mengembangkan kepekaan sensori, empati pada makhluk hidup, dan rasa syukur atas ciptaan Allah SWT.',
-    specs: [
-      'Media tanam pot vertikal & hidroponik mini',
-      'Bak sensory play pasir kinetik & air bersih',
-      'Alat berkebun anak plastik anti-cedera',
-      'Mengenalkan siklus hidup tanaman'
-    ],
-    images: [
-      '/images/ChatGPT Image Jun 17, 2026, 10_17_48 PM (5).png',
-      '/images/gallery_2.png'
-    ]
-  }
-]
-
-// Kontak Narahubung Resmi (Point 12)
-const CONTACT_PERSONS = [
-  {
-    role: 'Narahubung PPDB & Pendaftaran',
-    name: 'Ustadzah Admin PPDB',
-    phone: '0811 2198 853',
-    waLink: 'https://wa.me/628112198853?text=Halo%20Admin%20PPDB%20TK%20Istiqamah,%20saya%20ingin%20bertanya%20informasi%20pendaftaran%20murid%20baru.',
-    hours: 'Senin - Jumat (07.30 - 15.00 WIB)'
-  },
-  {
-    role: 'Narahubung Tata Usaha & Akademik',
-    name: 'Kantor Tata Usaha Sekolah',
-    phone: '022 - 4241799 / 0812 2345 6789',
-    waLink: 'https://wa.me/6281223456789?text=Halo%20Tata%20Usaha%20TK%20Istiqamah,%20saya%20ingin%20berkonsultasi%20tentang%20program%20akademik.',
-    hours: 'Senin - Jumat (07.30 - 14.00 WIB)'
-  },
-  {
-    role: 'Narahubung Konfirmasi Pembayaran',
-    name: 'Bagian Keuangan & Administrasi',
-    phone: '0811 2198 853',
-    waLink: 'https://wa.me/628112198853?text=Halo%20Bagian%20Keuangan%20TK%20Istiqamah,%20saya%20ingin%20mengonfirmasi%20bukti%20pembayaran%20pendaftaran.',
-    hours: 'Senin - Jumat (08.00 - 14.00 WIB)'
+    title: "Eksplorasi Sains & Lingkungan",
+    desc: "Mengenal keagungan ciptaan Allah melalui eksperimen sains sederhana, berkebun, dan pembiasaan peduli lingkungan.",
+    image: '/images/activity_fieldtrip.png',
+    layout: 'image-top' as const
   }
 ]
 
 const FALLBACK_GALLERY = [
-  { id: 'f1', title: 'Kegiatan Pembelajaran di Kelas', image: '/images/gallery_1.png', category: 'Kegiatan Pembelajaran' },
-  { id: 'f2', title: 'Sarana & Fasilitas Bermain', image: '/images/gallery_2.png', category: 'Sarana' },
-  { id: 'f3', title: 'Prestasi dan Apresiasi Murid', image: '/images/gallery_3.png', category: 'Prestasi' },
-  { id: 'f4', title: 'Kegiatan Pembelajaran Luar Kelas', image: '/images/gallery_4.png', category: 'Kegiatan Pembelajaran' },
+  { id: 'f1', title: 'Kegiatan Belajar', image: '/images/gallery_1.png', category: 'Kegiatan' },
+  { id: 'f2', title: 'Sarana Sekolah', image: '/images/gallery_2.png', category: 'Sarana' },
+  { id: 'f3', title: 'Prestasi Murid', image: '/images/gallery_3.png', category: 'Prestasi' },
+  { id: 'f4', title: 'Aktivitas Sekolah', image: '/images/gallery_4.png', category: 'Kegiatan' },
+]
+
+const DEVELOPMENT_PILLARS = [
+  {
+    id: 'kreativitas',
+    title: 'Kreativitas & Eksplorasi',
+    shortTitle: 'Kreativitas',
+    desc: 'Memberikan kesempatan anak untuk bereksperimen, berkarya, berimajinasi, dan menemukan berbagai cara dalam menyelesaikan tantangan.',
+    image: '/images/dev_kreativitas.png',
+  },
+  {
+    id: 'sosial',
+    title: 'Sosial & Emosional',
+    shortTitle: 'Sosial',
+    desc: 'Membangun rasa empati, kemampuan bersosialisasi, kerja sama, dan kecerdasan emosional dalam kebersamaan yang hangat.',
+    image: '/images/dev_sosial.png',
+  },
+  {
+    id: 'motorik',
+    title: 'Fisik & Motorik',
+    shortTitle: 'Fisik & Motorik',
+    desc: 'Mengoptimalkan pertumbuhan motorik kasar dan halus anak melalui aktivitas gerak fisik, olahraga terarah, dan permainan aktif.',
+    image: '/images/dev_motorik.png',
+  },
+  {
+    id: 'kemandirian',
+    title: 'Kemandirian & Kebiasaan',
+    shortTitle: 'Kemandirian',
+    desc: 'Melatih kemandirian sejak dini, menjaga kebersihan diri, kerapian, serta tanggung jawab dalam setiap rutinitas sehari-hari.',
+    image: '/images/dev_kemandirian.png',
+  },
+  {
+    id: 'ibadah',
+    title: 'Karakter Religius & Ibadah',
+    shortTitle: 'Religius',
+    desc: 'Menumbuhkan kecintaan pada ibadah harian, pengenalan doa-doa, hafalan surat pendek, dan penanaman adab Islami yang mendalam.',
+    image: '/images/dev_ibadah.png',
+  },
+]
+
+const FACILITIES = [
+  {
+    title: 'Ruang Belajar',
+    desc: 'Ruang belajar yang nyaman dan mendukung aktivitas belajar aktif serta menyenangkan.',
+    image: '/images/fasilitas_belajar.png',
+  },
+  {
+    title: 'Ruang Bermain',
+    desc: 'Area bermain yang mendukung eksplorasi, interaksi, dan perkembangan motorik anak.',
+    image: '/images/fasilitas_bermain.png',
+  },
+  {
+    title: 'Perpustakaan',
+    desc: 'Ruang literasi yang nyaman untuk menumbuhkan kecintaan anak terhadap buku dan kegiatan membaca.',
+    image: '/images/fasilitas_perpus.png',
+  },
+  {
+    title: 'Ruang Multimedia',
+    desc: 'Fasilitas pembelajaran interaktif untuk memperkaya pengalaman belajar melalui teknologi dan media digital.',
+    image: '/images/fasilitas_multimedia.png',
+  },
+  {
+    title: 'Ruang Bermain Outdoor',
+    desc: 'Area bermain terbuka untuk mengembangkan kemampuan motorik, keberanian, dan interaksi sosial anak.',
+    image: '/images/fasilitas_outdoor.png',
+  },
+]
+
+const GALLERY_SHOWCASE = [
+  { id: 'g1', src: '/images/galeri_1.png', alt: 'Prestasi Juara Istiqamah', category: 'program' },
+  { id: 'g2', src: '/images/galeri_2.png', alt: 'Aktivitas Mewarnai & Berkreasi', category: 'kegiatan' },
+  { id: 'g3', src: '/images/galeri_3.png', alt: 'Kegiatan Pramuka & Kemandirian', category: 'program' },
+  { id: 'g4', src: '/images/galeri_4.png', alt: 'Piala & Apresiasi Outdoor', category: 'program' },
+  { id: 'g5', src: '/images/galeri_5.png', alt: 'Bermain Monkey Bar Outdoor', category: 'kegiatan' },
+  { id: 'g6', src: '/images/galeri_6.png', alt: 'Penghargaan Siswa Berprestasi', category: 'program' },
+  { id: 'g7', src: '/images/galeri_7.png', alt: 'Permainan Terowongan Edukatif', category: 'kegiatan' },
+]
+
+const TESTIMONIALS_DATA = [
+  {
+    name: 'Bunda Mila',
+    role: 'Orang Tua Murid',
+    content: 'Alhamdulillah anak kami sangat senang bersekolah di KB TK Istiqamah. Guru-gurunya penuh perhatian, sabar, dan menanamkan nilai-nilai Islami dengan cara yang menyenangkan.',
+    avatar: '/images/parent_bunda_mila.png',
+  },
+  {
+    name: 'Ayah Rizki',
+    role: 'Orang Tua Murid',
+    content: 'Perkembangan kemandirian dan adab anak kami sangat terasa setelah bergabung di sini. Program Tilawati dan pembiasaan sholatnya luar biasa.',
+    avatar: '/images/parent_ayah_rizki.png',
+  },
+  {
+    name: 'Papah Adit',
+    role: 'Orang Tua Murid',
+    content: 'Fasilitas lengkap, lingkungan belajar aman dan asri. Anak menjadi lebih aktif bereksplorasi dan percaya diri setiap hari.',
+    avatar: '/images/parent_papah_adit.png',
+  },
+]
+
+const FAQ_ITEMS = [
+  {
+    q: 'Berapa usia anak yang dapat mendaftar',
+    a: 'Kelompok Bermain (KB) melayani usia 2 - 4 tahun, sedangkan Taman Kanak-kanak (TK) melayani usia 4 - 6 tahun per bulan Juli pada tahun ajaran baru.',
+  },
+  {
+    q: 'Bagaimana proses pendaftarannya',
+    a: 'Pendaftaran dapat dilakukan secara online melalui website ini pada menu PPDB, atau datang langsung ke ruang administrasi KB TK Istiqamah Bandung untuk pengisian formulir dan observasi ramah anak.',
+  },
+  {
+    q: 'Apa saja syarat pendaftarannya',
+    a: 'Syarat administrasi meliputi: formulir pendaftaran yang telah diisi, fotokopi Akta Kelahiran anak, fotokopi Kartu Keluarga (KK), fotokopi KTP kedua orang tua, serta pas foto calon peserta didik.',
+  },
+  {
+    q: 'Berapa biaya pendidikan di TK Istiqamah',
+    a: 'Rincian biaya pendaftaran, dana pengembangan, uang seragam, dan SPP bulanan dapat dilihat pada brosur resmi PPDB atau langsung menghubungi layanan informasi WhatsApp kami.',
+  },
+  {
+    q: 'Kapan tahun ajaran dimulai',
+    a: 'Tahun ajaran baru dimulai pada pertengahan bulan Juli setiap tahunnya, diawali dengan Masa Pengenalan Lingkungan Sekolah (MPLS) yang ramah anak dan menyenangkan.',
+  },
 ]
 
 export default function HomePage() {
-  const [galleryItems, setGalleryItems] = useState<any[]>(FALLBACK_GALLERY)
-  const [[galleryPage, galleryDirection], setGalleryPage] = useState([0, 0])
-  const [visibleItems, setVisibleItems] = useState(5)
+  const [activePillar, setActivePillar] = useState(0)
+  const [galleryCategory, setGalleryCategory] = useState<'all' | 'kegiatan' | 'program'>('all')
+  const [openFaq, setOpenFaq] = useState<number | null>(0)
 
-  const [testimonials, setTestimonials] = useState<any[]>([])
-  const [heroBanners, setHeroBanners] = useState<any[]>([])
-  const [currentHero, setCurrentHero] = useState(0)
+  // Program Unggulan horizontal carousel state & ref
+  const [activeProgramIndex, setActiveProgramIndex] = useState(0)
+  const programScrollRef = useRef<HTMLDivElement>(null)
 
-  // Facility Popup Modal State
-  const [selectedFacility, setSelectedFacility] = useState<typeof SCHOOL_FACILITIES[0] | null>(null)
-  const [facilityPhotoIndex, setFacilityPhotoIndex] = useState(0)
-
-  const supabase = createClient()
-
-  useEffect(() => {
-    const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setVisibleItems(5)
-      } else if (window.innerWidth >= 768) {
-        setVisibleItems(3)
-      } else {
-        setVisibleItems(1)
-      }
+  const scrollToProgram = useCallback((index: number) => {
+    if (!programScrollRef.current) return
+    const container = programScrollRef.current
+    const cards = container.querySelectorAll<HTMLElement>('.program-card')
+    if (cards[index]) {
+      const card = cards[index]
+      const cardRect = card.getBoundingClientRect()
+      const containerRect = container.getBoundingClientRect()
+      const currentScrollLeft = container.scrollLeft
+      const targetScroll = currentScrollLeft + (cardRect.left - containerRect.left) - (containerRect.width - cardRect.width) / 2
+      container.scrollTo({
+        left: Math.max(0, targetScroll),
+        behavior: 'smooth'
+      })
     }
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => window.removeEventListener('resize', handleResize)
+    setActiveProgramIndex(index)
   }, [])
 
-  const nextGallery = useCallback(() => {
-    const maxIndex = galleryItems.length - visibleItems
-    if (maxIndex <= 0) return
-    setGalleryPage(prev => {
-      const nextIndex = prev[0] >= maxIndex ? 0 : prev[0] + 1
-      return [nextIndex, 1]
-    })
-  }, [galleryItems.length, visibleItems])
+  const handleProgramScroll = useCallback(() => {
+    if (!programScrollRef.current) return
+    const container = programScrollRef.current
+    const cards = container.querySelectorAll<HTMLElement>('.program-card')
+    if (cards.length === 0) return
 
-  const prevGallery = useCallback(() => {
-    const maxIndex = galleryItems.length - visibleItems
-    if (maxIndex <= 0) return
-    setGalleryPage(prev => {
-      const prevIndex = prev[0] <= 0 ? maxIndex : prev[0] - 1
-      return [prevIndex, -1]
-    })
-  }, [galleryItems.length, visibleItems])
+    const containerRect = container.getBoundingClientRect()
+    const containerCenter = containerRect.left + containerRect.width / 2
 
-  const nextHero = useCallback(() => {
-    if (heroBanners.length <= 1) return
-    setCurrentHero(prev => (prev + 1) % heroBanners.length)
-  }, [heroBanners.length])
+    let closestIdx = 0
+    let minDiff = Infinity
 
-  const prevHero = useCallback(() => {
-    if (heroBanners.length <= 1) return
-    setCurrentHero(prev => (prev - 1 + heroBanners.length) % heroBanners.length)
-  }, [heroBanners.length])
-
-  useEffect(() => {
-    async function loadGallery() {
-      const { data, error } = await supabase
-        .from('galleries_tk')
-        .select('id, title, image, category')
-        .neq('category', 'Hero Banner')
-        .order('created_at', { ascending: false })
-        .limit(10)
-      if (!error && data && data.length > 0) {
-        // Map category if 'Kegiatan' to 'Kegiatan Pembelajaran'
-        const mapped = data.map(item => ({
-          ...item,
-          category: item.category === 'Kegiatan' ? 'Kegiatan Pembelajaran' : item.category
-        }))
-        setGalleryItems(mapped)
+    cards.forEach((card, idx) => {
+      const cardRect = card.getBoundingClientRect()
+      const cardCenter = cardRect.left + cardRect.width / 2
+      const diff = Math.abs(cardCenter - containerCenter)
+      if (diff < minDiff) {
+        minDiff = diff
+        closestIdx = idx
       }
-    }
-    async function loadHeroBanners() {
-      const { data, error } = await supabase
-        .from('galleries_tk')
-        .select('id, title, image, category')
-        .eq('category', 'Hero Banner')
-        .order('created_at', { ascending: false })
-      if (!error && data && data.length > 0) {
-        setHeroBanners(data)
-      } else {
-        setHeroBanners([
+    })
+
+    setActiveProgramIndex(closestIdx)
+  }, [])
+
+  // Register GSAP ScrollTrigger for standard smooth entrance animations on all sections
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    gsap.registerPlugin(ScrollTrigger)
+
+    const ctx = gsap.context(() => {
+      const sections = document.querySelectorAll('.gsap-reveal')
+      sections.forEach((el) => {
+        gsap.fromTo(
+          el,
+          { opacity: 0, y: 28 },
           {
-            id: 'default-1',
-            image: '/images/Cover.png',
-            title: JSON.stringify({ buttonText: 'Daftar PPDB Sekarang', buttonLink: '/ppdb' })
-          },
-          {
-            id: 'default-2',
-            image: '/images/ChatGPT Image Jun 17, 2026, 10_17_44 PM (2).png',
-            title: JSON.stringify({ buttonText: 'Lihat Program', buttonLink: '/program' })
+            opacity: 1,
+            y: 0,
+            duration: 0.7,
+            ease: 'power2.out',
+            scrollTrigger: {
+              trigger: el,
+              start: 'top 88%',
+              toggleActions: 'play none none none',
+            },
           }
-        ])
-      }
-    }
-    async function loadTestimonials() {
-      const { data, error } = await supabase
-        .from('testimonials_tk')
-        .select('id, name, job, content, photo')
-        .eq('published', true)
-        .order('id', { ascending: false })
-        .limit(10)
-      if (!error && data) setTestimonials(data)
-    }
-    loadGallery()
-    loadHeroBanners()
-    loadTestimonials()
-  }, [supabase])
+        )
+      })
+    })
 
-  // Auto-advance gallery slider
-  useEffect(() => {
-    if (galleryItems.length <= visibleItems) return
-    const t = setInterval(() => nextGallery(), 4000)
-    return () => clearInterval(t)
-  }, [galleryItems, visibleItems, nextGallery])
-
-  // Auto-advance hero banner slider
-  useEffect(() => {
-    if (heroBanners.length <= 1) return
-    const t = setInterval(() => nextHero(), 6000)
-    return () => clearInterval(t)
-  }, [heroBanners, nextHero])
-
-  // Open facility popup modal
-  const handleOpenFacility = (facility: typeof SCHOOL_FACILITIES[0]) => {
-    setSelectedFacility(facility)
-    setFacilityPhotoIndex(0)
-  }
-
-  // Facility slide navigation
-  const nextFacilityPhoto = () => {
-    if (!selectedFacility) return
-    setFacilityPhotoIndex(prev => (prev + 1) % selectedFacility.images.length)
-  }
-
-  const prevFacilityPhoto = () => {
-    if (!selectedFacility) return
-    setFacilityPhotoIndex(prev => (prev - 1 + selectedFacility.images.length) % selectedFacility.images.length)
-  }
+    return () => ctx.revert()
+  }, [])
 
   return (
     <div className="w-full">
@@ -457,7 +280,7 @@ export default function HomePage() {
             "name": "KB & TK Istiqamah Bandung",
             "url": "https://tkistiqamah.sch.id",
             "logo": "https://tkistiqamah.sch.id/images/school_logo.png",
-            "image": "https://tkistiqamah.sch.id/images/Cover.png",
+            "image": "https://tkistiqamah.sch.id/images/hero_bg_2x.png",
             "description": "Website Resmi KB & TK Istiqamah Bandung. Mengembangkan potensi buah hati melalui bermain kreatif, pengenalan akhlak mulia sejak dini, dan kurikulum Islami terarah.",
             "address": {
               "@type": "PostalAddress",
@@ -477,673 +300,685 @@ export default function HomePage() {
         }}
       />
 
-      {/* ─── HERO SLIDER ───────────────────────── */}
-      <section className="relative w-full h-[65vh] sm:h-[75vh] lg:h-[90vh] min-h-[500px] overflow-hidden group">
-        {/* Banner Images Slider */}
-        <div className="absolute inset-0 z-0">
-          <AnimatePresence mode="wait">
-            {heroBanners.length > 0 && (
-              <motion.div
-                key={currentHero}
-                variants={heroVariants}
-                initial="enter"
-                animate="center"
-                exit="exit"
-                transition={{ duration: 0.8, ease: 'easeInOut' }}
-                className="absolute inset-0 w-full h-full"
-              >
-                <Image
-                  src={heroBanners[currentHero]?.image}
-                  alt="Banner Hero"
-                  fill
-                  priority
-                  className="object-cover w-full h-full"
-                />
-                {/* Gradient Overlay */}
-                <div className="absolute inset-0 bg-black/35 z-10" />
-              </motion.div>
-            )}
-          </AnimatePresence>
+      {/* ─── HERO SECTION (GSAP ANIMATED WITH LAYERS) ─── */}
+      <GsapHeroBanner />
+
+      {/* ─── SECTION 1: TEMPAT TUMBUHNYA GENERASI SMART ─── */}
+      <section className="gsap-reveal relative w-full bg-[#0A7043] pt-6 sm:pt-10 pb-10 sm:pb-14 px-4 sm:px-6 lg:px-8 overflow-hidden z-20">
+        {/* Floating Decorative Stars matching reference */}
+        <div className="absolute left-6 sm:left-12 top-6 text-white/80 pointer-events-none animate-pulse">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 sm:w-8 sm:h-8">
+            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
+          </svg>
         </div>
-
-        {/* Buttons Overlay */}
-        {heroBanners.length > 0 && (() => {
-          const banner = heroBanners[currentHero]
-          let btnText = ''
-          let btnLink = ''
-          try {
-            const parsed = JSON.parse(banner.title)
-            btnText = parsed.buttonText || ''
-            btnLink = parsed.buttonLink || ''
-          } catch {
-            btnText = banner.title || ''
-            btnLink = '/ppdb'
-          }
-
-          if (!btnText) return null
-
-          const btnClass = "px-10 py-4 bg-[#07A363] hover:bg-[#07A363]/90 text-white font-extrabold text-xs sm:text-sm tracking-wider uppercase rounded-full transition-all cursor-pointer shadow-xl hover:scale-105 z-20"
-
-          return (
-            <div className="absolute inset-0 flex flex-col justify-end items-center pb-16 sm:pb-24 lg:pb-28 z-20">
-              <Link href={btnLink || '/ppdb'} className={btnClass}>
-                {btnText}
-              </Link>
-            </div>
-          )
-        })()}
-
-        {/* Navigation Arrows */}
-        {heroBanners.length > 1 && (
-          <>
-            <button
-              onClick={prevHero}
-              aria-label="Previous Slide"
-              className="absolute left-4 sm:left-6 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-3 rounded-full transition-all cursor-pointer shadow-md z-30 opacity-0 group-hover:opacity-100 duration-300"
-            >
-              <ChevronLeft size={24} />
-            </button>
-            <button
-              onClick={nextHero}
-              aria-label="Next Slide"
-              className="absolute right-4 sm:right-6 top-1/2 -translate-y-1/2 bg-white/20 hover:bg-white/40 text-white p-3 rounded-full transition-all cursor-pointer shadow-md z-30 opacity-0 group-hover:opacity-100 duration-300"
-            >
-              <ChevronRight size={24} />
-            </button>
-          </>
-        )}
-
-        {/* Dot Indicators */}
-        {heroBanners.length > 1 && (
-          <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2 z-30">
-            {heroBanners.map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentHero(idx)}
-                aria-label={`Slide ${idx + 1}`}
-                className={`w-2.5 h-2.5 rounded-full transition-all cursor-pointer ${idx === currentHero ? 'bg-white scale-125' : 'bg-white/40 hover:bg-white/60'
-                  }`}
-              />
-            ))}
-          </div>
-        )}
-      </section>
-
-      {/* ─── WHY CHOOSE US ── */}
-      <section
-        className="relative bg-cover bg-top pt-[10%] py-20 z-20 w-[101vw] right-[10px] bg-transparent -mt-28 sm:-mt-44 lg:-mt-56"
-        style={{ backgroundImage: "url('/images/Asset 3.png')" }}
-      >
-        <div className="absolute left-[4%] top-[14%] w-16 h-10 pointer-events-none opacity-90">
-          <Image src="/images/Asset 13.png" alt="Cloud" fill className="object-contain" />
+        <div className="absolute right-8 sm:right-16 top-6 text-[#F5B744] pointer-events-none drop-shadow-sm">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7 sm:w-9 sm:h-9">
+            <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+          </svg>
         </div>
-        <div className="absolute right-[4%] top-[20%] w-16 h-10 pointer-events-none opacity-90">
-          <Image src="/images/Asset 14.png" alt="Cloud" fill className="object-contain" />
-        </div>
-        <div className="absolute left-[12%] bottom-[22%] text-amber-400">
-          <Star fill="currentColor" size={14} />
-        </div>
-        <div className="absolute right-[18%] bottom-[30%] text-amber-400">
-          <Star fill="currentColor" size={12} />
-        </div>
-
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 pt-[8rem] lg:px-12 relative z-10">
-          <div className="text-center mb-14 relative inline-block w-full">
-            <h2 className="text-2xl sm:text-3xl font-black text-[#07265F]">Mengapa Memilih Istiqamah</h2>
-            <div className="absolute -top-5 right-[22%] text-amber-400">
-              <Star fill="currentColor" size={18} />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-4">
-            {[
-              { icon: '/images/Asset 6.png', alt: 'Bermain Kreatif', title: 'Bermain Kreatif', desc: 'Mengasah imajinasi melalui aktivitas bermain yang menyenangkan dan bermakna.' },
-              { icon: '/images/Asset 5.png', alt: 'Berakhlak Sejak Dini', title: 'Berakhlak Sejak Dini', desc: 'Pembiasaan sikap terpuji dan keteladanan harian di sekolah maupun di rumah.' },
-              { icon: '/images/Asset 4.png', alt: 'Kurikulum Islami Terarah', title: 'Kurikulum Islami Terarah', desc: 'Pembelajaran terintegrasi nilai keislaman dan sains modern sesuai tahap usia emas anak.' },
-            ].map((card, i) => (
-              <div key={i} className="bg-white rounded-[28px] p-8 shadow-sm hover:shadow-md transition-all border border-gray-100 flex flex-col items-center text-center gap-4">
-                <div className="relative w-16 h-16">
-                  <Image src={card.icon} alt={card.alt} fill className="object-contain" />
-                </div>
-                <h3 className="font-extrabold text-[#07265F] text-base">{card.title}</h3>
-                <p className="text-sm font-semibold text-[#07265F]/80 leading-relaxed">{card.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="flex justify-center mt-12">
-            <Link href="/tentang-kami" className="flex items-center gap-2 font-extrabold text-sm text-[#07A363] hover:text-[#07A363]/80 transition-colors">
-              Pelajari Visi &amp; Misi Kami <ArrowRight size={16} />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── PROGRAM UNGGULAN (Point 7 & 9) ───────── */}
-      <section className="py-20 bg-[#F9F4ED] relative">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="text-center mb-16 space-y-3">
-            <div className="inline-flex items-center gap-2 bg-[#07A363]/10 text-[#07A363] px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider">
-              <Star size={14} className="fill-current" /> Kurikulum Pembelajaran PAUD
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-primary-blue">Program Unggulan</h2>
-            <p className="text-sm text-[#07265F]/75 max-w-2xl mx-auto font-medium leading-relaxed">
-              Empat pilar utama program pembelajaran yang dirancang untuk mengoptimalkan potensi spiritual, sosial, kemandirian, dan kognitif buah hati Anda.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-7">
-            {LEARNING_PROGRAMS.map((prog) => {
-              const IconComp = prog.icon
-              return (
-                <div
-                  key={prog.id}
-                  className="bg-white rounded-[30px] p-6 shadow-sm hover:shadow-xl transition-all border border-gray-100 flex flex-col justify-between group hover:-translate-y-1 duration-300"
-                >
-                  <div className="space-y-4">
-                    {/* Header: Icon & Category */}
-                    <div className="flex items-center justify-between">
-                      <div className={`w-14 h-14 rounded-2xl ${prog.iconBg} flex items-center justify-center shadow-md group-hover:scale-110 transition-transform`}>
-                        <IconComp size={28} />
-                      </div>
-                      <span className={`text-[10px] font-extrabold px-3 py-1 rounded-full border ${prog.badgeColor}`}>
-                        {prog.category}
-                      </span>
-                    </div>
-
-                    {/* Title & Desc */}
-                    <div className="space-y-2 pt-2">
-                      <h3 className="font-black text-lg text-primary-blue leading-snug group-hover:text-primary-green transition-colors">
-                        {prog.title}
-                      </h3>
-                      <p className="text-xs text-gray-600 font-medium leading-relaxed">
-                        {prog.desc}
-                      </p>
-                    </div>
-
-                    {/* Key Features */}
-                    <div className="pt-3 border-t border-gray-100 space-y-2">
-                      <p className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">Ragam Pembelajaran:</p>
-                      {prog.features.map((feat, fIdx) => (
-                        <div key={fIdx} className="flex items-center gap-2 text-xs font-semibold text-primary-blue">
-                          <CheckCircle2 size={13} className="text-[#07A363] shrink-0" />
-                          <span>{feat}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="mt-6 pt-4 border-t border-gray-100">
-                    <Link
-                      href="/program"
-                      className="flex items-center justify-between text-xs font-bold text-[#07A363] group-hover:text-primary-blue transition-colors"
-                    >
-                      <span>Lihat Rincian Program</span>
-                      <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-
-          <div className="flex justify-center mt-12">
-            <Link href="/program" className="bg-primary-blue hover:bg-primary-blue/90 text-white font-extrabold text-xs uppercase tracking-wider px-8 py-3.5 rounded-full transition-all shadow-md inline-flex items-center gap-2">
-              Katalog Lengkap Kurikulum &amp; Jadwal <ArrowRight size={16} />
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── SECTION KHUSUS EKSTRAKURIKULER (Point 11) ─── */}
-      <section className="py-20 bg-white border-t border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="text-center mb-14 space-y-3">
-            <div className="inline-flex items-center gap-2 bg-purple-50 text-purple-700 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border border-purple-200">
-              <Sparkles size={14} /> Minat &amp; Bakat Anak
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-primary-blue">Kegiatan Ekstrakurikuler</h2>
-            <p className="text-sm text-gray-500 max-w-2xl mx-auto font-medium leading-relaxed">
-              Mewadahi eksplorasi minat, kecerdasan majemuk (*multiple intelligences*), dan bakat anak melalui kegiatan ekstrakurikuler yang seru dan dipandu pelatih profesional.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {EXTRACURRICULARS.map((ekskul, idx) => {
-              const IconComp = ekskul.icon
-              return (
-                <div
-                  key={idx}
-                  className="bg-[#F9F4ED]/60 rounded-3xl p-6 border border-gray-100 hover:border-primary-green/40 hover:bg-white hover:shadow-lg transition-all flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <div className="w-12 h-12 rounded-2xl bg-white text-primary-green flex items-center justify-center shadow-sm border border-gray-100">
-                        <IconComp size={22} />
-                      </div>
-                      <span className="text-[10px] font-extrabold px-3 py-1 rounded-full bg-white text-gray-600 border border-gray-200 font-mono">
-                        {ekskul.schedule}
-                      </span>
-                    </div>
-                    <h3 className="font-extrabold text-base text-primary-blue leading-snug">{ekskul.title}</h3>
-                    <p className="text-xs text-gray-600 font-medium leading-relaxed">{ekskul.desc}</p>
-                  </div>
-                  <div className="mt-5 pt-3 border-t border-gray-200/60 flex items-center justify-between text-[11px] font-bold text-gray-500">
-                    <span>Pelatih: {ekskul.instructor}</span>
-                    <span className="text-[#07A363]">Tersedia</span>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── SECTION FASILITAS SEKOLAH & POP UP SWIPE (Point 10) ─── */}
-      <section className="py-20 bg-[#F9F4ED]">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="text-center mb-14 space-y-3">
-            <div className="inline-flex items-center gap-2 bg-blue-50 text-blue-700 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border border-blue-200">
-              <Building2 size={14} /> Sarana &amp; Prasarana
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-black text-primary-blue">Fasilitas Sekolah Unggulan</h2>
-            <p className="text-sm text-gray-600 max-w-2xl mx-auto font-medium leading-relaxed">
-              Lingkungan belajar yang bersih, aman, dan nyaman berstandar ramah anak. Klik salah satu fasilitas untuk melihat foto dan detail lengkap.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-7">
-            {SCHOOL_FACILITIES.map((facility) => (
-              <div
-                key={facility.id}
-                onClick={() => handleOpenFacility(facility)}
-                className="bg-white rounded-[28px] overflow-hidden shadow-sm hover:shadow-xl transition-all border border-gray-100 cursor-pointer group flex flex-col"
-              >
-                {/* Image Box */}
-                <div className="relative w-full h-52 overflow-hidden bg-gray-100">
-                  <Image
-                    src={facility.images[0]}
-                    alt={facility.title}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/60 via-transparent to-transparent opacity-80" />
-                  <div className="absolute top-3.5 left-3.5">
-                    <span className="bg-[#07A363] text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm">
-                      {facility.category}
-                    </span>
-                  </div>
-                  {facility.images.length > 1 && (
-                    <div className="absolute bottom-3 right-3 bg-black/60 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-1 rounded-lg">
-                      +{facility.images.length} Foto
-                    </div>
-                  )}
-                </div>
-
-                {/* Content Box */}
-                <div className="p-6 flex-1 flex flex-col justify-between space-y-3">
-                  <div className="space-y-2">
-                    <h3 className="font-extrabold text-base text-primary-blue group-hover:text-primary-green transition-colors leading-snug">
-                      {facility.title}
-                    </h3>
-                    <p className="text-xs text-gray-500 font-medium leading-relaxed line-clamp-2">
-                      {facility.shortDesc}
-                    </p>
-                  </div>
-                  <div className="pt-3 border-t border-gray-100 flex items-center justify-between text-xs font-extrabold text-[#07A363]">
-                    <span>Lihat Detail Fasilitas</span>
-                    <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ─── MODAL POP UP FASILITAS (Point 10: Foto > 1 dengan Gaya Geser / Swipe) ─── */}
-      <AnimatePresence>
-        {selectedFacility && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-55 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6"
-            onClick={() => setSelectedFacility(null)}
-          >
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-              onClick={(e) => e.stopPropagation()}
-              className="relative max-w-2xl w-full bg-white rounded-3xl overflow-hidden shadow-2xl max-h-[90vh] flex flex-col"
-            >
-              {/* Close Button */}
-              <button
-                onClick={() => setSelectedFacility(null)}
-                aria-label="Tutup"
-                className="absolute top-4 right-4 z-20 bg-black/50 hover:bg-black/80 text-white p-2 rounded-full cursor-pointer transition-colors"
-              >
-                <X size={20} />
-              </button>
-
-              {/* Photo Slider (Gaya Geser / Swipe) */}
-              <div className="relative w-full h-64 sm:h-80 bg-gray-950 overflow-hidden shrink-0 group">
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={facilityPhotoIndex}
-                    initial={{ opacity: 0, x: 50 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -50 }}
-                    transition={{ duration: 0.3 }}
-                    className="relative w-full h-full"
-                  >
-                    <Image
-                      src={selectedFacility.images[facilityPhotoIndex]}
-                      alt={selectedFacility.title}
-                      fill
-                      className="object-cover"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-                  </motion.div>
-                </AnimatePresence>
-
-                {/* Slider Controls (if photos > 1) */}
-                {selectedFacility.images.length > 1 && (
-                  <>
-                    <button
-                      onClick={prevFacilityPhoto}
-                      aria-label="Foto Sebelumnya"
-                      className="absolute left-3 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/60 text-white p-2.5 rounded-full transition-all cursor-pointer backdrop-blur-xs shadow-md"
-                    >
-                      <ChevronLeft size={20} />
-                    </button>
-                    <button
-                      onClick={nextFacilityPhoto}
-                      aria-label="Foto Selanjutnya"
-                      className="absolute right-3 top-1/2 -translate-y-1/2 bg-white/30 hover:bg-white/60 text-white p-2.5 rounded-full transition-all cursor-pointer backdrop-blur-xs shadow-md"
-                    >
-                      <ChevronRight size={20} />
-                    </button>
-
-                    {/* Dots / Page Counter */}
-                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1.5 z-10">
-                      {selectedFacility.images.map((_, idx) => (
-                        <button
-                          key={idx}
-                          onClick={() => setFacilityPhotoIndex(idx)}
-                          className={`w-2.5 h-2.5 rounded-full transition-all ${
-                            idx === facilityPhotoIndex ? 'bg-white scale-125' : 'bg-white/40'
-                          }`}
-                        />
-                      ))}
-                    </div>
-
-                    <div className="absolute bottom-3.5 left-4 bg-black/60 text-white text-[10px] font-mono px-2.5 py-1 rounded-md">
-                      {facilityPhotoIndex + 1} / {selectedFacility.images.length} Foto
-                    </div>
-                  </>
-                )}
-              </div>
-
-              {/* Detail Content */}
-              <div className="p-6 sm:p-8 overflow-y-auto space-y-5">
-                <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="bg-[#07A363]/10 text-[#07A363] text-xs font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
-                      {selectedFacility.category}
-                    </span>
-                    <span className="text-xs font-semibold text-gray-400">
-                      • {selectedFacility.badge}
-                    </span>
-                  </div>
-                  <h3 className="text-xl sm:text-2xl font-black text-primary-blue">
-                    {selectedFacility.title}
-                  </h3>
-                </div>
-
-                <p className="text-sm text-gray-600 font-medium leading-relaxed">
-                  {selectedFacility.fullDesc}
-                </p>
-
-                {/* Specs List */}
-                <div className="bg-[#F8F6F2] rounded-2xl p-5 space-y-3">
-                  <h4 className="text-xs font-extrabold uppercase tracking-wider text-primary-blue flex items-center gap-2">
-                    <ShieldCheck size={16} className="text-[#07A363]" /> Spesifikasi &amp; Fasilitas:
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    {selectedFacility.specs.map((spec, sIdx) => (
-                      <div key={sIdx} className="flex items-center gap-2 text-xs font-semibold text-gray-700">
-                        <CheckCircle2 size={14} className="text-[#07A363] shrink-0" />
-                        <span>{spec}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="pt-2 flex justify-end">
-                  <button
-                    onClick={() => setSelectedFacility(null)}
-                    className="px-6 py-2.5 bg-primary-blue hover:bg-primary-blue/90 text-white font-bold text-xs rounded-xl transition-all cursor-pointer"
-                  >
-                    Tutup Detail
-                  </button>
-                </div>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* ─── INFORMASI NARAHUBUNG RESMI (Point 12) ─── */}
-      <section className="py-16 bg-white border-t border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="bg-gradient-to-br from-primary-blue via-[#0c367d] to-[#07265F] text-white rounded-[32px] p-8 sm:p-12 shadow-xl relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-96 h-96 bg-[#07A363]/15 rounded-full blur-3xl pointer-events-none" />
-            <div className="relative z-10 space-y-8">
-              <div className="text-center max-w-2xl mx-auto space-y-3">
-                <div className="inline-flex items-center gap-2 bg-white/10 px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-wider text-emerald-300">
-                  <PhoneCall size={14} /> Layanan Bantuan &amp; Konsultasi
-                </div>
-                <h2 className="text-2xl sm:text-3xl font-black">Nomor Narahubung Resmi</h2>
-                <p className="text-xs sm:text-sm text-white/80 font-medium leading-relaxed">
-                  Punya pertanyaan seputar kurikulum, pendaftaran PPDB, atau konfirmasi administrasi? Hubungi narahubung kami melalui WhatsApp resmi berikut:
-                </p>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {CONTACT_PERSONS.map((person, idx) => (
-                  <div
-                    key={idx}
-                    className="bg-white/10 backdrop-blur-md rounded-2xl p-6 border border-white/15 flex flex-col justify-between space-y-4 hover:bg-white/15 transition-all"
-                  >
-                    <div className="space-y-2">
-                      <div className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-300 font-mono">
-                        {person.role}
-                      </div>
-                      <h3 className="font-extrabold text-base text-white">{person.name}</h3>
-                      <p className="text-sm font-black text-white font-mono">{person.phone}</p>
-                      <div className="flex items-center gap-1.5 text-[11px] text-white/70 font-medium pt-1">
-                        <Clock size={12} /> {person.hours}
-                      </div>
-                    </div>
-
-                    <a
-                      href={person.waLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="w-full bg-[#07A363] hover:bg-[#07A363]/90 text-white font-extrabold text-xs py-3 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all cursor-pointer"
-                    >
-                      <MessageCircle size={15} />
-                      <span>Chat WhatsApp</span>
-                    </a>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── GALLERY SLIDER (Kegiatan Pembelajaran - Point 8) ─── */}
-      <section className="relative overflow-hidden pt-12 pb-24 lg:h-[140vh] flex flex-col justify-center">
-        <div className="absolute top-0 left-0 w-full translate-y-[-99%] pointer-events-none">
-          <svg viewBox="0 0 1440 80" className="w-full h-10 sm:h-16 fill-primary-green" preserveAspectRatio="none">
-            <path d="M0,40 C360,80 720,0 1080,40 C1260,60 1440,40 1440,40 L1440,80 L0,80 Z" />
+        <div className="absolute right-6 sm:right-14 top-28 text-white/70 pointer-events-none">
+          <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5 sm:w-6 sm:h-6">
+            <path d="M12 2L14.5 9.5L22 12L14.5 14.5L12 22L9.5 14.5L2 12L9.5 9.5L12 2Z" />
           </svg>
         </div>
 
-        <div className="absolute inset-0 z-0">
-          <Image src="/images/Asset 10.png" alt="" fill className="object-cover" />
+        {/* White Card: SMART Generation */}
+        <div className="max-w-6xl xl:max-w-7xl mx-auto bg-white rounded-[26px] sm:rounded-[34px] p-5 sm:p-8 lg:p-10 shadow-[0_16px_50px_rgba(0,0,0,0.12)] border border-white relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+            {/* Left Column: Heading & Description */}
+            <div className="lg:col-span-6 flex flex-col justify-center text-left">
+              <h2 className="text-2xl sm:text-3xl lg:text-[34px] font-extrabold tracking-tight leading-[1.18]">
+                <span className="block text-[#1B3B6F]">Tempat Tumbuhnya</span>
+                <span className="block text-[#07A363] font-black mt-1">Generasi SMART</span>
+              </h2>
+              <p className="mt-3 sm:mt-4 text-xs sm:text-sm lg:text-[14px] text-[#2C4A6F]/90 font-medium leading-[1.75]">
+                Setiap anak tumbuh dengan cara dan waktunya sendiri. Guru hadir untuk mendampingi, memberi teladan, menstimulasi, dan membuka ruang bagi anak untuk bereksplorasi sehingga tumbuh menjadi pribadi yang Santun, Mandiri, Aktif, Religius dan Terampil ( SMART)
+              </p>
+            </div>
+
+            {/* Right Column: School Building Photo */}
+            <div className="lg:col-span-6">
+              <div className="relative w-full aspect-[16/10] rounded-2xl sm:rounded-3xl overflow-hidden shadow-md border-2 border-emerald-50">
+                <Image
+                  src="/images/gedung_istiqamah.png"
+                  alt="Gedung KB &amp; TK Istiqamah Bandung"
+                  fill
+                  className="object-cover"
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <div className="max-w-10xl mx-auto px-6 sm:px-8 lg:px-12 pb-16 pt-[-10%] relative z-10">
-          <div className="text-center mb-10">
-            <h2 className="text-2xl sm:text-3xl font-black text-white">Galeri Kegiatan Pembelajaran</h2>
-            <p className="text-white/70 text-sm font-semibold mt-2">Momen berharga kegiatan belajar dan bermain di KB &amp; TK Istiqamah</p>
+        {/* Bottom decorative lush foliage curves */}
+        <div className="w-full flex justify-center -mb-8 sm:-mb-12 mt-6 sm:mt-8 pointer-events-none opacity-90">
+          <div className="relative w-full max-w-7xl h-10 sm:h-14">
+            <svg viewBox="0 0 1200 80" fill="none" className="w-full h-full" preserveAspectRatio="none">
+              <path d="M0,80 C150,20 300,50 450,20 C600,-10 750,50 900,15 C1050,45 1150,25 1200,80 Z" fill="#075E38" opacity="0.6"/>
+              <path d="M0,80 C200,30 400,60 600,20 C800,50 1000,10 1200,80 Z" fill="#054A2C" opacity="0.8"/>
+            </svg>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── SECTION 2: PENDEKATAN PEMBELAJARAN ─── */}
+      <section className="gsap-reveal relative w-full bg-[#054A2C] pb-8 sm:pb-12 px-4 sm:px-6 lg:px-8 z-20">
+        <div className="max-w-6xl xl:max-w-7xl mx-auto bg-[#102A4E] rounded-[26px] sm:rounded-[34px] p-5 sm:p-8 lg:p-10 shadow-2xl border border-white/10">
+          {/* Section Header */}
+          <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8">
+            <h2 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-white tracking-tight">
+              Pendekatan Pembelajaran
+            </h2>
+            <p className="mt-2 text-xs sm:text-sm text-blue-100/80 font-medium leading-relaxed">
+              Pembelajaran yang dirancang untuk menumbuhkan iman, karakter, kemandirian, kreativitas dan keterampilan anak secara utuh
+            </p>
           </div>
 
-          <div className="relative w-full overflow-hidden max-w-7xl mx-auto px-10">
+          {/* 3 Pillar Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5 sm:gap-6">
+            {/* Card 1: Islamic Learning */}
+            <div className="bg-white rounded-[22px] p-5 sm:p-6 flex flex-col items-center text-center shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group">
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full bg-[#DCE8FA] flex items-center justify-center text-[#1B3B6F] mb-3.5 shadow-inner group-hover:scale-105 transition-transform">
+                <svg viewBox="0 0 40 40" fill="currentColor" className="w-7 h-7 sm:w-8 sm:h-8 text-[#1B3B6F]">
+                  <rect x="8" y="8" width="24" height="24" rx="4" fill="#1B3B6F"/>
+                  <rect x="11" y="27" width="18" height="3" rx="1.5" fill="#DCE8FA"/>
+                  <path d="M21.5 14C19.5 14 18 15.5 18 17.5C18 19.5 19.5 21 21.5 21C22.2 21 22.8 20.8 23.3 20.5C22.5 21.2 21.5 21.7 20.3 21.7C17.9 21.7 16 19.8 16 17.4C16 15 17.9 13.1 20.3 13.1C20.7 13.1 21.1 13.2 21.5 13.3V14Z" fill="#FFFFFF"/>
+                  <polygon points="22.5,16.5 23.2,17.7 24.5,17.8 23.5,18.7 23.8,20 22.5,19.3 21.2,20 21.5,18.7 20.5,17.8 21.8,17.7" fill="#FFFFFF"/>
+                </svg>
+              </div>
+              <h3 className="font-extrabold text-[#1B3B6F] text-sm sm:text-base">Islamic Learning</h3>
+              <p className="mt-1.5 text-xs sm:text-[13px] text-[#4A607A] font-medium leading-[1.65]">
+                Menanamkan nilai-nilai Islam dan kecintaan kepada Allah SWT melalui pembelajaran Al-Qur&apos;an, ibadah, doa, dan pembiasaan sehari-hari
+              </p>
+            </div>
+
+            {/* Card 2: Moslem Character Building */}
+            <div className="bg-white rounded-[22px] p-5 sm:p-6 flex flex-col items-center text-center shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group">
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full bg-[#DCE8FA] flex items-center justify-center text-[#1B3B6F] mb-3.5 shadow-inner group-hover:scale-105 transition-transform">
+                <svg viewBox="0 0 40 40" fill="currentColor" className="w-7 h-7 sm:w-8 sm:h-8 text-[#1B3B6F]">
+                  <path d="M20 9C15.5 9 13 12.5 13 17C13 22 14.5 27 15.5 30H24.5C25.5 27 27 22 27 17C27 12.5 24.5 9 20 9Z" fill="#1B3B6F"/>
+                  <ellipse cx="20" cy="18" rx="4.5" ry="5.5" fill="#DCE8FA"/>
+                </svg>
+              </div>
+              <h3 className="font-extrabold text-[#1B3B6F] text-sm sm:text-base">Moslem Character Building</h3>
+              <p className="mt-1.5 text-xs sm:text-[13px] text-[#4A607A] font-medium leading-[1.65]">
+                Membangun karakter Islami melalui pembiasaan adab, akhlakul karimah, karakter SMART dan kepedulian terhadap sesama
+              </p>
+            </div>
+
+            {/* Card 3: Life Skill */}
+            <div className="bg-white rounded-[22px] p-5 sm:p-6 flex flex-col items-center text-center shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 group">
+              <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full bg-[#DCE8FA] flex items-center justify-center text-[#1B3B6F] mb-3.5 shadow-inner group-hover:scale-105 transition-transform">
+                <svg viewBox="0 0 40 40" fill="none" stroke="#1B3B6F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 sm:w-8 sm:h-8">
+                  <path d="M19 14.5C17.5 12.5 14.5 12.5 13 14C11.5 15.5 11.5 18.5 13.5 20.5L19 26L24.5 20.5C26.5 18.5 26.5 15.5 25 14C23.5 12.5 20.5 12.5 19 14.5Z" />
+                  <ellipse cx="23" cy="20" rx="5.5" ry="7" transform="rotate(30 23 20)" stroke="#1B3B6F" strokeWidth="2" fill="none"/>
+                </svg>
+              </div>
+              <h3 className="font-extrabold text-[#1B3B6F] text-sm sm:text-base">Life Skill</h3>
+              <p className="mt-1.5 text-xs sm:text-[13px] text-[#4A607A] font-medium leading-[1.65]">
+                Melatih kemandirian dan keterampilan melalui aktivitas nyata sesuai usia dan perkembangannya
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── SECTION 3: PENGEMBANGAN ANAK (COMPACT & SPACE-EFFICIENT) ─── */}
+      <section id="pengembangan-anak" className="gsap-reveal relative w-full bg-[#054A2C] pb-6 sm:pb-8 px-4 sm:px-6 lg:px-8 z-20">
+        <div className="max-w-6xl xl:max-w-7xl mx-auto bg-[#0B7347] rounded-[24px] sm:rounded-[32px] p-4 sm:p-6 lg:p-7 shadow-2xl border border-white/10">
+          {/* Section Header */}
+          <div className="text-center mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-2xl lg:text-[30px] font-black text-white tracking-tight">
+              Pengembangan Anak
+            </h2>
+          </div>
+
+          {/* Compact Space-Efficient Layout matching reference */}
+          <div className="flex flex-col md:flex-row items-center justify-center gap-5 sm:gap-7 lg:gap-8 max-w-4xl mx-auto">
+            {/* Left: Active Enlarged Pillar Card */}
+            <div className="relative w-36 h-36 sm:w-44 sm:h-44 md:w-48 md:h-48 rounded-[24px] sm:rounded-[30px] bg-white p-3 sm:p-4 shadow-xl flex items-center justify-center flex-shrink-0 border-2 border-white/80 group">
+              <div className="relative w-full h-full">
+                <Image
+                  src={DEVELOPMENT_PILLARS[activePillar].image}
+                  alt={DEVELOPMENT_PILLARS[activePillar].title}
+                  fill
+                  className="object-contain drop-shadow-sm transition-all duration-300 group-hover:scale-105"
+                  priority
+                />
+              </div>
+            </div>
+
+            {/* Right: Active Text & Other Pillar Buttons Row */}
+            <div className="flex-1 flex flex-col justify-center text-center md:text-left min-w-0">
+              {/* Text Description */}
+              <div className="min-h-[70px] sm:min-h-[80px] flex flex-col justify-center">
+                <h3 className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight">
+                  {DEVELOPMENT_PILLARS[activePillar].title}
+                </h3>
+                <p className="mt-1.5 text-xs sm:text-[13px] lg:text-sm text-emerald-100/95 font-medium leading-relaxed max-w-xl">
+                  {DEVELOPMENT_PILLARS[activePillar].desc}
+                </p>
+              </div>
+
+              {/* Small Pillar Icon Cards Row */}
+              <div className="flex items-center justify-center md:justify-start gap-2.5 sm:gap-3.5 mt-3 sm:mt-4">
+                {DEVELOPMENT_PILLARS.map((pillar, idx) => {
+                  const isActive = activePillar === idx
+                  return (
+                    <button
+                      key={pillar.id}
+                      type="button"
+                      onClick={() => setActivePillar(idx)}
+                      aria-label={`Pilar: ${pillar.title}`}
+                      className={`relative w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 cursor-pointer transition-all duration-300 shadow-md ${
+                        isActive
+                          ? 'bg-white ring-3 ring-amber-300 scale-105 opacity-100 shadow-lg'
+                          : 'bg-white/90 hover:bg-white hover:scale-105 opacity-80 hover:opacity-100'
+                      }`}
+                    >
+                      <div className="relative w-full h-full">
+                        <Image
+                          src={pillar.image}
+                          alt={pillar.title}
+                          fill
+                          className="object-contain"
+                          sizes="(max-width: 640px) 48px, 64px"
+                        />
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── WAVE TRANSITION FROM PENGEMBANGAN ANAK TO WHITE SECTIONS ─── */}
+      <div className="w-full overflow-hidden leading-none bg-[#054A2C] -mt-1">
+        <svg viewBox="0 0 1200 45" fill="none" className="w-full h-7 sm:h-10" preserveAspectRatio="none">
+          <path d="M0,0 C300,40 600,0 900,35 C1050,48 1150,22 1200,40 L1200,45 L0,45 Z" fill="#FDFBF7" />
+        </svg>
+      </div>
+
+      <div className="bg-[#FDFBF7] pt-4 sm:pt-6 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8">
+        {/* ─── SECTION 4: PROGRAM UNGGULAN (HORIZONTAL SCROLL + CLICKABLE DOTS) ─── */}
+        <section id="program-unggulan" className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="text-center max-w-2xl mx-auto mb-5 sm:mb-7">
+            <h2 className="text-2xl sm:text-3xl lg:text-[34px] font-black text-[#1B3B6F] tracking-tight">
+              Program Unggulan
+            </h2>
+            <p className="mt-1.5 text-xs sm:text-sm text-[#4A607A] font-medium leading-relaxed">
+              Beragam pengalaman belajar bermakna untuk menumbuhkan iman, karakter, kemandirian, kreativitas, dan potensi terbaik setiap anak
+            </p>
+          </div>
+
+          {/* Scrollable Container with Smooth Native Right-Scroll */}
+          <div className="relative">
             <div
-              className="flex transition-transform duration-500 ease-out"
-              style={{ transform: `translateX(-${galleryPage * (100 / visibleItems)}%)` }}
+              ref={programScrollRef}
+              onScroll={handleProgramScroll}
+              className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden gap-4 sm:gap-6 pb-3 pt-1 px-2"
             >
-              {galleryItems.map((item) => (
-                <div key={item.id} className="w-full md:w-1/3 lg:w-1/5 p-2 shrink-0">
-                  <div className="relative rounded-[20px] overflow-hidden shadow-lg aspect-square group bg-[#07265F]/20">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={item.image}
-                      alt={item.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              {FEATURED_PROGRAMS.map((prog, idx) => (
+                <div
+                  key={idx}
+                  className="program-card w-[270px] sm:w-[310px] md:w-[340px] lg:w-[360px] flex-shrink-0 snap-start flex flex-col justify-between group bg-white/50 hover:bg-white rounded-2xl p-2 transition-all duration-300 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-lg border border-transparent hover:border-gray-100"
+                >
+                  {prog.layout === 'text-top' ? (
+                    <>
+                      <div className="text-left mb-2.5 px-1 min-h-[72px]">
+                        <h3 className="font-extrabold text-[#1B3B6F] text-sm sm:text-base group-hover:text-[#07A363] transition-colors">
+                          {prog.title}
+                        </h3>
+                        <p className="mt-1 text-xs text-[#4A607A] font-medium leading-[1.65]">
+                          {prog.desc}
+                        </p>
+                      </div>
+                      <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-gray-50">
+                        <Image
+                          src={prog.image}
+                          alt={prog.title}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                    </>
+                  ) : (
+                    <>
+                      <div className="relative w-full aspect-[4/3] rounded-2xl overflow-hidden shadow-sm border border-gray-100 bg-gray-50 mb-2.5">
+                        <Image
+                          src={prog.image}
+                          alt={prog.title}
+                          fill
+                          className="object-cover group-hover:scale-105 transition-transform duration-300"
+                        />
+                      </div>
+                      <div className="text-left px-1 min-h-[72px]">
+                        <h3 className="font-extrabold text-[#1B3B6F] text-sm sm:text-base group-hover:text-[#07A363] transition-colors">
+                          {prog.title}
+                        </h3>
+                        <p className="mt-1 text-xs text-[#4A607A] font-medium leading-[1.65]">
+                          {prog.desc}
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Indicator Dots & Next/Prev Controls */}
+          <div className="flex items-center justify-center gap-3 mt-6 sm:mt-7">
+            <button
+              type="button"
+              onClick={() => scrollToProgram((activeProgramIndex - 1 + FEATURED_PROGRAMS.length) % FEATURED_PROGRAMS.length)}
+              aria-label="Program Sebelumnya"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white shadow-sm border border-gray-200 flex items-center justify-center text-[#1B3B6F] hover:bg-[#1B3B6F] hover:text-white transition-all cursor-pointer hover:scale-105 active:scale-95"
+            >
+              <ChevronLeft className="w-4 h-4" />
+            </button>
+
+            {/* Clickable Indicator Dots */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {FEATURED_PROGRAMS.map((_, idx) => {
+                const isActive = activeProgramIndex === idx
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => {
+                      if (isActive) {
+                        scrollToProgram((idx + 1) % FEATURED_PROGRAMS.length)
+                      } else {
+                        scrollToProgram(idx)
+                      }
+                    }}
+                    aria-label={`Program ${idx + 1}${isActive ? ' (Klik untuk ke program selanjutnya)' : ''}`}
+                    className={`transition-all duration-300 rounded-full cursor-pointer ${
+                      isActive
+                        ? 'w-6 sm:w-7 h-2 bg-[#1B3B6F] shadow-sm'
+                        : 'w-2 h-2 bg-[#1B3B6F]/30 hover:bg-[#1B3B6F]/70'
+                    }`}
+                  />
+                )
+              })}
+            </div>
+
+            <button
+              type="button"
+              onClick={() => scrollToProgram((activeProgramIndex + 1) % FEATURED_PROGRAMS.length)}
+              aria-label="Program Selanjutnya"
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white shadow-sm border border-gray-200 flex items-center justify-center text-[#1B3B6F] hover:bg-[#1B3B6F] hover:text-white transition-all cursor-pointer hover:scale-105 active:scale-95"
+            >
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </section>
+
+        {/* ─── SECTION 5: FASILITAS KB TK ISTIQAMAH ─── */}
+        <section className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mt-8 sm:mt-10">
+          <div className="text-center max-w-2xl mx-auto mb-4 sm:mb-5">
+            <h2 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-[#1B3B6F] tracking-tight">
+              Fasilitas KB TK Istiqamah
+            </h2>
+            <p className="mt-1 text-xs sm:text-sm text-[#4A607A] font-medium">
+              Ruang Nyaman untuk Tumbuh dan Bereksplorasi
+            </p>
+          </div>
+
+          {/* Green Facility Container */}
+          <div className="bg-[#0B7347] rounded-[26px] sm:rounded-[34px] p-4 sm:p-6 lg:p-7 shadow-xl border border-white/10">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
+              {FACILITIES.map((facility, idx) => (
+                <div
+                  key={idx}
+                  className="bg-white rounded-[20px] overflow-hidden flex flex-col shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
+                >
+                  <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100">
+                    <Image
+                      src={facility.image}
+                      alt={facility.title}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/20 to-transparent opacity-90 group-hover:opacity-95 transition-opacity" />
-                    <div className="absolute bottom-0 left-0 right-0 p-4 z-10 text-left">
-                      <span className="text-[9px] text-white bg-[#07A363] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider">
-                        {item.category}
-                      </span>
-                      <p className="text-white font-extrabold text-xs sm:text-sm leading-snug mt-1.5 line-clamp-2">
-                        {item.title}
-                      </p>
-                    </div>
+                  </div>
+                  <div className="p-3 sm:p-3.5 flex flex-col flex-1 justify-between text-center">
+                    <h3 className="font-extrabold text-[#1B3B6F] text-xs sm:text-[13px] leading-tight">
+                      {facility.title}
+                    </h3>
+                    <p className="text-[#4A607A] text-[10px] sm:text-[11px] leading-snug mt-1 font-medium line-clamp-3">
+                      {facility.desc}
+                    </p>
                   </div>
                 </div>
               ))}
             </div>
 
-            {galleryItems.length > visibleItems && (
-              <>
-                <button
-                  onClick={prevGallery}
-                  aria-label="Galeri Sebelumnya"
-                  className="absolute left-0 top-1/2 -translate-y-1/2 bg-[#07A363] hover:bg-[#07A363]/90 text-white p-2.5 rounded-full transition-all cursor-pointer shadow-md z-20"
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button
-                  onClick={nextGallery}
-                  aria-label="Galeri Selanjutnya"
-                  className="absolute right-0 top-1/2 -translate-y-1/2 bg-[#07A363] hover:bg-[#07A363]/90 text-white p-2.5 rounded-full transition-all cursor-pointer shadow-md z-20"
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </>
-            )}
+            <p className="text-emerald-100/90 text-xs sm:text-sm text-center font-medium mt-4 sm:mt-6 max-w-2xl mx-auto leading-relaxed">
+              Lingkungan belajar yang aman, nyaman dan menyenangkan untuk mendukung anak belajar, bermain, bergerak serta mengeksplorasi berbagai pengalaman baru!
+            </p>
           </div>
+        </section>
 
-          <div className="flex justify-center mt-10">
-            <Link href="/galeri" className="bg-[#07A363] hover:bg-[#07A363]/90 text-white font-extrabold text-xs tracking-wider uppercase px-8 py-3.5 rounded-full transition-all shadow-md z-20">
-              Lihat Seluruh Galeri
-            </Link>
-          </div>
-        </div>
-      </section>
+        {/* ─── SECTION 6: CERITA DARI ORANG TUA ─── */}
+        <section className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mt-8 sm:mt-10">
+          <div className="bg-[#102A4E] rounded-[26px] sm:rounded-[34px] p-5 sm:p-8 shadow-2xl border border-white/10">
+            <div className="text-center max-w-2xl mx-auto mb-5 sm:mb-6">
+              <h2 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-white tracking-tight">
+                Cerita dari Orang Tua
+              </h2>
+              <p className="mt-1 text-xs sm:text-sm text-blue-100/80 font-medium">
+                Kepercayaan yang Tumbuh Bersama
+              </p>
+            </div>
 
-      {/* ─── TESTIMONIAL ─── */}
-      <section className="bg-transparent py-16 relative -mt-44 sm:-mt-50 lg:-mt-112">
-        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            {/* Left Column: Testimonials */}
-            <div className="lg:col-span-7 flex flex-col gap-6">
-              <h2 className="text-2xl sm:text-3xl font-black text-primary-blue">Testimoni Orang Tua</h2>
-
-              {testimonials.length > 0 ? (
-                <div className="bg-white rounded-[24px] p-6 sm:p-8 shadow-sm border border-gray-100 relative overflow-hidden min-h-[160px] flex items-center">
-                  <Quote size={36} className="absolute top-5 right-6 text-primary-green/10 z-0" />
-                  <div className="flex flex-row gap-5 items-start z-10 w-full text-left">
-                    {testimonials[0]?.photo ? (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={testimonials[0].photo}
-                        alt={testimonials[0].name}
-                        className="w-14 h-14 rounded-full border-4 border-[#07A363] object-cover flex-shrink-0"
-                      />
-                    ) : (
-                      <div className="w-14 h-14 rounded-full border-4 border-[#07A363] bg-[#07A363]/10 text-[#07A363] flex items-center justify-center font-black text-2xl flex-shrink-0">
-                        {testimonials[0]?.name?.charAt(0).toUpperCase()}
-                      </div>
-                    )}
-                    <div className="space-y-2 flex-1">
-                      <p className="text-sm font-semibold text-[#07265F]/80 leading-relaxed">
-                        &ldquo;{testimonials[0]?.content}&rdquo;
-                      </p>
-                      <p className="font-extrabold text-[#07265F] text-sm">{testimonials[0]?.name}</p>
-                      <p className="text-[11px] text-gray-400 font-semibold">{testimonials[0]?.job}</p>
-                    </div>
+            {/* 3 Testimonial Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
+              {TESTIMONIALS_DATA.map((t, idx) => (
+                <div
+                  key={idx}
+                  className="bg-white rounded-2xl p-4 sm:p-4.5 flex items-start gap-3.5 shadow-md border border-white/80 hover:shadow-lg transition-all"
+                >
+                  <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-amber-100 bg-[#DCE8FA]">
+                    <Image
+                      src={t.avatar}
+                      alt={t.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-extrabold text-[#1B3B6F] text-xs sm:text-sm truncate">
+                      {t.name}
+                    </h3>
+                    <p className="text-[#4A607A] text-[11px] sm:text-xs leading-relaxed mt-1 font-medium line-clamp-3">
+                      {t.content}
+                    </p>
                   </div>
                 </div>
-              ) : (
-                <div className="bg-white rounded-[24px] p-6 sm:p-8 shadow-sm border border-gray-100">
-                  <div className="flex flex-row gap-5 items-start">
-                    <div className="relative w-14 h-14 rounded-full border-4 border-[#07A363] overflow-hidden flex-shrink-0">
-                      <Image src="/images/parent_agus.png" alt="Pa Agus" fill className="object-cover" />
-                    </div>
-                    <div className="space-y-2 flex-1">
-                      <p className="text-sm font-semibold text-[#07265F]/80 leading-relaxed">
-                        &ldquo;Anak saya menjadi sangat mandiri, senang membaca Al-Qur&apos;an dengan nada Tilawati, dan selalu antusias berangkat sekolah setiap pagi. Lingkungan guru sangat penuh kasih sayang!&rdquo;
-                      </p>
-                      <p className="font-extrabold text-[#07265F] text-sm">Pak Agus &amp; Ibu Fitri</p>
-                      <p className="text-[11px] text-gray-400 font-semibold">Orang Tua Murid Kelas TK-A</p>
-                    </div>
-                  </div>
-                </div>
-              )}
+              ))}
+            </div>
 
-              <div className="flex justify-start">
-                <Link href="/aktivitas" className="flex items-center gap-2 font-extrabold text-sm text-[#07A363] hover:text-[#07A363]/80 transition-colors">
-                  Lihat Kegiatan Pembelajaran &amp; Aktivitas Sekolah <ArrowRight size={16} />
-                </Link>
+            <p className="text-blue-100/75 text-xs sm:text-[13px] text-center font-medium mt-5 sm:mt-6 max-w-2xl mx-auto leading-relaxed">
+              Cerita dan pengalaman orang tua menjadi bagian berharga dalam perjalanan kami mendampingi tumbuh kembang setiap anak.
+            </p>
+          </div>
+        </section>
+
+        {/* ─── SECTION 7: JEJAK KECIL, CERITA BERMAKNA (GALERI) ─── */}
+        <section className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mt-8 sm:mt-10">
+          <div className="bg-[#0B7347] rounded-[26px] sm:rounded-[34px] p-5 sm:p-8 shadow-2xl border border-white/10">
+            <div className="text-center max-w-2xl mx-auto mb-5 sm:mb-6">
+              <h2 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-white tracking-tight">
+                Jejak Kecil, Cerita Bermakna
+              </h2>
+              <p className="mt-1.5 text-xs sm:text-sm text-emerald-100/85 font-medium leading-relaxed">
+                Lihat bagaimana anak-anak belajar, bermain, bereksplorasi dan menciptakan pengalaman bermakna di KB TK Istiqamah
+              </p>
+
+              {/* Category Filter Pills */}
+              <div className="flex items-center justify-center flex-wrap gap-2.5 sm:gap-3 mt-4">
+                <button
+                  onClick={() => setGalleryCategory('all')}
+                  className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm ${
+                    galleryCategory === 'all'
+                      ? 'bg-[#054A2C] text-white shadow-inner'
+                      : 'bg-white text-[#0B7347] hover:bg-emerald-50'
+                  }`}
+                >
+                  Semua
+                </button>
+                <button
+                  onClick={() => setGalleryCategory('kegiatan')}
+                  className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm ${
+                    galleryCategory === 'kegiatan'
+                      ? 'bg-[#054A2C] text-white shadow-inner'
+                      : 'bg-white text-[#0B7347] hover:bg-emerald-50'
+                  }`}
+                >
+                  Kegiatan Pembelajaran
+                </button>
+                <button
+                  onClick={() => setGalleryCategory('program')}
+                  className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm ${
+                    galleryCategory === 'program'
+                      ? 'bg-[#054A2C] text-white shadow-inner'
+                      : 'bg-white text-[#0B7347] hover:bg-emerald-50'
+                  }`}
+                >
+                  Program Unggulan
+                </button>
               </div>
             </div>
 
-            {/* Right Column: Graphic Decor */}
-            <div className="hidden lg:block lg:col-span-5 relative h-[520px]">
-              <div className="absolute inset-0 w-full h-full">
+            {/* Gallery Grid matching reference (Left portrait + Right 2x3 grid) */}
+            {galleryCategory === 'all' ? (
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 mt-5">
+                {/* Left Tall Portrait Card */}
+                <div className="md:col-span-4 relative rounded-2xl overflow-hidden shadow-md aspect-[3/4] md:aspect-auto min-h-[250px] md:min-h-full border border-white/20 group">
+                  <Image
+                    src="/images/galeri_1.png"
+                    alt="Prestasi Juara Istiqamah"
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+
+                {/* Right 2x3 Grid */}
+                <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                  {GALLERY_SHOWCASE.slice(1).map((item) => (
+                    <div
+                      key={item.id}
+                      className="relative rounded-2xl overflow-hidden shadow-md aspect-[4/3] border border-white/20 group"
+                    >
+                      <Image
+                        src={item.src}
+                        alt={item.alt}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 mt-5">
+                {GALLERY_SHOWCASE.filter((item) => item.category === galleryCategory).map((item) => (
+                  <div
+                    key={item.id}
+                    className="relative rounded-2xl overflow-hidden shadow-md aspect-[4/3] border border-white/20 group"
+                  >
+                    <Image
+                      src={item.src}
+                      alt={item.alt}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Button Lihat Semua Galeri */}
+            <div className="flex justify-center mt-6 sm:mt-8">
+              <Link
+                href="/galeri"
+                className="bg-white hover:bg-emerald-50 text-[#075E38] font-bold text-xs sm:text-sm px-7 py-2.5 rounded-full shadow-lg transition-all inline-flex items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0"
+              >
+                Lihat Semua Galeri <ArrowRight size={15} />
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ─── SECTION 8: PENERIMAAN PESERTA DIDIK BARU (PPDB BANNER) ─── */}
+        <section className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mt-8 sm:mt-10">
+          <div className="bg-[#FFFDF4] rounded-[26px] sm:rounded-[34px] p-5 sm:p-8 lg:p-10 shadow-md border border-amber-200/60 relative overflow-hidden">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
+              {/* Left Column: Information & Action */}
+              <div className="lg:col-span-7 flex flex-col justify-center text-left">
+                <h3 className="text-base sm:text-lg font-bold text-[#1B3B6F]">
+                  Penerimaan Peserta Didik Baru
+                </h3>
+                <h2 className="text-xl sm:text-2xl lg:text-[30px] font-black text-[#1B3B6F] tracking-tight leading-tight mt-1">
+                  Tahun Ajaran 2026/2027 Telah Dibuka
+                </h2>
+
+                <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3.5 text-xs sm:text-sm text-[#4A607A] font-semibold">
+                  <div className="flex items-center gap-2">
+                    <Clock size={16} className="text-[#F5B744]" />
+                    <span>Usia 2 - 6 Tahun</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <MapPin size={16} className="text-[#F5B744]" />
+                    <span>Jl. Taman Citarum, Kota Bandung</span>
+                  </div>
+                </div>
+
+                <div className="mt-5">
+                  <Link
+                    href="/ppdb"
+                    className="bg-[#F5B744] hover:bg-[#F59E0B] text-white font-bold text-xs sm:text-sm px-8 py-2.5 sm:py-3 rounded-full shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0"
+                  >
+                    Daftar Sekarang <ArrowRight size={16} />
+                  </Link>
+                </div>
+              </div>
+
+              {/* Right Column: 3D Kids Illustration with rolling hills & stars */}
+              <div className="lg:col-span-5 relative h-40 sm:h-48 lg:h-52 w-full">
                 <Image
-                  src="/images/Asset 9.png"
-                  alt="Student drawing"
+                  src="/images/ppdb_banner_kids.png"
+                  alt="Siswa KB TK Istiqamah"
                   fill
-                  className="object-contain object-bottom"
+                  className="object-contain object-right-bottom"
                 />
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ─── CTA REGISTRATION ─── */}
-      <section className="bg-[#07A363] text-white py-14 rounded-[32px] max-w-7xl mx-auto my-8 px-8 sm:px-12 text-center shadow-lg relative overflow-hidden">
-        <div className="absolute -top-10 -left-10 w-40 h-40 rounded-full bg-white/5 pointer-events-none" />
-        <div className="absolute -bottom-10 -right-10 w-40 h-40 rounded-full bg-white/5 pointer-events-none" />
-        <h2 className="text-2xl sm:text-3xl font-black mb-4">Mari Bergabung Bersama Kami!</h2>
-        <p className="text-sm font-semibold max-w-2xl mx-auto mb-8 opacity-90 leading-relaxed">
-          Kembangkan potensi emas putra-putri Anda melalui program bermain kreatif, pembiasaan akhlak mulia sejak dini, dan kurikulum Islami yang terarah.
-        </p>
-        <Link href="/ppdb" className="bg-[#07265F] hover:bg-[#07265F]/90 text-white font-extrabold text-xs sm:text-sm uppercase tracking-wider px-10 py-4 rounded-full transition-all shadow-md inline-block hover:scale-105">
-          Daftar SPMB Sekarang
-        </Link>
-      </section>
+        {/* ─── SECTION 9: PERTANYAAN YANG SERING DIAJUKAN (FAQ) ─── */}
+        <section className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mt-8 sm:mt-12">
+          {/* Header */}
+          <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8">
+            <h2 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-[#1B3B6F] tracking-tight">
+              Pertanyaan yang Sering Diajukan
+            </h2>
+          </div>
+
+          {/* 2-Column FAQ Layout */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+            {/* Left Column: 5 Accordion Questions */}
+            <div className="lg:col-span-7 flex flex-col gap-2.5 sm:gap-3">
+              {FAQ_ITEMS.map((item, idx) => {
+                const isOpen = openFaq === idx
+                return (
+                  <div
+                    key={idx}
+                    className="border border-[#48A97A]/40 rounded-2xl bg-white overflow-hidden transition-all shadow-sm hover:border-[#0B7347]/60"
+                  >
+                    <button
+                      onClick={() => setOpenFaq(isOpen ? null : idx)}
+                      className="w-full flex items-center justify-between p-3.5 sm:p-4 text-left cursor-pointer transition-colors"
+                      aria-expanded={isOpen}
+                    >
+                      <span className="text-xs sm:text-sm font-bold text-[#1B3B6F]">
+                        {item.q}
+                      </span>
+                      <ChevronDown
+                        size={18}
+                        className={`text-[#0B7347] transition-transform duration-300 flex-shrink-0 ml-2 ${
+                          isOpen ? 'rotate-180' : ''
+                        }`}
+                      />
+                    </button>
+                    <div
+                      className={`grid transition-all duration-300 ease-in-out ${
+                        isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                      }`}
+                    >
+                      <div className="overflow-hidden">
+                        <p className="px-3.5 pb-3.5 sm:px-4 sm:pb-4 text-xs sm:text-[13px] text-[#4A607A] leading-relaxed font-medium">
+                          {item.a}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+
+            {/* Right Column: Contact Card & Map Location */}
+            <div className="lg:col-span-5 flex flex-col gap-3.5 sm:gap-4">
+              {/* Card 1: Masih ada Pertanyaan? */}
+              <div className="border border-[#48A97A]/40 rounded-2xl bg-[#F5FBF8] p-4 sm:p-5 shadow-sm flex items-center gap-4">
+                <div className="relative w-20 h-28 sm:w-24 sm:h-32 flex-shrink-0">
+                  <Image
+                    src="/images/faq_girl.png"
+                    alt="Bantuan Informasi"
+                    fill
+                    className="object-contain"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="text-sm sm:text-base font-extrabold text-[#1B3B6F]">
+                    Masih ada Pertanyaan?
+                  </h4>
+                  <p className="text-[11px] sm:text-xs text-[#4A607A] font-medium mt-1 leading-snug">
+                    Yuk hubungi kami via Whatsapp. Kami siap membantu!
+                  </p>
+                  <a
+                    href="https://wa.me/6281222248622?text=Halo%20KB%20TK%20Istiqamah%20Bandung,%20saya%20ingin%20bertanya%20mengenai%20pendaftaran%20sekolah..."
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-1.5 bg-[#0B7347] hover:bg-[#075E38] text-white font-bold text-xs px-5 py-2 rounded-full shadow-sm hover:shadow transition-all transform hover:-translate-y-0.5 active:translate-y-0"
+                  >
+                    Hubungi Kami
+                  </a>
+                </div>
+              </div>
+
+              {/* Card 2: Interactive Location Map Card */}
+              <a
+                href="https://maps.google.com/?q=KB+TK+Istiqamah+Bandung+Jl+Taman+Citarum"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="block border border-[#48A97A]/40 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-all group relative h-28 sm:h-32"
+                title="Buka Lokasi di Google Maps"
+              >
+                {/* Visual Map graphic background */}
+                <div className="absolute inset-0 bg-[#E8F0F8] flex items-center justify-center">
+                  <svg className="w-full h-full opacity-60" viewBox="0 0 400 150" fill="none">
+                    <path d="M-20 40 Q80 30 180 60 T380 40" stroke="#CBDCEE" strokeWidth="18" fill="none" />
+                    <path d="M120 -10 L140 160" stroke="#CBDCEE" strokeWidth="14" fill="none" />
+                    <path d="M260 -10 L240 160" stroke="#CBDCEE" strokeWidth="12" fill="none" />
+                    <circle cx="200" cy="75" r="28" fill="#D9E6F5" stroke="#CBDCEE" strokeWidth="8" />
+                    <path d="M-20 110 Q100 130 200 90 T420 120" stroke="#E2ECF7" strokeWidth="10" fill="none" />
+                  </svg>
+                </div>
+                {/* Red Pin & School Marker */}
+                <div className="absolute inset-0 flex items-center justify-center p-3 z-10">
+                  <div className="bg-white/95 backdrop-blur-sm px-3.5 py-1.5 rounded-full shadow-md border border-[#0B7347]/30 flex items-center gap-2 transform group-hover:scale-105 transition-transform">
+                    <MapPin size={16} className="text-red-600 flex-shrink-0 fill-red-100" />
+                    <div className="text-left">
+                      <span className="text-[11px] sm:text-xs font-black text-[#1B3B6F] block leading-none">
+                        KB TK Istiqamah Bandung
+                      </span>
+                      <span className="text-[9px] text-[#4A607A] font-semibold block mt-0.5 leading-none">
+                        Jl. Taman Citarum No. 1, Kota Bandung
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </a>
+            </div>
+          </div>
+        </section>
+      </div>
     </div>
   )
 }

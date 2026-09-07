@@ -253,6 +253,12 @@ function shapeResult(table: TableName, rows: any[], mode?: DatabaseQuery['result
 
 export async function executeDatabaseQuery(query: DatabaseQuery): Promise<DatabaseResult> {
   try {
+    if (!prisma) {
+      if (query.operation === 'select') {
+        return { data: [], error: null, count: 0 }
+      }
+      return { data: null, error: { message: 'DATABASE_URL belum dikonfigurasi.' } }
+    }
     assertTable(query.table)
     const table = query.table
     const delegate = (prisma as any)[modelByTable[table]]

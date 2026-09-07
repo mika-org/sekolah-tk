@@ -3,18 +3,14 @@ import { PrismaClient } from '@/lib/generated/prisma/client'
 
 const connectionString = process.env.DATABASE_URL
 
-if (!connectionString) {
-  throw new Error('DATABASE_URL belum dikonfigurasi.')
-}
-
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  adapter: new PrismaPg({ connectionString }),
-})
+export const prisma: PrismaClient = (connectionString
+  ? (globalForPrisma.prisma ?? new PrismaClient({ adapter: new PrismaPg({ connectionString }) }))
+  : null) as unknown as PrismaClient
 
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
+if (connectionString && process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma as PrismaClient
 }
