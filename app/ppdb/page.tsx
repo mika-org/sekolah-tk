@@ -22,7 +22,7 @@ import {
 } from 'lucide-react'
 import { toast } from 'sonner'
 
-import { submitPPDB, verifyPpdbToken, purchasePPDBForm } from '@/actions/ppdb'
+import { submitPPDB, verifyPpdbToken, purchasePPDBForm, saveInitialPPDBForm } from '@/actions/ppdb'
 import { getSettings } from '@/actions/settings'
 import { buttonVariants } from '@/components/ui/button'
 import {
@@ -32,7 +32,7 @@ import {
   MOTHER_FORM_SECTIONS,
   type PPDBFieldDefinition,
 } from '@/lib/ppdb/form-definition'
-import { cn } from '@/lib/utils'
+import { cn, getCleanWhatsAppNumber } from '@/lib/utils'
 
 interface FormState {
   success: boolean
@@ -152,6 +152,8 @@ export default function PPDBPage() {
   const [fullSubmitState, setFullSubmitState] = useState<FormState>(initialFormState)
   const [isPending, setIsPending] = useState(false)
 
+  const PPDB_DRAFT_STORAGE_KEY = 'ppdb_initial_registration_draft'
+
   // Form Data & Files
   const [formData, setFormData] = useState<Record<string, string>>({
     payment_method: 'Transfer',
@@ -161,7 +163,26 @@ export default function PPDBPage() {
   const [ktpFile, setKtpFile] = useState<File | null>(null)
   const [dbSettings, setDbSettings] = useState<any>(null)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [savingInitial, setSavingInitial] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
+
+  // Restore draft formulir awal dari localStorage jika tersedia
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem(PPDB_DRAFT_STORAGE_KEY)
+      if (saved) {
+        const parsed = JSON.parse(saved)
+        if (parsed && typeof parsed === 'object') {
+          setFormData((prev) => ({ ...prev, ...parsed }))
+          if (parsed.existingPpdbId) {
+            setExistingPpdbId(parsed.existingPpdbId)
+          }
+        }
+      }
+    } catch (err) {
+      console.warn('Gagal memuat draft data formulir awal:', err)
+    }
+  }, [])
 
   useEffect(() => {
     async function loadSettings() {
@@ -178,7 +199,23 @@ export default function PPDBPage() {
   }, [])
 
   const handleChange = (name: string, value: string) => {
-    setFormData((prev) => ({ ...prev, [name]: value }))
+    setFormData((prev) => {
+      const updated = { ...prev, [name]: value }
+      try {
+        localStorage.setItem(
+          PPDB_DRAFT_STORAGE_KEY,
+          JSON.stringify({
+            student_name: updated.student_name || '',
+            parent_name: updated.parent_name || '',
+            phone: updated.phone || '',
+            email: updated.email || '',
+            alamat: updated.alamat || '',
+            existingPpdbId: existingPpdbId || '',
+          })
+        )
+      } catch {}
+      return updated
+    })
   }
 
   const handleCopyAccount = (text: string) => {
@@ -188,6 +225,9 @@ export default function PPDBPage() {
 
   // Reset Formulir
   const handleResetForm = () => {
+    try {
+      localStorage.removeItem(PPDB_DRAFT_STORAGE_KEY)
+    } catch {}
     setFormData({ payment_method: 'Transfer' })
     setProofFile(null)
     setAktaFile(null)
@@ -293,8 +333,8 @@ export default function PPDBPage() {
     }
   }
 
-  // Step 1: Lanjut ke Pembayaran
-  const handleGoToPayment = () => {
+  // Step 1: Lanjut ke Pembayaran (Simpan Data Awal Formulir)
+  const handleGoToPayment = async () => {
     if (!formData.student_name?.trim()) {
       toast.error('Nama lengkap anak wajib diisi.')
       return
@@ -311,8 +351,42 @@ export default function PPDBPage() {
       toast.error('Alamat lengkap wajib diisi.')
       return
     }
-    setRegStep(2)
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    setSavingInitial(true)
+    try {
+      // Simpan data formulir awal ke database agar aman tersimpan sejak awal
+      const res = await saveInitialPPDBForm({
+        ppdbId: existingPpdbId,
+        studentName: formData.student_name.trim(),
+        parentName: formData.parent_name.trim(),
+        phone: formData.phone.trim(),
+        email: formData.email?.trim() || '',
+        alamat: formData.alamat.trim(),
+      })
+
+      if (res.success && res.ppdbId) {
+        setExistingPpdbId(res.ppdbId)
+        try {
+          localStorage.setItem(
+            PPDB_DRAFT_STORAGE_KEY,
+            JSON.stringify({
+              student_name: formData.student_name,
+              parent_name: formData.parent_name,
+              phone: formData.phone,
+              email: formData.email,
+              alamat: formData.alamat,
+              existingPpdbId: res.ppdbId,
+            })
+          )
+        } catch {}
+      }
+    } catch (err) {
+      console.warn('Gagal menyimpan data awal formulir ke server:', err)
+    } finally {
+      setSavingInitial(false)
+      setRegStep(2)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 
   // Step 2: Kirim Pembelian Formulir (Berikutnya)
@@ -325,6 +399,7 @@ export default function PPDBPage() {
     setIsPending(true)
     try {
       const data = new FormData()
+      if (existingPpdbId) data.append('ppdb_id', existingPpdbId)
       data.append('student_name', formData.student_name || '')
       data.append('parent_name', formData.parent_name || '')
       data.append('alamat', formData.alamat || '')
@@ -407,6 +482,9 @@ export default function PPDBPage() {
       const res = await submitPPDB(initialFormState, data)
       setFullSubmitState(res)
       if (res.success) {
+        try {
+          localStorage.removeItem(PPDB_DRAFT_STORAGE_KEY)
+        } catch {}
         toast.success('Pendaftaran SPMB lengkap berhasil dikirim!')
         window.scrollTo({ top: 0, behavior: 'smooth' })
       } else {
@@ -430,7 +508,10 @@ export default function PPDBPage() {
     maximumFractionDigits: 0,
   }).format(Number(rawFee) || 500000)
 
-  const schoolPhone = dbSettings?.school_phone || '628112198853'
+  const schoolPhone = getCleanWhatsAppNumber(dbSettings?.school_phone)
+  const formattedSchoolPhone = schoolPhone.startsWith('62')
+    ? `+${schoolPhone.slice(0, 2)} ${schoolPhone.slice(2, 5)}-${schoolPhone.slice(5, 9)}-${schoolPhone.slice(9)}`
+    : `+62 811-2198-853`
 
   // ─── SUKSES FORMULIR LENGKAP PPDB (SESUAI TAMPILAN PPDB SAAT INI) ───
   if (fullSubmitState.success) {
@@ -462,7 +543,7 @@ export default function PPDBPage() {
             {activeToken && (
               <div className="flex items-center justify-between text-xs">
                 <span className="font-semibold text-gray-500">Kode Akses Formulir:</span>
-                <span className="font-mono font-black text-purple-700">{activeToken}</span>
+                <span className="font-mono font-black text-[#0F7A4A]">{activeToken}</span>
               </div>
             )}
             <div className="flex items-center justify-between text-xs">
@@ -478,7 +559,7 @@ export default function PPDBPage() {
               className="w-full bg-[#25D366] hover:bg-[#20bd5a] text-white font-extrabold text-xs py-3.5 rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
             >
               <MessageCircle size={16} />
-              <span>Konfirmasi Berkas ke WhatsApp Narahubung</span>
+              <span>Konfirmasi Berkas ke WhatsApp ({formattedSchoolPhone})</span>
             </a>
             <Link
               href="/"
@@ -600,7 +681,7 @@ export default function PPDBPage() {
               exit={{ opacity: 0, scale: 0.95 }}
               className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs"
             >
-              <div className="w-full max-w-lg rounded-3xl bg-gradient-to-br from-purple-50 via-white to-purple-50 p-6 sm:p-8 border-2 border-purple-200 shadow-2xl space-y-4 text-center relative">
+              <div className="w-full max-w-lg rounded-3xl bg-gradient-to-br from-[#EAF7ED] via-white to-[#EAF7ED] p-6 sm:p-8 border-2 border-[#0F7A4A]/30 shadow-2xl space-y-4 text-center relative">
                 <button
                   type="button"
                   onClick={() => setShowTokenInput(false)}
@@ -609,8 +690,8 @@ export default function PPDBPage() {
                   <X size={20} />
                 </button>
 
-                <div className="flex items-center justify-center gap-2 text-purple-800 font-black text-base sm:text-lg">
-                  <KeyRound size={22} className="text-purple-600" />
+                <div className="flex items-center justify-center gap-2 text-[#0F7A4A] font-black text-base sm:text-lg">
+                  <KeyRound size={22} className="text-[#0F7A4A]" />
                   <span>Masukkan Kode Akses Formulir Anda</span>
                 </div>
                 <p className="text-xs text-gray-500 font-medium max-w-md mx-auto leading-relaxed">
@@ -623,13 +704,13 @@ export default function PPDBPage() {
                     value={inputToken}
                     onChange={(e) => setInputToken(e.target.value.toUpperCase())}
                     placeholder="Contoh: TK-A8B9C2"
-                    className="h-12 w-full text-center sm:text-left rounded-xl border border-purple-300 bg-white px-4 font-mono font-black text-purple-900 placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-purple-400 text-sm"
+                    className="h-12 w-full text-center sm:text-left rounded-xl border border-[#0F7A4A]/40 bg-white px-4 font-mono font-black text-[#1B365D] placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[#0F7A4A]/30 text-sm"
                   />
                   <button
                     type="button"
                     onClick={handleValidateToken}
                     disabled={verifyingToken || !inputToken.trim()}
-                    className="w-full sm:w-auto shrink-0 bg-purple-700 hover:bg-purple-800 disabled:opacity-50 text-white font-extrabold text-xs px-6 h-12 rounded-xl transition-all cursor-pointer shadow-md inline-flex items-center justify-center gap-1.5"
+                    className="w-full sm:w-auto shrink-0 bg-[#0F7A4A] hover:bg-[#0d6b41] disabled:opacity-50 text-white font-extrabold text-xs px-6 h-12 rounded-xl transition-all cursor-pointer shadow-md inline-flex items-center justify-center gap-1.5"
                   >
                     <ArrowRight size={14} />
                     <span>{verifyingToken ? 'Memeriksa...' : 'Lanjutkan'}</span>
@@ -645,7 +726,7 @@ export default function PPDBPage() {
           <div className="w-full rounded-[28px] bg-white p-6 sm:p-10 shadow-2xl border border-gray-100 relative">
             <div className="flex items-center justify-between border-b border-gray-100 pb-4 mb-6">
               <div>
-                <span className="text-[10px] font-bold text-purple-700 uppercase tracking-widest bg-purple-100 px-2.5 py-1 rounded-full">
+                <span className="text-[10px] font-bold text-[#0F7A4A] uppercase tracking-widest bg-[#EAF7ED] border border-[#0F7A4A]/20 px-2.5 py-1 rounded-full">
                   Kode Akses: {activeToken || 'Terverifikasi'}
                 </span>
                 <h2 className="text-xl sm:text-2xl font-black text-[#1B365D] mt-2">
@@ -789,7 +870,7 @@ export default function PPDBPage() {
                   <div className="bg-[#F8F6F2] rounded-2xl p-4 text-xs space-y-1.5 border border-gray-100 text-gray-600">
                     <div><strong>Calon Murid:</strong> {formData.student_name}</div>
                     <div><strong>Orang Tua:</strong> {formData.parent_name} ({formData.phone})</div>
-                    <div><strong>Kode Akses:</strong> <span className="font-mono font-bold text-purple-700">{activeToken}</span></div>
+                    <div><strong>Kode Akses:</strong> <span className="font-mono font-bold text-[#0F7A4A]">{activeToken}</span></div>
                   </div>
 
                   <div className="flex justify-between items-center pt-4 border-t border-gray-100">
@@ -996,7 +1077,7 @@ export default function PPDBPage() {
                     <div className="text-xs sm:text-sm text-gray-700 font-medium">
                       Sudah membeli formulir?
                     </div>
-                    <div className="text-xs sm:text-sm text-gray-900 font-bold group-hover:text-[#0F7A4A] transition-colors">
+                    <div className="text-xs sm:text-sm text-[#0F7A4A] font-bold group-hover:underline transition-colors">
                       Masukan kode akses!
                     </div>
                   </button>
@@ -1004,9 +1085,10 @@ export default function PPDBPage() {
                   <button
                     type="button"
                     onClick={handleGoToPayment}
-                    className="w-full sm:w-auto bg-[#0F7A4A] hover:bg-[#0d6b41] text-white font-bold text-sm px-8 py-3.5 rounded-xl shadow-md transition-all cursor-pointer text-center"
+                    disabled={savingInitial}
+                    className="w-full sm:w-auto bg-[#0F7A4A] hover:bg-[#0d6b41] disabled:opacity-50 text-white font-bold text-sm px-8 py-3.5 rounded-xl shadow-md transition-all cursor-pointer text-center"
                   >
-                    Lanjut ke Pembayaran
+                    {savingInitial ? 'Menyimpan Data...' : 'Lanjut ke Pembayaran'}
                   </button>
                 </div>
               </motion.div>
@@ -1200,14 +1282,23 @@ export default function PPDBPage() {
                   href={`https://wa.me/${schoolPhone}?text=Halo%20Admin%20PPDB%20TK%20Istiqamah,%20saya%20sudah%20membeli%20formulir%20dan%20mengunggah%20bukti%20pembayaran.`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full max-w-md rounded-2xl border-2 border-emerald-600/50 bg-[#F2FAF5] p-4 flex items-center justify-center gap-3 my-8 hover:bg-emerald-100/70 transition-all cursor-pointer shadow-xs"
+                  className="w-full max-w-md rounded-2xl border-2 border-emerald-600/40 bg-[#F2FAF5] p-4 flex items-center justify-center gap-3 my-8 hover:bg-emerald-100/70 transition-all cursor-pointer shadow-xs group"
                 >
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[#25D366] text-white shrink-0">
-                    <MessageCircle size={18} />
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#25D366] text-white shrink-0 shadow-xs">
+                    <MessageCircle size={20} />
                   </div>
-                  <span className="text-xs sm:text-sm font-bold text-emerald-950">
-                    Silahkan hubungi kami jika ada pertanyaan
-                  </span>
+                  <div className="text-left">
+                    <div className="text-xs sm:text-sm font-bold text-emerald-950">
+                      Silahkan hubungi kami jika ada pertanyaan
+                    </div>
+                    <div className="text-[11px] text-emerald-700 font-semibold flex items-center gap-1.5 mt-0.5">
+                      <span>WhatsApp:</span>
+                      <span className="font-mono font-bold text-[#0F7A4A] group-hover:underline">
+                        {formattedSchoolPhone}
+                      </span>
+                      <span className="text-[10px] text-gray-500 font-normal">(Admin SPMB)</span>
+                    </div>
+                  </div>
                 </a>
 
                 <div className="space-y-3 w-full max-w-md">
@@ -1222,7 +1313,7 @@ export default function PPDBPage() {
                   <button
                     type="button"
                     onClick={() => setShowTokenInput(true)}
-                    className="w-full py-2.5 text-xs font-bold text-purple-700 hover:underline cursor-pointer"
+                    className="w-full py-2.5 text-xs font-bold text-[#0F7A4A] hover:text-[#0d6b41] hover:underline cursor-pointer transition-colors"
                   >
                     Sudah mendapatkan Kode Akses? Masukkan kode di sini
                   </button>

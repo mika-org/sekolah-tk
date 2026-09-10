@@ -68,12 +68,120 @@ export async function generateFormToken(): Promise<string> {
   return `TK-${code}`
 }
 
+// ─── TAHAP 0 / 1: SIMPAN DATA AWAL FORMULIR (DRAFT AWAL SEBELUM PEMBAYARAN) ───
+export async function saveInitialPPDBForm(payload: {
+  ppdbId?: string | null
+  studentName: string
+  parentName: string
+  phone: string
+  email?: string
+  alamat: string
+}): Promise<{ success: boolean; ppdbId?: string; error?: string }> {
+  try {
+    const studentName = payload.studentName?.trim()
+    const parentName = payload.parentName?.trim()
+    const phone = payload.phone?.trim()
+    const email = payload.email?.trim() || ''
+    const alamat = payload.alamat?.trim()
+
+    if (!studentName || !parentName || !phone || !alamat) {
+      return { success: false, error: 'Data formulir awal belum lengkap.' }
+    }
+
+    const database = createAdminClient()
+
+    if (payload.ppdbId) {
+      const { data: existingApp } = await database
+        .from('ppdb_tk')
+        .select('id, child_details, father_details')
+        .eq('id', payload.ppdbId)
+        .maybeSingle()
+
+      if (existingApp) {
+        const childDetails = {
+          ...((existingApp.child_details as Record<string, any>) || {}),
+          student_name: studentName,
+          parent_name: parentName,
+          alamat,
+          phone,
+          email,
+          updated_at: new Date().toISOString(),
+        }
+        const fatherDetails = {
+          ...((existingApp.father_details as Record<string, any>) || {}),
+          nama_ayah: parentName,
+          hp_ayah: phone,
+          email_ayah: email,
+          alamat_ayah: alamat,
+        }
+
+        await database
+          .from('ppdb_tk')
+          .update({
+            student_name: studentName,
+            child_details: childDetails,
+            father_details: fatherDetails,
+          })
+          .eq('id', payload.ppdbId)
+
+        revalidatePath('/dashboard/admin/ppdb')
+        return { success: true, ppdbId: payload.ppdbId }
+      }
+    }
+
+    // Buat data pendaftaran awal (Draft / Menunggu Pembayaran)
+    const childDetails = {
+      student_name: studentName,
+      parent_name: parentName,
+      alamat,
+      phone,
+      email,
+      registration_phase: 'initial_draft',
+      created_at: new Date().toISOString(),
+    }
+
+    const fatherDetails = {
+      nama_ayah: parentName,
+      hp_ayah: phone,
+      email_ayah: email,
+      alamat_ayah: alamat,
+    }
+
+    const { data: ppdbData, error: ppdbError } = await database
+      .from('ppdb_tk')
+      .insert({
+        student_name: studentName,
+        birth_date: new Date().toISOString().split('T')[0],
+        child_details: childDetails,
+        father_details: fatherDetails,
+        mother_details: {},
+        development_health: {},
+        status: 'Menunggu Pembayaran',
+        payment_status: 'Pending',
+      })
+      .select()
+      .single()
+
+    if (ppdbError || !ppdbData) {
+      console.error('Save initial PPDB form error:', ppdbError)
+      return { success: false, error: ppdbError?.message || 'Gagal menyimpan data awal formulir.' }
+    }
+
+    revalidatePath('/dashboard/admin/ppdb')
+    return { success: true, ppdbId: ppdbData.id }
+  } catch (err: any) {
+    console.error('Error in saveInitialPPDBForm:', err)
+    return { success: false, error: err.message || 'Terjadi kesalahan sistem.' }
+  }
+}
+
 // ─── TAHAP 1: PEMBELIAN FORMULIR (DATA AWAL & BUKTI BAYAR TRANSFER) ───
 export async function purchasePPDBForm(
   _prevState: PPDBActionState,
   formData: FormData
 ): Promise<PPDBActionState> {
   try {
+    const existingId = formText(formData, 'ppdb_id')
     const studentName = formText(formData, 'student_name')
     const parentName = formText(formData, 'parent_name')
     const alamat = formText(formData, 'alamat')
@@ -113,27 +221,61 @@ export async function purchasePPDBForm(
       alamat_ayah: alamat,
     }
 
-    const { data: ppdbData, error: ppdbError } = await database
-      .from('ppdb_tk')
-      .insert({
-        student_name: studentName,
-        birth_date: new Date().toISOString().split('T')[0],
-        child_details: childDetails,
-        father_details: fatherDetails,
-        mother_details: {},
-        development_health: {},
-        status: 'Submitted',
-        payment_status: 'Pending',
-      })
-      .select()
-      .single()
+    let ppdbId = existingId
 
-    if (ppdbError || !ppdbData) {
-      console.error('PPDB Purchase insertion error:', ppdbError)
-      return failure(`Gagal menyimpan pembelian formulir: ${ppdbError?.message || 'data tidak ditemukan'}`, 1)
+    if (ppdbId) {
+      const { data: existingApp } = await database
+        .from('ppdb_tk')
+        .select('id, child_details, father_details')
+        .eq('id', ppdbId)
+        .maybeSingle()
+
+      if (existingApp) {
+        const mergedChild = {
+          ...((existingApp.child_details as Record<string, any>) || {}),
+          ...childDetails,
+        }
+        const mergedFather = {
+          ...((existingApp.father_details as Record<string, any>) || {}),
+          ...fatherDetails,
+        }
+        await database
+          .from('ppdb_tk')
+          .update({
+            student_name: studentName,
+            child_details: mergedChild,
+            father_details: mergedFather,
+            status: 'Submitted',
+            payment_status: 'Pending',
+          })
+          .eq('id', ppdbId)
+      } else {
+        ppdbId = ''
+      }
     }
 
-    const ppdbId = ppdbData.id
+    if (!ppdbId) {
+      const { data: ppdbData, error: ppdbError } = await database
+        .from('ppdb_tk')
+        .insert({
+          student_name: studentName,
+          birth_date: new Date().toISOString().split('T')[0],
+          child_details: childDetails,
+          father_details: fatherDetails,
+          mother_details: {},
+          development_health: {},
+          status: 'Submitted',
+          payment_status: 'Pending',
+        })
+        .select()
+        .single()
+
+      if (ppdbError || !ppdbData) {
+        console.error('PPDB Purchase insertion error:', ppdbError)
+        return failure(`Gagal menyimpan pembelian formulir: ${ppdbError?.message || 'data tidak ditemukan'}`, 1)
+      }
+      ppdbId = ppdbData.id
+    }
 
     // Simpan file bukti pembayaran ke storage
     const fileExtension = proofFile.name.split('.').pop()?.toLowerCase() || 'jpg'

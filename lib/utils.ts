@@ -61,3 +61,37 @@ export function compressImage(file: File, quality = 0.8, maxWidth = 1920): Promi
   });
 }
 
+/**
+ * Sanitizes and extracts a valid Indonesian WhatsApp mobile phone number
+ * Handles formats like '022 - 4241799 / 0811 2198 853', '+62 811-2198-853', '08112198853'
+ */
+export function getCleanWhatsAppNumber(rawPhone?: string | null): string {
+  if (!rawPhone) return '628112198853'
+
+  // If multiple numbers separated by slash, pipe, comma, etc., find the mobile one starting with 08 or 628 or 8
+  const parts = rawPhone.split(/[/|,;]/)
+  let candidate = parts.find((p) => {
+    const digits = p.replace(/\D/g, '')
+    return digits.startsWith('08') || digits.startsWith('628') || digits.startsWith('8')
+  })
+
+  if (!candidate && parts.length > 0) {
+    candidate = parts[parts.length - 1]
+  }
+
+  let cleaned = (candidate || rawPhone).replace(/\D/g, '')
+  if (cleaned.startsWith('08')) {
+    cleaned = '628' + cleaned.slice(2)
+  } else if (cleaned.startsWith('8')) {
+    cleaned = '62' + cleaned
+  } else if (!cleaned.startsWith('62') && cleaned.length >= 9) {
+    cleaned = '62' + cleaned
+  }
+
+  if (cleaned.length < 10 || !cleaned.startsWith('628')) {
+    return '628112198853'
+  }
+
+  return cleaned
+}
+
