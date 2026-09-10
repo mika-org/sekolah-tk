@@ -178,13 +178,16 @@ const FACILITIES = [
 ]
 
 const GALLERY_SHOWCASE = [
-  { id: 'g1', src: '/images/galeri_1.png', alt: 'Prestasi Juara Istiqamah', category: 'program' },
-  { id: 'g2', src: '/images/galeri_2.png', alt: 'Aktivitas Mewarnai & Berkreasi', category: 'kegiatan' },
-  { id: 'g3', src: '/images/galeri_3.png', alt: 'Kegiatan Pramuka & Kemandirian', category: 'program' },
-  { id: 'g4', src: '/images/galeri_4.png', alt: 'Piala & Apresiasi Outdoor', category: 'program' },
-  { id: 'g5', src: '/images/galeri_5.png', alt: 'Bermain Monkey Bar Outdoor', category: 'kegiatan' },
-  { id: 'g6', src: '/images/galeri_6.png', alt: 'Penghargaan Siswa Berprestasi', category: 'program' },
-  { id: 'g7', src: '/images/galeri_7.png', alt: 'Permainan Terowongan Edukatif', category: 'kegiatan' },
+  { id: 'g3', src: '/images/gallery/3.jpg', alt: 'Prestasi Juara Lomba & Siswa Berprestasi', category: 'program' },
+  { id: 'g1', src: '/images/gallery/1.jpg', alt: 'Aktivitas Belajar Berhitung di Kelas', category: 'kegiatan' },
+  { id: 'g2', src: '/images/gallery/2.jpg', alt: 'Pentas Tari Tradisional Anak Istiqamah', category: 'program' },
+  { id: 'g4', src: '/images/gallery/4.jpg', alt: 'Pentas Seni Budaya & Teater Cilik', category: 'program' },
+  { id: 'g5', src: '/images/gallery/5.jpg', alt: 'Cooking Day & Kreasi Masak Ceria', category: 'kegiatan' },
+  { id: 'g6', src: '/images/gallery/6.jpg', alt: 'Bermain Ayunan & Keseimbangan Outdoor', category: 'kegiatan' },
+  { id: 'g7', src: '/images/gallery/7.jpg', alt: 'Ketangkasan Outbound Jaring Tali', category: 'kegiatan' },
+  { id: 'g8', src: '/images/gallery/8.jpg', alt: 'Lomba Adzan & Iqomah Pentas PAI', category: 'program' },
+  { id: 'g9', src: '/images/gallery/9.jpg', alt: 'Petualangan Air Naik Rakit Edukasi', category: 'kegiatan' },
+  { id: 'g10', src: '/images/gallery/10.jpg', alt: 'Mengenal & Menyayangi Satwa Kelinci', category: 'kegiatan' },
 ]
 
 const TESTIMONIALS_DATA = [
@@ -936,8 +939,8 @@ export default function HomePage() {
                 {/* Left Tall Portrait Card */}
                 <div className="md:col-span-4 relative rounded-2xl overflow-hidden shadow-md aspect-[3/4] md:aspect-auto min-h-[250px] md:min-h-full border border-white/20 group">
                   <Image
-                    src="/images/galeri_1.png"
-                    alt="Prestasi Juara Istiqamah"
+                    src={GALLERY_SHOWCASE[0].src}
+                    alt={GALLERY_SHOWCASE[0].alt}
                     fill
                     className="object-cover group-hover:scale-105 transition-transform duration-300"
                   />

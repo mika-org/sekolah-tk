@@ -205,6 +205,20 @@ export default function PPDBPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  // Klik Daftar Sekarang di Header: Scroll mulus ke formulir registrasi
+  const handleDaftarSekarangClick = () => {
+    setFullFormMode(false)
+    setRegStep(1)
+    setShowTokenInput(false)
+    setMobileMenuOpen(false)
+    const el = document.getElementById('registration-form-card')
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    } else {
+      window.scrollTo({ top: 120, behavior: 'smooth' })
+    }
+  }
+
   // Validasi & Gunakan Kode Akses Formulir
   const handleValidateToken = async () => {
     if (!inputToken.trim()) {
@@ -522,11 +536,8 @@ export default function PPDBPage() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => {
-                setFullFormMode(false)
-                setRegStep(1)
-              }}
-              className="rounded-full bg-[#F59E0B] hover:bg-[#D97706] px-5 sm:px-6 py-2 text-xs sm:text-sm font-bold text-white shadow transition-all cursor-pointer"
+              onClick={handleDaftarSekarangClick}
+              className="rounded-full bg-[#F59E0B] hover:bg-[#D97706] px-5 sm:px-6 py-2 text-xs sm:text-sm font-bold text-white shadow transition-all cursor-pointer transform hover:scale-[1.02] active:scale-95"
             >
               Daftar Sekarang
             </button>
@@ -566,6 +577,13 @@ export default function PPDBPage() {
               <Link href="/kontak" className="py-2 text-xs font-bold text-gray-700 hover:text-[#0F7A4A]">
                 Kontak
               </Link>
+              <button
+                type="button"
+                onClick={handleDaftarSekarangClick}
+                className="w-full py-2.5 mt-1 bg-[#F59E0B] hover:bg-[#D97706] text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
+              >
+                Daftar Sekarang
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -797,7 +815,7 @@ export default function PPDBPage() {
           </div>
         ) : (
           /* ─── ALUR REGISTRASI / BELI FORMULIR SESUAI DENGAN 3 GAMBAR USER ─── */
-          <div className="space-y-6">
+          <div id="registration-form-card" className="space-y-6 scroll-mt-20">
             {/* 3-STEP WIZARD PROGRESS BAR (IDENTIK DENGAN GAMBAR) */}
             <div className="flex items-center justify-center gap-2 sm:gap-4 px-2">
               {/* Step 1: Beli Formulir */}

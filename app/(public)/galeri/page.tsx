@@ -8,10 +8,16 @@ import { motion, AnimatePresence } from 'framer-motion'
 const CATEGORIES = ['Semua', 'Kegiatan Pembelajaran', 'Sarana', 'Prestasi']
 
 const FALLBACK_GALLERY = [
-  { id: 'f1', title: 'Kegiatan Belajar di Kelas', image: '/images/gallery_1.png', category: 'Kegiatan Pembelajaran' },
-  { id: 'f2', title: 'Sarana Bermain Outdoor', image: '/images/gallery_2.png', category: 'Sarana' },
-  { id: 'f3', title: 'Penghargaan Lomba Mewarnai', image: '/images/gallery_3.png', category: 'Prestasi' },
-  { id: 'f4', title: 'Pentas Seni Akhir Tahun', image: '/images/gallery_4.png', category: 'Kegiatan Pembelajaran' },
+  { id: 'f1', title: 'Belajar Berhitung & Menulis di Kelas Ceria', image: '/images/gallery/1.jpg', category: 'Kegiatan Pembelajaran' },
+  { id: 'f2', title: 'Pentas Seni Tari Tradisional Anak', image: '/images/gallery/2.jpg', category: 'Kegiatan Pembelajaran' },
+  { id: 'f3', title: 'Prestasi Juara Lomba Siswa & Apresiasi', image: '/images/gallery/3.jpg', category: 'Prestasi' },
+  { id: 'f4', title: 'Keceriaan Drama & Pentas Seni Budaya Daerah', image: '/images/gallery/4.jpg', category: 'Kegiatan Pembelajaran' },
+  { id: 'f5', title: 'Cooking Day & Kreasi Masak Cilik', image: '/images/gallery/5.jpg', category: 'Kegiatan Pembelajaran' },
+  { id: 'f6', title: 'Sarana Bermain Keseimbangan Outdoor', image: '/images/gallery/6.jpg', category: 'Sarana' },
+  { id: 'f7', title: 'Ketangkasan Memanjat Jaring Outbound', image: '/images/gallery/7.jpg', category: 'Kegiatan Pembelajaran' },
+  { id: 'f8', title: 'Lomba Adzan & Iqomah Pentas PAI', image: '/images/gallery/8.jpg', category: 'Prestasi' },
+  { id: 'f9', title: 'Petualangan Naik Rakit Air Outbound', image: '/images/gallery/9.jpg', category: 'Kegiatan Pembelajaran' },
+  { id: 'f10', title: 'Edukasi Mengenal & Menyayangi Hewan Kelinci', image: '/images/gallery/10.jpg', category: 'Kegiatan Pembelajaran' },
 ]
 
 export default function GaleriPage() {

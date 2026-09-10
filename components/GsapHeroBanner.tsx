@@ -626,10 +626,10 @@ export default function GsapHeroBanner() {
         </div>
       </div>
 
-      {/* ─── LAYER 7: HERO TEXT CONTENT (z-50, MATCHING MOCKUP) ─── */}
+      {/* ─── LAYER 7: HERO TEXT CONTENT (z-30, MATCHING MOCKUP) ─── */}
       <div
         ref={contentRef}
-        className="relative z-50 max-w-7xl mx-auto w-full h-full px-4 sm:px-6 md:px-6 lg:px-14 pt-16 sm:pt-20 md:pt-14 lg:pt-20 flex flex-col justify-start md:justify-center items-center md:items-start pointer-events-auto"
+        className="relative z-30 max-w-7xl mx-auto w-full h-full px-4 sm:px-6 md:px-6 lg:px-14 pt-16 sm:pt-20 md:pt-14 lg:pt-20 flex flex-col justify-start md:justify-center items-center md:items-start pointer-events-auto"
       >
         <div className="w-full max-w-[340px] sm:max-w-[380px] md:max-w-[360px] lg:max-w-[480px] flex flex-col items-center text-center">
           {/* Official School Crest Logo (Enlarged) */}
