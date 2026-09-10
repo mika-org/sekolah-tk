@@ -32,7 +32,7 @@ const CORE_PROGRAMS = [
     age: 'Usia 3 - 6 Tahun',
     target: 'Hafal 15 surat pendek Juz 30, 10 doa harian, tartil melafalkan Tilawati jilid dasar, dan terbiasa wudhu serta shalat.',
     activities: 'Membaca Tilawati klasikal, setoran hafalan ceria, praktik shalat dhuha berjamaah, dan dongeng kisah teladan Nabi.',
-    image: '/images/ChatGPT Image Jun 17, 2026, 10_17_46 PM (3).png'
+    image: '/images/fasilitas/7.webp'
   },
   {
     id: 'muslimic-character',
@@ -44,7 +44,7 @@ const CORE_PROGRAMS = [
     age: 'Usia 3 - 6 Tahun',
     target: 'Terbentuknya adab pergaulan islami, empati sosial, kemandirian emosi, dan kejujuran dalam berinteraksi.',
     activities: 'Jumat Berbagi (infaq cilik), bermain peran adab bertamu, lingkaran apresiasi kawan, dan pembiasaan antre tertib.',
-    image: '/images/ChatGPT Image Jun 17, 2026, 10_17_44 PM (2).png'
+    image: '/images/fasilitas/11.webp'
   },
   {
     id: 'life-skill',
@@ -56,7 +56,7 @@ const CORE_PROGRAMS = [
     age: 'Usia 3 - 6 Tahun',
     target: 'Anak mandiri melakukan toilet training, makan sendiri dengan tertib, serta mampu merapikan barang pribadi.',
     activities: 'Praktik mencuci tangan 6 langkah, mengancing baju dan memakai sepatu, merapikan mainan mandiri, dan cooking class mini.',
-    image: '/images/Cover.png'
+    image: '/images/fasilitas/1.webp'
   },
   {
     id: 'stem-pbl',
@@ -68,7 +68,7 @@ const CORE_PROGRAMS = [
     age: 'Usia 4 - 6 Tahun',
     target: 'Kemampuan berpikir logis dasar, mengenal konsep angka dan pola alam, serta rasa takjub terhadap ciptaan Allah SWT.',
     activities: 'Eksperimen sains seru (gunung meletus mini, terapung-tenggelam), menanam benih sayur, dan proyek seni kriya ramah lingkungan.',
-    image: '/images/ChatGPT Image Jun 17, 2026, 10_17_48 PM (5).png'
+    image: '/images/fasilitas/6.webp'
   }
 ]
 

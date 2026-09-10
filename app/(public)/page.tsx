@@ -25,37 +25,37 @@ const FEATURED_PROGRAMS = [
   {
     title: "Al-Qur'an Metode Tilawati",
     desc: "Mengenalkan dan menumbuhkan kecintaan anak terhadap Al-Qur'an melalui pembelajaran yang menyenangkan dan sesuai tahap perkembangan.",
-    image: '/images/activity_haji.png',
+    image: '/images/fasilitas/7.webp',
     layout: 'text-top' as const
   },
   {
     title: "Qur'an Camp",
     desc: "Pengalaman belajar Islami yang memadukan kegiatan Al-Qur'an, ibadah, kemandirian, kebersamaan, dan aktivitas menyenangkan.",
-    image: '/images/galeri_3.png',
+    image: '/images/fasilitas/11.webp',
     layout: 'image-top' as const
   },
   {
     title: "Outbound",
     desc: "Aktivitas luar ruangan yang melatih keberanian, kemandirian, kerja sama, serta kemampuan motorik anak melalui berbagai tantangan yang menyenangkan.",
-    image: '/images/galeri_5.png',
+    image: '/images/fasilitas/5.webp',
     layout: 'text-top' as const
   },
   {
     title: "Calistung & Literasi Ceria",
     desc: "Pondasi literasi membaca, menulis, dan berhitung melalui pendekatan bermain interaktif tanpa membebani anak.",
-    image: '/images/Cover.png',
+    image: '/images/fasilitas/1.webp',
     layout: 'image-top' as const
   },
   {
     title: "Seni & Kreativitas Anak",
     desc: "Mengeksplorasi bakat seni, melukis, kriya, dan pertunjukan islami untuk mengasah imajinasi serta rasa percaya diri.",
-    image: '/images/galeri_2.png',
+    image: '/images/fasilitas/12.webp',
     layout: 'text-top' as const
   },
   {
     title: "Eksplorasi Sains & Lingkungan",
     desc: "Mengenal keagungan ciptaan Allah melalui eksperimen sains sederhana, berkebun, dan pembiasaan peduli lingkungan.",
-    image: '/images/activity_fieldtrip.png',
+    image: '/images/fasilitas/3.webp',
     layout: 'image-top' as const
   }
 ]
@@ -73,35 +73,35 @@ const DEVELOPMENT_PILLARS = [
     title: 'Kreativitas & Eksplorasi',
     shortTitle: 'Kreativitas',
     desc: 'Memberikan kesempatan anak untuk bereksperimen, berkarya, berimajinasi, dan menemukan berbagai cara dalam menyelesaikan tantangan.',
-    image: '/images/dev_kreativitas.png',
+    image: '/images/perkembangan_anak/2.png',
   },
   {
     id: 'sosial',
     title: 'Sosial & Emosional',
     shortTitle: 'Sosial',
     desc: 'Membangun rasa empati, kemampuan bersosialisasi, kerja sama, dan kecerdasan emosional dalam kebersamaan yang hangat.',
-    image: '/images/dev_sosial.png',
+    image: '/images/perkembangan_anak/1.png',
   },
   {
     id: 'motorik',
     title: 'Fisik & Motorik',
     shortTitle: 'Fisik & Motorik',
     desc: 'Mengoptimalkan pertumbuhan motorik kasar dan halus anak melalui aktivitas gerak fisik, olahraga terarah, dan permainan aktif.',
-    image: '/images/dev_motorik.png',
+    image: '/images/perkembangan_anak/3.png',
   },
   {
     id: 'kemandirian',
     title: 'Kemandirian & Kebiasaan',
     shortTitle: 'Kemandirian',
     desc: 'Melatih kemandirian sejak dini, menjaga kebersihan diri, kerapian, serta tanggung jawab dalam setiap rutinitas sehari-hari.',
-    image: '/images/dev_kemandirian.png',
+    image: '/images/perkembangan_anak/4.png',
   },
   {
     id: 'ibadah',
-    title: 'Karakter Religius & Ibadah',
-    shortTitle: 'Religius',
-    desc: 'Menumbuhkan kecintaan pada ibadah harian, pengenalan doa-doa, hafalan surat pendek, dan penanaman adab Islami yang mendalam.',
-    image: '/images/dev_ibadah.png',
+    title: 'Ibadah & Nilai Agama',
+    shortTitle: 'Ibadah & Nilai Agama',
+    desc: 'Membimbing pembiasaan sholat, hafalan doa harian, adab Islami, dan akhlak mulia dalam keseharian anak.',
+    image: '/images/perkembangan_anak/5.png',
   },
 ]
 
@@ -146,29 +146,34 @@ const LEARNING_APPROACHES = [
 
 const FACILITIES = [
   {
-    title: 'Ruang Belajar',
-    desc: 'Ruang belajar yang nyaman dan mendukung aktivitas belajar aktif serta menyenangkan.',
-    image: '/images/fasilitas_belajar.png',
+    title: 'Ruang Belajar Tematik',
+    desc: 'Ruang kelas ber-AC yang ceria, nyaman, dan mendukung aktivitas belajar aktif serta menyenangkan.',
+    image: '/images/fasilitas/1.webp',
   },
   {
-    title: 'Ruang Bermain',
-    desc: 'Area bermain yang mendukung eksplorasi, interaksi, dan perkembangan motorik anak.',
-    image: '/images/fasilitas_bermain.png',
+    title: 'Ruang Bermain Indoor',
+    desc: 'Area bermain indoor dengan mandi bola, perosotan, dan aneka rintangan aman untuk motorik anak.',
+    image: '/images/fasilitas/6.webp',
   },
   {
-    title: 'Perpustakaan',
+    title: 'Perpustakaan & Reading Corner',
     desc: 'Ruang literasi yang nyaman untuk menumbuhkan kecintaan anak terhadap buku dan kegiatan membaca.',
-    image: '/images/fasilitas_perpus.png',
+    image: '/images/fasilitas/7.webp',
   },
   {
-    title: 'Ruang Multimedia',
-    desc: 'Fasilitas pembelajaran interaktif untuk memperkaya pengalaman belajar melalui teknologi dan media digital.',
-    image: '/images/fasilitas_multimedia.png',
+    title: 'Ruang Multimedia & Aktivitas',
+    desc: 'Fasilitas pembelajaran interaktif dengan smart screen digital untuk memperkaya wawasan anak.',
+    image: '/images/fasilitas/8.webp',
   },
   {
-    title: 'Ruang Bermain Outdoor',
-    desc: 'Area bermain terbuka untuk mengembangkan kemampuan motorik, keberanian, dan interaksi sosial anak.',
-    image: '/images/fasilitas_outdoor.png',
+    title: 'Taman Bermain Outdoor',
+    desc: 'Area bermain terbuka yang luas dan asri untuk melatih motorik kasar, ketangkasan, dan keberanian.',
+    image: '/images/fasilitas/5.webp',
+  },
+  {
+    title: 'Playground Rumput Sintetis',
+    desc: 'Area bermain mini outdoor berlapis rumput sintetis higienis yang aman untuk anak beraktivitas.',
+    image: '/images/fasilitas/3.webp',
   },
 ]
 
@@ -433,8 +438,8 @@ export default function HomePage() {
             <div className="lg:col-span-6">
               <div className="relative w-full aspect-[16/10] rounded-2xl sm:rounded-3xl overflow-hidden shadow-md border-2 border-emerald-50">
                 <Image
-                  src="/images/gedung_istiqamah.png"
-                  alt="Gedung KB &amp; TK Istiqamah Bandung"
+                  src="/images/1.jpg"
+                  alt="Tempat Tumbuhnya Generasi SMART - KB & TK Istiqamah Bandung"
                   fill
                   className="object-cover"
                 />

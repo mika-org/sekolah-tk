@@ -146,7 +146,7 @@ export async function purchasePPDBForm(
     await database.from('payments_tk').insert({
       ppdb_id: ppdbId,
       method: 'Transfer',
-      amount: 250000,
+      amount: 500000,
       proof: proofUrl,
       status: 'Pending',
     })
@@ -493,7 +493,7 @@ export async function submitPPDB(
       await database.from('payments_tk').insert({
         ppdb_id: ppdbId,
         method: 'Transfer',
-        amount: 250000,
+        amount: 500000,
         proof: proofUrl,
         status: 'Pending',
       })
