@@ -2,14 +2,17 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import { createClient } from '@/lib/database/client'
+import { getTeacherPlottedClassAndStudents } from '@/actions/students'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
 import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
 import { toast } from 'sonner'
-import { ClipboardList, RefreshCw, Save } from 'lucide-react'
+import { ClipboardList, RefreshCw, Save, Info } from 'lucide-react'
 
 export default function GuruAttendancePage() {
   const [students, setStudents] = useState<any[]>([])
+  const [classes, setClasses] = useState<any[]>([])
   const [attendance, setAttendance] = useState<Record<string, string>>({})
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -25,38 +28,41 @@ export default function GuruAttendancePage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      // Fetch active students
-      const { data: studentData } = await supabase
-        .from('students_tk')
-        .select('*')
-        .eq('status', 'active')
-        .order('nama')
+      const plottedRes = await getTeacherPlottedClassAndStudents()
+      const studentData = plottedRes.students || []
+      setStudents(studentData)
+      setClasses(plottedRes.classes || [])
 
-      // Fetch today's attendance
-      const { data: attendanceData } = await supabase
-        .from('attendance_tk')
-        .select('*')
-        .eq('date', today)
-
-      if (studentData) {
-        setStudents(studentData)
-        
-        // Map attendance status
-        const attMap: Record<string, string> = {}
-        studentData.forEach(s => {
-          attMap[s.id] = 'Hadir' // default
-        })
-        if (attendanceData) {
-          attendanceData.forEach(a => {
-            attMap[a.student_id] = a.status
-          })
-        }
-        setAttendance(attMap)
+      if (plottedRes.isTeacher && studentData.length === 0) {
+        setAttendance({})
+        setLoading(false)
+        return
       }
+
+      const studentIds = studentData.map((s: any) => s.id)
+      let attQuery = supabase.from('attendance_tk').select('*').eq('date', today)
+      if (plottedRes.isTeacher && studentIds.length > 0) {
+        attQuery = attQuery.in('student_id', studentIds)
+      }
+
+      const { data: attendanceData } = await attQuery
+
+      // Map attendance status
+      const attMap: Record<string, string> = {}
+      studentData.forEach((s: any) => {
+        attMap[s.id] = 'Hadir' // default
+      })
+      if (attendanceData) {
+        attendanceData.forEach((a: any) => {
+          attMap[a.student_id] = a.status
+        })
+      }
+      setAttendance(attMap)
     } catch (e: any) {
       toast.error('Gagal memuat data: ' + e.message)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   useEffect(() => {
@@ -118,8 +124,18 @@ export default function GuruAttendancePage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-black text-primary-blue">Presensi Kelas</h1>
-          <p className="text-gray-500 font-semibold text-xs mt-1">Mengelola kehadiran harian murid kelas berjalan.</p>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-3xl font-black text-primary-blue">Presensi Kelas</h1>
+            {classes.length > 0 && (
+              <Badge className="bg-[#0F7A4A] hover:bg-[#0F7A4A] text-white font-extrabold text-xs px-3 py-1 rounded-full">
+                Wali Kelas: {classes.map((c) => c.nama).join(', ')}
+              </Badge>
+            )}
+          </div>
+          <p className="text-gray-500 font-semibold text-xs mt-1">
+            Mengelola kehadiran harian murid kelas berjalan.
+            {students.length > 0 && ` • Menampilkan ${students.length} murid kelas binaan.`}
+          </p>
         </div>
         <div className="flex items-center gap-3">
           <Button onClick={loadData} variant="outline" className="border-gray-200 font-bold rounded-xl text-xs cursor-pointer gap-2">
@@ -127,7 +143,7 @@ export default function GuruAttendancePage() {
           </Button>
           <Button
             onClick={handleSaveAttendance}
-            disabled={saving}
+            disabled={saving || students.length === 0}
             className="bg-primary-green hover:bg-primary-green/90 text-white font-extrabold rounded-xl text-xs cursor-pointer shadow-md shadow-primary-green/10 gap-1.5"
           >
             <Save size={14} /> {saving ? 'Menyimpan...' : 'Simpan Presensi'}
@@ -158,8 +174,18 @@ export default function GuruAttendancePage() {
         <CardContent className="p-0">
           {loading ? (
             <div className="p-12 text-center text-gray-400">Memuat data murid...</div>
+          ) : students.length === 0 ? (
+            <div className="p-12 text-center space-y-2">
+              <Info className="mx-auto text-amber-600" size={32} />
+              <div className="font-bold text-gray-800 text-sm">Belum Ada Murid yang Di-Plotting</div>
+              <div className="text-xs text-gray-500 max-w-sm mx-auto">
+                {classes.length > 0
+                  ? `Kelas ${classes.map((c) => c.nama).join(', ')} saat ini belum memiliki murid yang di-plotting.`
+                  : 'Akun Anda belum terhubung sebagai wali kelas pada kelas manapun.'}
+              </div>
+            </div>
           ) : filteredStudents.length === 0 ? (
-            <div className="p-12 text-center text-gray-400">Tidak ada data murid yang sesuai.</div>
+            <div className="p-12 text-center text-gray-400">Tidak ada data murid yang sesuai pencarian.</div>
           ) : (
             <div className="divide-y divide-gray-100">
               {paginatedStudents.map((student) => (

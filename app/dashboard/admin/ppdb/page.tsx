@@ -117,6 +117,13 @@ interface SelectedRegistrationDetails {
   payment: RegistrationPayment | null
   student: StudentDetails | null
   parent: ParentDetails | null
+  user?: {
+    id: string
+    username: string
+    email?: string
+    initial_password?: string
+    status?: string
+  } | null
 }
 
 export type WaTemplateType = 'observasi' | 'ukur_seragam' | 'ambil_seragam' | 'custom'
@@ -720,11 +727,35 @@ export default function AdminPPDBPage() {
         proof: null
       } : null)
 
+      // 5. Fetch linked parent portal user account
+      let linkedUser: any = null
+      if (student?.user_id) {
+        const { data: userData } = await supabase
+          .from('users_tk')
+          .select('id, username, email, initial_password, status')
+          .eq('id', student.user_id)
+          .maybeSingle()
+        linkedUser = userData
+      }
+
+      if (!linkedUser) {
+        const targetEmail = parent?.email || father.email_ayah || mother.email_ibu || child.email
+        if (targetEmail) {
+          const { data: userData } = await supabase
+            .from('users_tk')
+            .select('id, username, email, initial_password, status')
+            .eq('email', targetEmail)
+            .maybeSingle()
+          linkedUser = userData
+        }
+      }
+
       setSelectedDetails({
         docs: (docs || []) as RegistrationDocument[],
         payment: resolvedPayment,
         student: resolvedStudent,
-        parent: resolvedParent
+        parent: resolvedParent,
+        user: linkedUser,
       })
     } catch (err) {
       console.error(err)
@@ -1969,6 +2000,57 @@ export default function AdminPPDBPage() {
                         <span className="sm:col-span-2 font-medium text-gray-700 leading-relaxed">
                           {initialAddress}
                         </span>
+
+                        {selectedDetails.user && (
+                          <div className="sm:col-span-3 pt-3 mt-1 border-t border-emerald-100 bg-emerald-50/60 p-3.5 rounded-2xl border border-emerald-200/70 space-y-2">
+                            <div className="flex items-center justify-between pb-1 border-b border-emerald-200/50">
+                              <span className="font-extrabold text-primary-green text-xs flex items-center gap-1.5">
+                                <KeyRound size={13} /> Akun Portal Orang Tua
+                              </span>
+                              <Badge className="bg-emerald-100 text-emerald-800 border-none font-bold text-[10px] px-2 py-0.5">
+                                Aktif Terdaftar
+                              </Badge>
+                            </div>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+                              <div className="bg-white px-3 py-2 rounded-xl border border-emerald-200/60 flex items-center justify-between">
+                                <span className="text-gray-400 font-semibold text-[11px]">Username:</span>
+                                <div className="flex items-center gap-1.5 font-mono font-bold text-primary-blue text-xs">
+                                  <span>@{selectedDetails.user.username}</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      navigator.clipboard.writeText(selectedDetails.user?.username || '')
+                                      toast.success(`Username @${selectedDetails.user?.username} disalin!`)
+                                    }}
+                                    className="text-gray-400 hover:text-primary-green p-0.5 cursor-pointer"
+                                    title="Salin username"
+                                  >
+                                    <Copy size={11} />
+                                  </button>
+                                </div>
+                              </div>
+                              <div className="bg-white px-3 py-2 rounded-xl border border-emerald-200/60 flex items-center justify-between">
+                                <span className="text-gray-400 font-semibold text-[11px]">Password Awal:</span>
+                                <div className="flex items-center gap-1.5 font-mono font-bold text-primary-green text-xs">
+                                  <span>{selectedDetails.user.initial_password || '—'}</span>
+                                  {selectedDetails.user.initial_password && (
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(selectedDetails.user?.initial_password || '')
+                                        toast.success(`Password awal disalin: ${selectedDetails.user?.initial_password}`)
+                                      }}
+                                      className="text-gray-400 hover:text-primary-green p-0.5 cursor-pointer"
+                                      title="Salin password awal"
+                                    >
+                                      <Copy size={11} />
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     </div>
 

@@ -1,7 +1,7 @@
 'use server'
 
 import { prisma } from '@/lib/prisma'
-import { requireSessionRole } from '@/lib/auth/session'
+import { requireSessionRole, getSessionUser } from '@/lib/auth/session'
 
 export interface StudentFullDetailResponse {
   success: boolean
@@ -11,6 +11,7 @@ export interface StudentFullDetailResponse {
   ppdb?: any
   documents?: any[]
   payment?: any
+  user?: any
 }
 
 export async function getStudentFullDetail(studentId: string): Promise<StudentFullDetailResponse> {
@@ -34,6 +35,22 @@ export async function getStudentFullDetail(studentId: string): Promise<StudentFu
     }
 
     const parent = student.parents_tk?.[0] || null
+
+    // Find linked portal user account
+    let user: any = null
+    if (student.user_id) {
+      user = await prisma.user.findUnique({
+        where: { id: student.user_id },
+        select: {
+          id: true,
+          username: true,
+          email: true,
+          role: true,
+          initial_password: true,
+          status: true,
+        },
+      })
+    }
 
     // Find linked PPDB record
     let ppdb: any = null
@@ -84,12 +101,127 @@ export async function getStudentFullDetail(studentId: string): Promise<StudentFu
       ppdb,
       documents,
       payment,
+      user,
     }
   } catch (err: any) {
     console.error('Error fetching student full detail:', err)
     return {
       success: false,
       error: err.message || 'Gagal memuat detail data murid.',
+    }
+  }
+}
+
+export interface TeacherPlottedDataResponse {
+  success: boolean
+  error?: string
+  isTeacher: boolean
+  teacher?: any
+  classes: any[]
+  students: any[]
+}
+
+export async function getTeacherPlottedClassAndStudents(): Promise<TeacherPlottedDataResponse> {
+  try {
+    const user = await getSessionUser()
+    if (!user) {
+      return { success: false, error: 'Sesi login tidak ditemukan.', isTeacher: false, classes: [], students: [] }
+    }
+
+    // Jika Super Admin atau Admin, berikan semua kelas dan semua murid aktif
+    if (['super_admin', 'admin'].includes(user.role)) {
+      const [allClasses, allStudents] = await Promise.all([
+        prisma.class.findMany({
+          include: { teachers_tk: true },
+          orderBy: { nama: 'asc' },
+        }),
+        prisma.student.findMany({
+          where: { status: 'active' },
+          include: { classes_tk: true, parents_tk: true },
+          orderBy: { nama: 'asc' },
+        }),
+      ])
+      return {
+        success: true,
+        isTeacher: false,
+        classes: JSON.parse(JSON.stringify(allClasses)),
+        students: JSON.parse(JSON.stringify(allStudents)),
+      }
+    }
+
+    // Jika Guru, cari akun teacher berdasarkan user_id
+    let teacher = await prisma.teacher.findFirst({
+      where: { user_id: user.id },
+      include: {
+        classes_tk: true,
+      },
+    })
+
+    // Fallback jika belum terhubung via user_id
+    if (!teacher && user.email) {
+      teacher = await prisma.teacher.findFirst({
+        where: {
+          OR: [
+            { nama: { contains: user.username, mode: 'insensitive' } },
+            { hp: { not: null } },
+          ],
+        },
+        include: {
+          classes_tk: true,
+        },
+      })
+    }
+
+    if (!teacher) {
+      return {
+        success: true,
+        isTeacher: true,
+        classes: [],
+        students: [],
+      }
+    }
+
+    const classes = teacher.classes_tk || []
+    if (classes.length === 0) {
+      return {
+        success: true,
+        isTeacher: true,
+        teacher: JSON.parse(JSON.stringify(teacher)),
+        classes: [],
+        students: [],
+      }
+    }
+
+    const classIds = classes.map((c) => c.id)
+
+    // Ambil murid yang SUDAH di-plotting ke kelas guru ini
+    const students = await prisma.student.findMany({
+      where: {
+        kelas_id: { in: classIds },
+        status: 'active',
+      },
+      include: {
+        classes_tk: true,
+        parents_tk: true,
+      },
+      orderBy: { nama: 'asc' },
+    })
+
+    return {
+      success: true,
+      isTeacher: true,
+      teacher: JSON.parse(JSON.stringify(teacher)),
+      classes: JSON.parse(JSON.stringify(classes)),
+      students: JSON.parse(JSON.stringify(students)),
+    }
+  } catch (err: any) {
+    console.error('getTeacherPlottedClassAndStudents error:', err)
+    return {
+      success: false,
+      error: err.message || 'Gagal memuat data kelas guru.',
+      isTeacher: false,
+      classes: [],
+      students: [],
     }
   }
 }

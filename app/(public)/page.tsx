@@ -211,21 +211,21 @@ const TESTIMONIALS_DATA = [
     role: 'Kelas Shafa Marwah',
     content:
       'Terima kasih kepada seluruh guru dan pihak sekolah atas perhatian, kesabaran, serta pendampingan yang telah diberikan kepada Shakil selama bulan ini. Kami melihat adanya perkembangan yang baik dalam sikap, kemandirian, dan semangat belajar Shakil. Sebagai saran dan masukan, kami berharap komunikasi mengenai perkembangan Shakil dapat terus terjalin dengan baik antara sekolah dan orang tua. Kami juga berharap sekolah dapat terus memberikan rekomendasi kegiatan sederhana yang dapat dilakukan di rumah sehingga stimulasi yang diberikan di sekolah dan di rumah dapat berjalan selaras demi mendukung tumbuh kembang Shakil secara optimal.',
-    avatar: '/images/parent_ayah_rizki.png',
+    avatar: '',
   },
   {
     name: 'Faeyza Zidan Al Karim',
     role: 'Hamzah bin Abdul Muthalib',
     content:
       'Saya mau minta masukan terkait laporan kegiatan bulanan anak contoh hal nya melalui foto kegiatan yg di share di grup kelas Agar saya bisa mendapat gambaran tentang aktivitas dan perkembangan anak di sekolah, baik akademik maupun non-akademik. Tujuannya supaya saya bisa bantu dukung anak dari rumah dan untuk menyelaraskan pola didik anak di rumah dengan disekolah Terima kasih atas perhatian dan kerja samanya',
-    avatar: '/images/parent_papah_adit.png',
+    avatar: '',
   },
   {
     name: 'Raheeq Satvik Relaksana',
     role: 'Umar bin Khattab',
     content:
       'Terima kasih sudah menghargai Raheeq untuk melindungi dirinya ketika temannya mengganggunya. Pada dasaranya Raheeq bukan anak yang suka memulai masalah/pertengkaran, hanya apabila diganggu dia anak yang siap melawan. Saya cukup bangga juga dengan dia. Dia tidak menceritakan hal tersebut ke orangtuanya karena saya yakin dia sudah merasa bisa menyelesaikan masalahnya sendiri.',
-    avatar: '/images/parent_bunda_mila.png',
+    avatar: '',
   },
 ]
 
@@ -274,7 +274,7 @@ export default function HomePage() {
               name: item.name,
               role: item.job || 'Orang Tua Murid',
               content: item.content,
-              avatar: item.photo || '/images/parent_ayah_rizki.png',
+              avatar: item.photo || '',
             }))
           )
         }
@@ -1038,14 +1038,20 @@ export default function HomePage() {
                 >
                   <div>
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-[#0B7347]/30 bg-[#DCE8FA]">
-                        <Image
-                          src={t.avatar}
-                          alt={t.name}
-                          fill
-                          className="object-cover"
-                        />
-                      </div>
+                      {t.avatar ? (
+                        <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-[#0B7347]/30 bg-[#DCE8FA]">
+                          <Image
+                            src={t.avatar}
+                            alt={t.name}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-11 h-11 sm:w-12 sm:h-12 rounded-full flex-shrink-0 border-2 border-[#0B7347]/30 bg-[#0B7347]/10 text-[#0B7347] flex items-center justify-center font-black text-sm sm:text-base">
+                          {t.name?.charAt(0).toUpperCase() || 'O'}
+                        </div>
+                      )}
                       <div className="min-w-0">
                         <h3 className="font-extrabold text-[#1B3B6F] text-xs sm:text-sm truncate">
                           {t.name}

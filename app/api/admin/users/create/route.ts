@@ -43,6 +43,7 @@ export async function POST(req: NextRequest) {
         username: cleanUsername,
         email: cleanEmail,
         password_hash: hashed,
+        initial_password: password,
         role,
         status: 'active',
       })

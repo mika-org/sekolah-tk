@@ -208,6 +208,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             title: 'Akademik & Penilaian',
             collapsible: true,
             items: [
+              { name: 'Daftar Murid Kelas', href: '/dashboard/guru/students', icon: Users },
               { name: 'Absensi TK', href: '/dashboard/guru/attendance', icon: ClipboardList },
               { name: 'Input Nilai PAUD', href: '/dashboard/guru/grades', icon: BookOpen },
               { name: 'Materi Belajar', href: '/dashboard/guru/materials', icon: Layers },

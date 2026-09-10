@@ -19,15 +19,28 @@ export async function saveMonthlyGrade(payload: SaveMonthlyGradePayload) {
 
     const supabase = createAdminClient()
 
-    // Cari teacher id jika user adalah guru
+    // Cari teacher id jika user adalah guru dan validasi kelas binaan
     let teacherId: string | null = null
     if (user.role === 'guru') {
       const { data: teacher } = await supabase
         .from('teachers_tk')
-        .select('id')
+        .select('id, classes_tk(id)')
         .eq('user_id', user.id)
         .maybeSingle()
-      if (teacher) teacherId = teacher.id
+      if (teacher) {
+        teacherId = teacher.id
+        const classIds = (teacher.classes_tk || []).map((c: any) => c.id)
+        if (classIds.length > 0) {
+          const { data: student } = await supabase
+            .from('students_tk')
+            .select('kelas_id')
+            .eq('id', payload.studentId)
+            .maybeSingle()
+          if (!student || !classIds.includes(student.kelas_id)) {
+            return { error: 'Anda hanya dapat menginput nilai untuk murid di kelas binaan Anda.' }
+          }
+        }
+      }
     }
 
     const tpObj = ALL_PAUD_TPS.find((t) => t.id === payload.tpId)

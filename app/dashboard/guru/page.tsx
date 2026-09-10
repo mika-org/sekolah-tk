@@ -17,8 +17,13 @@ import {
   Megaphone
 } from 'lucide-react'
 
+import { getTeacherPlottedClassAndStudents } from '@/actions/students'
+
 export default function GuruDashboardLanding() {
   const [studentCount, setStudentCount] = useState(0)
+  const [plottedStudents, setPlottedStudents] = useState<any[]>([])
+  const [myClasses, setMyClasses] = useState<any[]>([])
+  const [teacherProfile, setTeacherProfile] = useState<any>(null)
   const [announcements, setAnnouncements] = useState<any[]>([])
   const [schedules, setSchedules] = useState<any[]>([])
   const [activeDay, setActiveDay] = useState('Senin')
@@ -35,13 +40,15 @@ export default function GuruDashboardLanding() {
   const loadData = async () => {
     setLoading(true)
     try {
-      // 1. Get active student count
-      const { count } = await supabase
-        .from('students_tk')
-        .select('*', { count: 'exact', head: true })
-        .eq('status', 'active')
+      // 1. Get plotted classes & students for this teacher
+      const plottedRes = await getTeacherPlottedClassAndStudents()
+      const studentsList = plottedRes.students || []
+      const classesList = plottedRes.classes || []
 
-      setStudentCount(count || 0)
+      setPlottedStudents(studentsList)
+      setMyClasses(classesList)
+      setStudentCount(studentsList.length)
+      if (plottedRes.teacher) setTeacherProfile(plottedRes.teacher)
 
       // 2. Get announcements for Guru
       const { data: ann } = await supabase
@@ -54,47 +61,15 @@ export default function GuruDashboardLanding() {
 
       if (ann) setAnnouncements(ann)
 
-      // 3. Get current logged-in user profile to fetch class schedule
-      let user = null
-      const match = document.cookie.match(new RegExp('(^| )sekolah_tk_token=([^;]+)'))
-      if (match) {
-        try {
-          const token = match[2]
-          const parts = token.split('.')
-          const payloadJson = atob(parts[1].replace(/-/g, '+').replace(/_/g, '/'))
-          const payload = JSON.parse(payloadJson)
-          user = { id: payload.id }
-        } catch {}
-      }
-
-      if (!user) {
-        const { data: { user: authUser } } = await supabase.auth.getUser()
-        user = authUser
-      }
-
-      if (user) {
-        const { data: teacher } = await supabase
-          .from('teachers_tk')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle()
-
-        if (teacher) {
-          const { data: classes } = await supabase
-            .from('classes_tk')
-            .select('id')
-            .eq('guru_id', teacher.id)
-
-          if (classes && classes.length > 0) {
-            const classIds = classes.map(c => c.id)
-            const { data: sched } = await supabase
-              .from('schedules_tk')
-              .select('*')
-              .in('class_id', classIds)
-              .order('start_time')
-            if (sched && sched.length > 0) setSchedules(sched)
-          }
-        }
+      // 3. Get schedule for teacher's classes
+      if (classesList.length > 0) {
+        const classIds = classesList.map((c: any) => c.id)
+        const { data: sched } = await supabase
+          .from('schedules_tk')
+          .select('*')
+          .in('class_id', classIds)
+          .order('start_time')
+        if (sched && sched.length > 0) setSchedules(sched)
       }
     } catch (e) {
       console.error(e)
@@ -154,12 +129,24 @@ export default function GuruDashboardLanding() {
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 bg-gradient-to-r from-primary-blue to-blue-900 text-white p-8 sm:p-10 rounded-[32px] shadow-xl relative overflow-hidden">
         <div className="absolute top-0 right-0 w-80 h-80 bg-primary-green/10 rounded-full blur-3xl" />
         <div className="relative z-10 space-y-2">
-          <div className="inline-flex items-center space-x-2 bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
-            <Sparkles size={12} className="text-amber-400" />
-            <span>Portal Guru Pengajar</span>
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="inline-flex items-center space-x-2 bg-white/10 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider">
+              <Sparkles size={12} className="text-amber-400" />
+              <span>Portal Guru Pengajar</span>
+            </div>
+            {myClasses.length > 0 && (
+              <Badge className="bg-primary-green text-white font-extrabold text-xs px-3 py-1 rounded-full border-none">
+                Wali Kelas: {myClasses.map((c) => c.nama).join(', ')}
+              </Badge>
+            )}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black">Selamat Datang, Ustadz / Ustadzah</h1>
-          <p className="text-gray-300 font-medium text-xs">Hari ini adalah {today}. Siapkan administrasi kelas dengan mudah melalui panel di bawah.</p>
+          <h1 className="text-2xl sm:text-3xl font-black">
+            Selamat Datang, {teacherProfile?.nama || 'Ustadzah'}
+          </h1>
+          <p className="text-gray-300 font-medium text-xs">
+            Hari ini adalah {today}. Anda mengampu {studentCount} murid aktif di kelas{' '}
+            {myClasses.map((c) => c.nama).join(', ') || 'KB/TK'}.
+          </p>
         </div>
       </div>
 
@@ -171,7 +158,7 @@ export default function GuruDashboardLanding() {
               <Users size={24} />
             </div>
             <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Murid Didik Aktif</div>
+              <div className="text-[10px] uppercase font-bold text-gray-400">Murid Kelas Binaan</div>
               <div className="text-2xl font-black text-primary-blue">{studentCount} Anak</div>
             </div>
           </CardContent>
@@ -214,8 +201,9 @@ export default function GuruDashboardLanding() {
             </CardHeader>
             <CardContent className="p-6 pt-0 space-y-3">
               {[
+                { title: 'Daftar Murid Kelas', desc: 'Lihat daftar anak yang di-plotting', href: '/dashboard/guru/students', icon: Users, color: 'bg-indigo-50 text-indigo-700' },
                 { title: 'Absensi TK', desc: 'Isi kehadiran murid hari ini', href: '/dashboard/guru/attendance', icon: ClipboardList, color: 'bg-emerald-50 text-primary-green' },
-                { title: 'Input Nilai Harian', desc: 'Catat perkembangan nilai anak', href: '/dashboard/guru/grades', icon: BookOpen, color: 'bg-blue-50 text-primary-blue' },
+                { title: 'Input Nilai PAUD', desc: 'Catat capaian TP bulanan', href: '/dashboard/guru/grades', icon: BookOpen, color: 'bg-blue-50 text-primary-blue' },
                 { title: 'Chat Orang Tua', desc: 'Komunikasi langsung dengan wali murid', href: '/dashboard/guru/chat', icon: MessageSquare, color: 'bg-purple-50 text-purple-650' },
                 { title: 'Materi Belajar', desc: 'Unggah modul & silabus mengajar', href: '/dashboard/guru/materials', icon: BookOpen, color: 'bg-amber-50 text-amber-700' },
               ].map((item, idx) => (
@@ -275,6 +263,73 @@ export default function GuruDashboardLanding() {
         </div>
 
       </div>
+
+      {/* Plotted Students Preview Card */}
+      <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
+        <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
+              <Users className="text-primary-green" size={20} />
+              Murid Kelas Binaan {myClasses.map((c) => c.nama).join(', ')} ({plottedStudents.length} Siswa)
+            </CardTitle>
+            <CardDescription className="text-xs font-semibold text-gray-400">
+              Daftar murid aktif yang telah di-plotting ke kelas Anda.
+            </CardDescription>
+          </div>
+          <Link
+            href="/dashboard/guru/students"
+            className="text-xs font-bold text-primary-green hover:underline flex items-center gap-1 shrink-0"
+          >
+            Lihat Detail Seluruh Murid <ArrowRight size={14} />
+          </Link>
+        </CardHeader>
+        <CardContent className="p-0">
+          {loading ? (
+            <div className="p-8 text-center text-xs text-gray-400">Memuat data murid...</div>
+          ) : plottedStudents.length === 0 ? (
+            <div className="p-8 text-center text-xs text-gray-400">
+              Belum ada murid yang di-plotting ke kelas Anda. Hubungi Admin untuk plotting murid.
+            </div>
+          ) : (
+            <div className="divide-y divide-gray-100">
+              {plottedStudents.slice(0, 6).map((s) => (
+                <div
+                  key={s.id}
+                  className="p-4 px-6 sm:px-8 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-gray-50/50 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-2xl bg-primary-blue/10 text-primary-blue font-extrabold text-xs flex items-center justify-center">
+                      {s.nama?.substring(0, 2).toUpperCase() || 'AN'}
+                    </div>
+                    <div>
+                      <div className="font-bold text-sm text-primary-blue">{s.nama}</div>
+                      <div className="text-[10px] text-gray-400 font-medium">
+                        NISN: {s.nisn || '-'} • Gender: {s.jenis_kelamin === 'L' ? 'Laki-laki' : 'Perempuan'} • Ortu: {s.parents_tk?.[0]?.nama_ayah || s.parents_tk?.[0]?.nama_ibu || '-'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <Link
+                      href={`/dashboard/guru/grades?student=${s.id}`}
+                      className="px-3 py-1.5 rounded-xl bg-blue-50 hover:bg-blue-100 text-primary-blue text-xs font-bold transition-all inline-flex items-center gap-1"
+                    >
+                      <BookOpen size={13} />
+                      Beri Nilai
+                    </Link>
+                    <Link
+                      href="/dashboard/guru/attendance"
+                      className="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 text-primary-green text-xs font-bold transition-all inline-flex items-center gap-1"
+                    >
+                      <ClipboardList size={13} />
+                      Presensi
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Weekly Schedule Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">

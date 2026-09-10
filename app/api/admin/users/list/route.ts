@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
 
     const { data, error } = await supabase
       .from('users_tk')
-      .select('id, username, email, role, status, created_at')
+      .select('id, username, email, role, status, initial_password, created_at')
       .order('created_at', { ascending: false })
 
     if (error) {

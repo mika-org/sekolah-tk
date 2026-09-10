@@ -20,7 +20,8 @@ import {
   Phone,
   MapPin,
   UserCheck,
-  AlertTriangle
+  AlertTriangle,
+  Copy
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -257,7 +258,26 @@ export default function MasterGuruPage() {
                       </td>
                       <td className="p-4">
                         {t.users_tk ? (
-                          <StatusBadge status="active" customLabel={`@${t.users_tk.username}`} size="sm" />
+                          <div className="space-y-1.5">
+                            <StatusBadge status="active" customLabel={`@${t.users_tk.username}`} size="sm" />
+                            {t.users_tk.initial_password && (
+                              <div className="flex items-center gap-1.5 text-[11px] font-mono text-gray-600 bg-gray-50 hover:bg-gray-100 px-2 py-0.5 rounded border border-gray-200/80 w-fit transition-colors">
+                                <span className="text-gray-400 font-sans text-[10px]">Pass:</span>
+                                <span className="font-bold text-primary-blue">{t.users_tk.initial_password}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(t.users_tk.initial_password)
+                                    toast.success(`Password awal @${t.users_tk.username} disalin!`)
+                                  }}
+                                  className="text-gray-400 hover:text-primary-green transition-colors cursor-pointer ml-0.5"
+                                  title="Salin password awal"
+                                >
+                                  <Copy size={11} />
+                                </button>
+                              </div>
+                            )}
+                          </div>
                         ) : (
                           <StatusBadge status="neutral" customLabel="Belum terhubung" size="sm" />
                         )}

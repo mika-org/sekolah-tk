@@ -19,6 +19,8 @@ import {
   X,
   ArrowRight,
   UploadCloud,
+  Camera,
+  Image as ImageIcon,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -159,6 +161,8 @@ export default function PPDBPage() {
     payment_method: 'Transfer',
   })
   const [proofFile, setProofFile] = useState<File | null>(null)
+  const [fotoAnakFile, setFotoAnakFile] = useState<File | null>(null)
+  const [kkFile, setKkFile] = useState<File | null>(null)
   const [aktaFile, setAktaFile] = useState<File | null>(null)
   const [ktpFile, setKtpFile] = useState<File | null>(null)
   const [dbSettings, setDbSettings] = useState<any>(null)
@@ -216,6 +220,26 @@ export default function PPDBPage() {
       } catch {}
       return updated
     })
+  }
+
+  const getFieldValue = (fieldName: string): string => {
+    if (formData[fieldName] !== undefined && formData[fieldName] !== null && formData[fieldName] !== '') {
+      return formData[fieldName]
+    }
+    // Pemetaan otomatis isian yang sudah pernah diisi (Tahap 1 / data registrasi awal)
+    if (fieldName === 'student_name') return formData.student_name || ''
+    if (fieldName === 'alamat') return formData.alamat || ''
+    if (fieldName === 'nama_ayah') return formData.nama_ayah || formData.parent_name || ''
+    if (fieldName === 'hp_ayah') return formData.hp_ayah || formData.phone || ''
+    if (fieldName === 'email_ayah') return formData.email_ayah || formData.email || ''
+    if (fieldName === 'alamat_ayah') return formData.alamat_ayah || formData.alamat || ''
+    if (fieldName === 'alamat_ibu') return formData.alamat_ibu || formData.alamat || ''
+    if (fieldName === 'status_ayah') return formData.status_ayah || 'Kandung'
+    if (fieldName === 'status_ibu') return formData.status_ibu || 'Kandung'
+    if (fieldName === 'status_pendaftaran') return formData.status_pendaftaran || 'Murid baru'
+    if (fieldName === 'kewarganegaraan') return formData.kewarganegaraan || 'WNI'
+    if (fieldName === 'agama') return formData.agama || 'Islam'
+    return ''
   }
 
   const handleCopyAccount = (text: string) => {
@@ -283,40 +307,51 @@ export default function PPDBPage() {
         setActiveToken(d.token)
         setExistingPpdbId(d.ppdbId)
 
-        // Isi otomatis data awal dari pendaftaran yang sudah diverifikasi
-        setFormData((prev) => ({
-          ...prev,
-          student_name: d.studentName || '',
-          parent_name: d.parentName || '',
-          alamat: d.alamat || '',
-          phone: d.phone || '',
-          email: d.email || '',
-          ppdb_id: d.ppdbId || '',
-          form_token: d.token || '',
-          // Data anak
-          birth_date: d.childDetails?.birth_date || '',
-          nik: d.childDetails?.nik || '',
-          nisn: d.childDetails?.nisn || '',
-          tempat_lahir: d.childDetails?.tempat_lahir || '',
-          jenis_kelamin: d.childDetails?.jenis_kelamin || 'L',
-          agama: d.childDetails?.agama || 'Islam',
-          anak_ke: String(d.childDetails?.anak_ke || '1'),
-          jml_saudara: String(d.childDetails?.jml_saudara || '0'),
-          // Ayah
-          nama_ayah: d.fatherDetails?.nama_ayah || d.parentName || '',
-          nik_ayah: d.fatherDetails?.nik_ayah || '',
-          pekerjaan_ayah: d.fatherDetails?.pekerjaan_ayah || '',
-          pendidikan_ayah: d.fatherDetails?.pendidikan_ayah || '',
-          penghasilan_ayah: d.fatherDetails?.penghasilan_ayah || '',
-          hp_ayah: d.fatherDetails?.hp_ayah || d.phone || '',
-          // Ibu
-          nama_ibu: d.motherDetails?.nama_ibu || '',
-          nik_ibu: d.motherDetails?.nik_ibu || '',
-          pekerjaan_ibu: d.motherDetails?.pekerjaan_ibu || '',
-          pendidikan_ibu: d.motherDetails?.pendidikan_ibu || '',
-          penghasilan_ibu: d.motherDetails?.penghasilan_ibu || '',
-          hp_ibu: d.motherDetails?.hp_ibu || '',
-        }))
+        const childD = (d.childDetails as Record<string, any>) || {}
+        const fatherD = (d.fatherDetails as Record<string, any>) || {}
+        const motherD = (d.motherDetails as Record<string, any>) || {}
+
+        // Isi otomatis SELURUH isian yang pernah diisi (Tahap 1, formulir awal, dan data tersimpan sebelumnya)
+        setFormData((prev) => {
+          const merged: Record<string, string> = {
+            ...prev,
+            // 1. Seluruh field tersimpan sebelumnya dari database
+            ...Object.fromEntries(
+              Object.entries(childD).map(([k, v]) => [k, v === null || v === undefined ? '' : String(v)])
+            ),
+            ...Object.fromEntries(
+              Object.entries(fatherD).map(([k, v]) => [k, v === null || v === undefined ? '' : String(v)])
+            ),
+            ...Object.fromEntries(
+              Object.entries(motherD).map(([k, v]) => [k, v === null || v === undefined ? '' : String(v)])
+            ),
+            // 2. Data primer pendaftaran awal
+            student_name: d.studentName || childD.student_name || prev.student_name || '',
+            parent_name: d.parentName || childD.parent_name || fatherD.nama_ayah || prev.parent_name || '',
+            alamat: d.alamat || childD.alamat || fatherD.alamat_ayah || prev.alamat || '',
+            phone: d.phone || childD.phone || fatherD.hp_ayah || prev.phone || '',
+            email: d.email || childD.email || fatherD.email_ayah || prev.email || '',
+            ppdb_id: d.ppdbId || prev.ppdb_id || '',
+            form_token: d.token || prev.form_token || '',
+            // 3. Pemetaan otomatis identitas orang tua (Ayah & Ibu)
+            nama_ayah: fatherD.nama_ayah || d.parentName || childD.parent_name || prev.parent_name || '',
+            hp_ayah: fatherD.hp_ayah || d.phone || childD.phone || prev.phone || '',
+            email_ayah: fatherD.email_ayah || d.email || childD.email || prev.email || '',
+            alamat_ayah: fatherD.alamat_ayah || d.alamat || childD.alamat || prev.alamat || '',
+            alamat_ibu: motherD.alamat_ibu || d.alamat || childD.alamat || prev.alamat || '',
+            status_ayah: fatherD.status_ayah || 'Kandung',
+            status_ibu: motherD.status_ibu || 'Kandung',
+            // 4. Default pilihan jika belum dipilih
+            birth_date: d.birthDate || childD.birth_date || prev.birth_date || '',
+            jenis_kelamin: childD.jenis_kelamin || prev.jenis_kelamin || 'L',
+            agama: childD.agama || prev.agama || 'Islam',
+            kewarganegaraan: childD.kewarganegaraan || prev.kewarganegaraan || 'WNI',
+            status_pendaftaran: childD.status_pendaftaran || prev.status_pendaftaran || 'Murid baru',
+            anak_ke: String(childD.anak_ke || prev.anak_ke || '1'),
+            jml_saudara: String(childD.jml_saudara || prev.jml_saudara || '0'),
+          }
+          return merged
+        })
 
         toast.success(
           `Kode Akses Terverifikasi! Melanjutkan ke Biodata Lengkap ananda ${d.studentName}.`
@@ -475,7 +510,27 @@ export default function PPDBPage() {
       data.set('phone', (formData.phone || '').trim())
       data.set('email', (formData.email || '').trim())
 
+      if (!data.get('nama_ayah') && (formData.nama_ayah || formData.parent_name)) {
+        data.set('nama_ayah', (formData.nama_ayah || formData.parent_name || '').trim())
+      }
+      if (!data.get('hp_ayah') && (formData.hp_ayah || formData.phone)) {
+        data.set('hp_ayah', (formData.hp_ayah || formData.phone || '').trim())
+      }
+      if (!data.get('email_ayah') && (formData.email_ayah || formData.email)) {
+        data.set('email_ayah', (formData.email_ayah || formData.email || '').trim())
+      }
+      if (!data.get('alamat_ayah') && (formData.alamat_ayah || formData.alamat)) {
+        data.set('alamat_ayah', (formData.alamat_ayah || formData.alamat || '').trim())
+      }
+      if (!data.get('alamat_ibu') && (formData.alamat_ibu || formData.alamat)) {
+        data.set('alamat_ibu', (formData.alamat_ibu || formData.alamat || '').trim())
+      }
+      if (!data.get('status_ayah')) data.set('status_ayah', formData.status_ayah || 'Kandung')
+      if (!data.get('status_ibu')) data.set('status_ibu', formData.status_ibu || 'Kandung')
+
       if (proofFile) data.append('bukti_pembayaran', proofFile)
+      if (fotoAnakFile) data.append('foto_anak', fotoAnakFile)
+      if (kkFile) data.append('kk', kkFile)
       if (aktaFile) data.append('akta', aktaFile)
       if (ktpFile) data.append('ktp_ortu', ktpFile)
 
@@ -756,17 +811,14 @@ export default function PPDBPage() {
                       <User size={15} className="text-[#0F7A4A]" /> 1. Identitas Lengkap Anak
                     </h3>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {allFields(CHILD_FORM_SECTIONS).map((field) => {
-                        if (field.name === 'student_name' || field.name === 'alamat') return null
-                        return (
-                          <DynamicField
-                            key={field.name}
-                            field={field}
-                            value={formData[field.name]}
-                            onChange={handleChange}
-                          />
-                        )
-                      })}
+                      {allFields(CHILD_FORM_SECTIONS).map((field) => (
+                        <DynamicField
+                          key={field.name}
+                          field={field}
+                          value={getFieldValue(field.name)}
+                          onChange={handleChange}
+                        />
+                      ))}
                     </div>
                   </div>
 
@@ -780,7 +832,7 @@ export default function PPDBPage() {
                         <DynamicField
                           key={field.name}
                           field={field}
-                          value={formData[field.name]}
+                          value={getFieldValue(field.name)}
                           onChange={handleChange}
                         />
                       ))}
@@ -788,7 +840,7 @@ export default function PPDBPage() {
                         <DynamicField
                           key={field.name}
                           field={field}
-                          value={formData[field.name]}
+                          value={getFieldValue(field.name)}
                           onChange={handleChange}
                         />
                       ))}
@@ -817,16 +869,62 @@ export default function PPDBPage() {
               {fullFormStep === 3 && (
                 <div className="space-y-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    {/* Pas Foto Calon Murid */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-700 block">
+                        Pas Foto Calon Murid <span className="text-xs text-gray-400 font-normal">(Opsional)</span>
+                      </label>
+                      <div className="border-2 border-dashed border-gray-300 hover:border-[#0F7A4A] rounded-2xl p-5 bg-[#F8F6F2]/60 text-center cursor-pointer transition-colors">
+                        <input
+                          type="file"
+                          id="foto_anak"
+                          accept=".png,.pdf,.jpg,.jpeg,image/png,image/jpeg,application/pdf"
+                          onChange={(e) => setFotoAnakFile(e.target.files?.[0] || null)}
+                          className="hidden"
+                        />
+                        <label htmlFor="foto_anak" className="cursor-pointer flex flex-col items-center gap-1.5">
+                          <Camera size={24} className="text-[#0F7A4A]" />
+                          <span className="text-xs font-bold text-[#1B365D]">
+                            {fotoAnakFile ? fotoAnakFile.name : 'Pilih Pas Foto Calon Murid'}
+                          </span>
+                          <span className="text-[10px] text-gray-400">Format: PNG, PDF, JPG, JPEG (Maks. 10MB)</span>
+                        </label>
+                      </div>
+                    </div>
+
+                    {/* Kartu Keluarga */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold text-gray-700 block">
+                        Kartu Keluarga (KK) <span className="text-xs text-gray-400 font-normal">(Opsional)</span>
+                      </label>
+                      <div className="border-2 border-dashed border-gray-300 hover:border-[#0F7A4A] rounded-2xl p-5 bg-[#F8F6F2]/60 text-center cursor-pointer transition-colors">
+                        <input
+                          type="file"
+                          id="kk"
+                          accept=".png,.pdf,.jpg,.jpeg,image/png,image/jpeg,application/pdf"
+                          onChange={(e) => setKkFile(e.target.files?.[0] || null)}
+                          className="hidden"
+                        />
+                        <label htmlFor="kk" className="cursor-pointer flex flex-col items-center gap-1.5">
+                          <FileText size={24} className="text-[#0F7A4A]" />
+                          <span className="text-xs font-bold text-[#1B365D]">
+                            {kkFile ? kkFile.name : 'Pilih berkas Kartu Keluarga'}
+                          </span>
+                          <span className="text-[10px] text-gray-400">Format: PNG, PDF, JPG, JPEG (Maks. 10MB)</span>
+                        </label>
+                      </div>
+                    </div>
+
                     {/* Akta Kelahiran */}
                     <div className="space-y-2">
                       <label className="text-xs font-bold text-gray-700 block">
                         Akta Kelahiran Anak <span className="text-red-500">*</span>
                       </label>
-                      <div className="border-2 border-dashed border-gray-300 hover:border-[#0F7A4A] rounded-2xl p-5 bg-[#F8F6F2]/60 text-center cursor-pointer">
+                      <div className="border-2 border-dashed border-gray-300 hover:border-[#0F7A4A] rounded-2xl p-5 bg-[#F8F6F2]/60 text-center cursor-pointer transition-colors">
                         <input
                           type="file"
                           id="akta"
-                          accept=".pdf,.jpg,.jpeg,.png"
+                          accept=".png,.pdf,.jpg,.jpeg,image/png,image/jpeg,application/pdf"
                           onChange={(e) => setAktaFile(e.target.files?.[0] || null)}
                           className="hidden"
                           required
@@ -836,7 +934,7 @@ export default function PPDBPage() {
                           <span className="text-xs font-bold text-[#1B365D]">
                             {aktaFile ? aktaFile.name : 'Pilih berkas Akta Kelahiran'}
                           </span>
-                          <span className="text-[10px] text-gray-400">Format: JPG, PNG, PDF (Maks. 2MB)</span>
+                          <span className="text-[10px] text-gray-400">Format: PNG, PDF, JPG, JPEG (Maks. 10MB)</span>
                         </label>
                       </div>
                     </div>
@@ -846,11 +944,11 @@ export default function PPDBPage() {
                       <label className="text-xs font-bold text-gray-700 block">
                         KTP Orang Tua / Wali <span className="text-red-500">*</span>
                       </label>
-                      <div className="border-2 border-dashed border-gray-300 hover:border-[#0F7A4A] rounded-2xl p-5 bg-[#F8F6F2]/60 text-center cursor-pointer">
+                      <div className="border-2 border-dashed border-gray-300 hover:border-[#0F7A4A] rounded-2xl p-5 bg-[#F8F6F2]/60 text-center cursor-pointer transition-colors">
                         <input
                           type="file"
                           id="ktp_ortu"
-                          accept=".pdf,.jpg,.jpeg,.png"
+                          accept=".png,.pdf,.jpg,.jpeg,image/png,image/jpeg,application/pdf"
                           onChange={(e) => setKtpFile(e.target.files?.[0] || null)}
                           className="hidden"
                           required
@@ -860,7 +958,7 @@ export default function PPDBPage() {
                           <span className="text-xs font-bold text-[#1B365D]">
                             {ktpFile ? ktpFile.name : 'Pilih berkas KTP Orang Tua'}
                           </span>
-                          <span className="text-[10px] text-gray-400">Format: JPG, PNG, PDF (Maks. 2MB)</span>
+                          <span className="text-[10px] text-gray-400">Format: PNG, PDF, JPG, JPEG (Maks. 10MB)</span>
                         </label>
                       </div>
                     </div>
@@ -1171,7 +1269,7 @@ export default function PPDBPage() {
                       <input
                         type="file"
                         id="proof_upload"
-                        accept="image/*,.pdf"
+                        accept=".png,.pdf,.jpg,.jpeg,image/png,image/jpeg,image/jpg,application/pdf"
                         onChange={(e) => setProofFile(e.target.files?.[0] || null)}
                         className="hidden"
                       />
@@ -1189,6 +1287,9 @@ export default function PPDBPage() {
                           {proofFile ? proofFile.name : 'Upload Bukti Pembayaran'}
                         </span>
                       </label>
+                      <span className="text-[10px] text-gray-400 block text-center mt-1">
+                        Format: PNG, PDF, JPG, JPEG (Maks. 10MB)
+                      </span>
                     </div>
                   </div>
 

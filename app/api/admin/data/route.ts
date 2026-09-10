@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
     } else if (table === 'teachers_tk_with_users') {
       query = supabase
         .from('teachers_tk')
-        .select('*, users_tk(username, email)')
+        .select('*, users_tk(username, email, initial_password)')
         .order(requestedOrderBy || 'nama', { ascending: true })
         .limit(limit)
     } else if (table === 'classes_tk_with_teachers') {

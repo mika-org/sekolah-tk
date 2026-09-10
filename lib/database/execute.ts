@@ -48,7 +48,7 @@ const primaryKeyByTable: Record<TableName, string> = {
 }
 
 const fieldsByTable: Record<TableName, ReadonlySet<string>> = {
-  users_tk: new Set(['id', 'username', 'email', 'password_hash', 'role', 'status', 'created_at']),
+  users_tk: new Set(['id', 'username', 'email', 'password_hash', 'initial_password', 'role', 'status', 'created_at']),
   teachers_tk: new Set(['id', 'user_id', 'nama', 'nip', 'hp', 'alamat']),
   classes_tk: new Set(['id', 'nama', 'guru_id', 'tahun_ajaran']),
   students_tk: new Set(['id', 'user_id', 'nama', 'nik', 'nisn', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'agama', 'alamat', 'kelas_id', 'status']),

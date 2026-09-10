@@ -18,7 +18,8 @@ import {
   ShieldCheck,
   RefreshCw,
   Eye,
-  EyeOff
+  EyeOff,
+  Copy
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -55,6 +56,11 @@ export default function AdminUsersPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showEditPassword, setShowEditPassword] = useState(false)
+  const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({})
+
+  const togglePasswordVisibility = (id: string) => {
+    setVisiblePasswords((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
 
   // Search & Pagination
   const [searchQuery, setSearchQuery] = useState('')
@@ -289,6 +295,7 @@ export default function AdminUsersPage() {
                     <th className="p-4 pl-8">Username</th>
                     <th className="p-4">Email</th>
                     <th className="p-4">Role</th>
+                    <th className="p-4">Password Awal</th>
                     <th className="p-4">Status</th>
                     <th className="p-4">Dibuat</th>
                     <th className="p-4 pr-8 text-right">Aksi</th>
@@ -307,6 +314,36 @@ export default function AdminUsersPage() {
                       </td>
                       <td className="p-4 text-gray-600 font-semibold text-xs">{u.email}</td>
                       <td className="p-4">{getRoleBadge(u.role)}</td>
+                      <td className="p-4">
+                        {u.initial_password ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-mono text-xs bg-gray-100 text-primary-blue font-bold px-2 py-0.5 rounded-md border border-gray-200/80">
+                              {visiblePasswords[u.id] ? u.initial_password : '••••••••'}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => togglePasswordVisibility(u.id)}
+                              className="text-gray-400 hover:text-primary-blue p-1 rounded transition-colors cursor-pointer"
+                              title={visiblePasswords[u.id] ? 'Sembunyikan password' : 'Lihat password awal'}
+                            >
+                              {visiblePasswords[u.id] ? <EyeOff size={13} /> : <Eye size={13} />}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(u.initial_password)
+                                toast.success(`Password awal @${u.username} disalin!`)
+                              }}
+                              className="text-gray-400 hover:text-primary-green p-1 rounded transition-colors cursor-pointer"
+                              title="Salin password awal"
+                            >
+                              <Copy size={13} />
+                            </button>
+                          </div>
+                        ) : (
+                          <span className="text-gray-300 text-xs font-mono">—</span>
+                        )}
+                      </td>
                       <td className="p-4">
                         <StatusBadge status={u.status === 'active' ? 'active' : 'inactive'} customLabel={u.status === 'active' ? 'Aktif' : 'Nonaktif'} />
                       </td>
@@ -422,6 +459,25 @@ export default function AdminUsersPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEdit} className="space-y-4 pt-2">
+            {editUser?.initial_password && (
+              <div className="p-3 bg-emerald-50/70 rounded-2xl border border-emerald-100 flex items-center justify-between text-xs">
+                <span className="text-emerald-900 font-semibold">Password Awal Terdaftar:</span>
+                <div className="flex items-center gap-1.5 font-mono font-bold text-primary-green">
+                  <span>{editUser.initial_password}</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      navigator.clipboard.writeText(editUser.initial_password)
+                      toast.success('Password awal disalin!')
+                    }}
+                    className="text-gray-400 hover:text-primary-green p-1 rounded cursor-pointer"
+                    title="Salin password awal"
+                  >
+                    <Copy size={12} />
+                  </button>
+                </div>
+              </div>
+            )}
             <div className="space-y-1.5">
               <Label className="text-xs font-bold text-primary-blue">Role / Peran</Label>
               <select value={editRole} onChange={e => setEditRole(e.target.value)}

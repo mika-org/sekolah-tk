@@ -200,6 +200,7 @@ export async function syncPpdbToStudent(ppdbId: string) {
           username,
           email: finalEmail,
           password_hash: passwordHash,
+          initial_password: passwordStr,
           role: 'orang_tua',
           status: 'active',
         })
@@ -573,6 +574,44 @@ export async function saveTestimonial(data: {
     if (error) return { error: error.message }
 
     revalidatePath('/dashboard/admin/testimonials')
+    return { success: true, data: result }
+  } catch (err: any) {
+    return { error: err.message }
+  }
+}
+
+export async function updateTestimonial(data: {
+  id: string
+  name: string
+  job: string
+  content: string
+  published: boolean
+  photo?: string | null
+}) {
+  try {
+    await requireSessionRole(['super_admin', 'admin'])
+    const supabaseAdmin = createAdminClient()
+    const updatePayload: Record<string, any> = {
+      name: data.name,
+      job: data.job,
+      content: data.content,
+      published: data.published,
+    }
+    if (data.photo !== undefined) {
+      updatePayload.photo = data.photo
+    }
+
+    const { data: result, error } = await supabaseAdmin
+      .from('testimonials_tk')
+      .update(updatePayload)
+      .eq('id', data.id)
+      .select()
+      .single()
+
+    if (error) return { error: error.message }
+
+    revalidatePath('/dashboard/admin/testimonials')
+    revalidatePath('/')
     return { success: true, data: result }
   } catch (err: any) {
     return { error: err.message }

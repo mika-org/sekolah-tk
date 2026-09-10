@@ -21,6 +21,7 @@ export async function POST(req: NextRequest) {
     // Only hash + update password if provided
     if (password && password.length >= 8) {
       updates.password_hash = await bcrypt.hash(password, 10)
+      updates.initial_password = password
     }
 
     const { error } = await supabase

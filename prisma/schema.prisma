@@ -12,6 +12,7 @@ model User {
   username          String        @unique @db.Text
   email             String        @unique @db.Text
   password_hash     String        @db.Text
+  initial_password  String?       @db.Text
   role              String        @db.Text
   status            String        @default("active") @db.Text
   created_at        DateTime      @default(now()) @db.Timestamptz(6)

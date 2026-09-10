@@ -35,7 +35,9 @@ import {
   FileText,
   Calendar,
   Sparkles,
-  CheckCircle2
+  CheckCircle2,
+  KeyRound,
+  Copy
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -825,6 +827,52 @@ export default function MasterMuridPage() {
                           {detailData.parent?.alamat || detailData.ppdb?.father_details?.alamat_ayah || '-'}
                         </span>
                       </div>
+
+                      {/* AKUN PORTAL ORANG TUA */}
+                      {detailData.user && (
+                        <div className="pt-3 mt-1 border-t border-gray-200/80 space-y-2 bg-emerald-50/60 p-3 rounded-xl border border-emerald-100">
+                          <div className="font-extrabold text-primary-green flex items-center justify-between text-xs">
+                            <span className="flex items-center gap-1.5"><KeyRound size={13} /> Akun Portal Orang Tua</span>
+                            <span className="text-[10px] text-emerald-700 bg-white px-2 py-0.5 rounded-full border border-emerald-200 font-bold">Aktif</span>
+                          </div>
+                          <div className="grid grid-cols-3 gap-1 items-center">
+                            <span className="text-gray-500 font-semibold">Username:</span>
+                            <div className="col-span-2 flex items-center gap-1.5 font-mono font-bold text-primary-blue">
+                              <span>@{detailData.user.username}</span>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  navigator.clipboard.writeText(detailData.user.username)
+                                  toast.success(`Username @${detailData.user.username} disalin!`)
+                                }}
+                                className="text-gray-400 hover:text-primary-green p-0.5 cursor-pointer transition-colors"
+                                title="Salin username"
+                              >
+                                <Copy size={11} />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="grid grid-cols-3 gap-1 items-center">
+                            <span className="text-gray-500 font-semibold">Password Awal:</span>
+                            <div className="col-span-2 flex items-center gap-1.5 font-mono font-bold text-primary-green">
+                              <span>{detailData.user.initial_password || '—'}</span>
+                              {detailData.user.initial_password && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(detailData.user.initial_password)
+                                    toast.success('Password awal disalin!')
+                                  }}
+                                  className="text-gray-400 hover:text-primary-green p-0.5 cursor-pointer transition-colors"
+                                  title="Salin password awal"
+                                >
+                                  <Copy size={11} />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

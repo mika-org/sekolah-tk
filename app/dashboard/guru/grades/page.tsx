@@ -33,6 +33,7 @@ import {
   saveMonthlyGrade,
   deleteGrade,
 } from '@/actions/grades'
+import { getTeacherPlottedClassAndStudents } from '@/actions/students'
 import {
   CRITERIA_MAP,
   MONTHS_SEMESTER_1,
@@ -97,24 +98,40 @@ export default function GuruGradesPage() {
   const loadData = async () => {
     setLoading(true)
     try {
-      const [studentsRes, gradesRes, classesRes] = await Promise.all([
-        supabase.from('students_tk').select('*, classes_tk(nama)').eq('status', 'active').order('nama'),
-        supabase.from('grades_tk').select('*, students_tk(nama, kelas_id)').order('id', { ascending: false }),
-        supabase.from('classes_tk').select('*').order('nama'),
-      ])
+      const plottedRes = await getTeacherPlottedClassAndStudents()
+      const myStudents = plottedRes.students || []
+      const myClasses = plottedRes.classes || []
 
-      if (studentsRes.data) {
-        setStudents(studentsRes.data)
-        if (studentsRes.data.length > 0 && !selectedStudent) {
-          setSelectedStudent(studentsRes.data[0].id)
-        }
+      setStudents(myStudents)
+      setClasses(myClasses)
+
+      const urlStudentId = typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('student') : null
+      const targetStudent = (urlStudentId && myStudents.some((s) => s.id === urlStudentId))
+        ? urlStudentId
+        : (myStudents.length > 0 ? myStudents[0].id : '')
+
+      setSelectedStudent(targetStudent)
+
+      if (plottedRes.isTeacher && myStudents.length === 0) {
+        setGrades([])
+        setLoading(false)
+        return
       }
-      if (gradesRes.data) setGrades(gradesRes.data)
-      if (classesRes.data) setClasses(classesRes.data)
+
+      const studentIds = myStudents.map((s) => s.id)
+      let query = supabase.from('grades_tk').select('*, students_tk(nama, kelas_id)').order('id', { ascending: false })
+      if (plottedRes.isTeacher && studentIds.length > 0) {
+        query = query.in('student_id', studentIds)
+      }
+
+      const { data: gradesData, error } = await query
+      if (gradesData) setGrades(gradesData)
+      if (error) console.error(error)
     } catch (e: any) {
       toast.error('Gagal memuat data: ' + e.message)
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   useEffect(() => {
@@ -278,11 +295,19 @@ export default function GuruGradesPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 print:hidden">
         <div>
-          <h1 className="text-3xl font-black text-primary-blue flex items-center gap-2">
-            <Award className="text-primary-green" /> Penilaian Capaian Pembelajaran PAUD
-          </h1>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <h1 className="text-3xl font-black text-primary-blue flex items-center gap-2">
+              <Award className="text-primary-green" /> Penilaian Capaian Pembelajaran PAUD
+            </h1>
+            {classes.length > 0 && (
+              <Badge className="bg-[#0F7A4A] hover:bg-[#0F7A4A] text-white font-extrabold text-xs px-3 py-1 rounded-full">
+                Wali Kelas: {classes.map((c) => c.nama).join(', ')}
+              </Badge>
+            )}
+          </div>
           <p className="text-gray-500 font-semibold text-xs mt-1">
             Kurikulum Merdeka PAUD: 10 TP Capaian Pembelajaran &amp; 8 TP Jati Diri per bulan (BB, MB, BSH, BSB).
+            {students.length > 0 && ` • Menampilkan ${students.length} murid kelas binaan.`}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -307,6 +332,20 @@ export default function GuruGradesPage() {
 
         {/* ─── TAB 1: INPUT NILAI BULANAN BERBASIS TP ─── */}
         <TabsContent value="input" className="space-y-6">
+          {students.length === 0 && !loading ? (
+            <Card className="bg-amber-50/80 border border-amber-200 rounded-[28px] p-8 text-center space-y-3">
+              <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto text-amber-700">
+                <Info size={24} />
+              </div>
+              <h3 className="font-black text-amber-900 text-base">Belum Ada Murid yang Di-Plotting</h3>
+              <p className="text-amber-800 text-xs max-w-md mx-auto leading-relaxed">
+                {classes.length > 0
+                  ? `Kelas ${classes.map((c) => c.nama).join(', ')} saat ini belum memiliki murid yang di-plotting. Silakan hubungi Kepala Sekolah / Admin untuk menempatkan murid ke kelas Anda.`
+                  : 'Akun Anda belum terhubung sebagai wali kelas pada kelas manapun. Silakan hubungi Admin untuk pengaturan kelas.'}
+              </p>
+            </Card>
+          ) : (
+            <>
           {/* Top Control Bar: Select Student, Semester, Month */}
           <Card className="bg-white rounded-[32px] shadow-sm border-none p-6">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
@@ -516,6 +555,8 @@ export default function GuruGradesPage() {
               )
             })}
           </div>
+          </>
+          )}
         </TabsContent>
 
         {/* ─── TAB 2: RIWAYAT PENILAIAN BULANAN ─── */}

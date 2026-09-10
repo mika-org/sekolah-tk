@@ -12,8 +12,15 @@ import {
 import { saveStoredFile } from '@/lib/storage'
 import { revalidatePath } from 'next/cache'
 
-const MAX_FILE_SIZE = 2 * 1024 * 1024
-const ALLOWED_FILE_TYPES = new Set(['image/jpeg', 'image/png', 'application/pdf'])
+const MAX_FILE_SIZE = 10 * 1024 * 1024
+const ALLOWED_FILE_TYPES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/x-png',
+  'image/pjpeg',
+  'application/pdf',
+])
 const ALLOWED_FILE_EXTENSION = /\.(jpe?g|png|pdf)$/i
 
 export type PPDBActionState = {
@@ -51,9 +58,11 @@ function getUpload(formData: FormData, name: string) {
 
 function validateUpload(file: File | null, label: string) {
   if (!file) return null
-  if (file.size > MAX_FILE_SIZE) return `${label} melebihi ukuran maksimum 2 MB.`
-  if (!ALLOWED_FILE_TYPES.has(file.type) && !ALLOWED_FILE_EXTENSION.test(file.name)) {
-    return `${label} harus berformat JPG, PNG, atau PDF.`
+  if (file.size > MAX_FILE_SIZE) return `${label} melebihi ukuran maksimum 10 MB.`
+  const extMatch = ALLOWED_FILE_EXTENSION.test(file.name)
+  const mimeMatch = file.type ? ALLOWED_FILE_TYPES.has(file.type.toLowerCase()) : false
+  if (!extMatch && !mimeMatch) {
+    return `${label} harus berformat PNG, PDF, JPG, atau JPEG.`
   }
   return null
 }
@@ -372,6 +381,7 @@ export async function verifyPpdbToken(tokenInput: string) {
         childDetails: child,
         fatherDetails: father,
         motherDetails: mother,
+        birthDate: matched.birth_date ? new Date(matched.birth_date).toISOString().split('T')[0] : '',
       },
     }
   } catch (err: any) {
@@ -551,8 +561,10 @@ export async function submitPPDB(
       fatherDetails.alamat_ayah = initialAddress
     }
 
-    // Dokumen Pendukung (Akta & KTP)
+    // Dokumen Pendukung (Pas Foto Anak, Kartu Keluarga, Akta & KTP)
     const documentDefinitions = [
+      { name: 'foto_anak', label: 'Pas Foto Calon Murid', required: false },
+      { name: 'kk', label: 'Kartu Keluarga', required: false },
       { name: 'akta', label: 'Akta Kelahiran Anak', required: true },
       { name: 'ktp_ortu', label: 'KTP Orang Tua', required: true },
     ] as const
