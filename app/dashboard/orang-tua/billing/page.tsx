@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
 import { StatusBadge } from '@/components/ui/status-badge'
 import { toast } from 'sonner'
-import { CreditCard, CheckCircle2, Sparkles, DollarSign, ExternalLink } from 'lucide-react'
+import { CreditCard, CheckCircle2, Sparkles, DollarSign, ExternalLink, Copy } from 'lucide-react'
 
 export default function BillingPage() {
   const [studentData, setStudentData] = useState<any>(null)
@@ -255,6 +255,32 @@ export default function BillingPage() {
             </CardHeader>
             <CardContent className="p-6">
               <form onSubmit={handleUploadPayment} className="space-y-4 text-xs">
+                <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 space-y-2">
+                  <div className="text-[10px] font-bold uppercase tracking-wider text-amber-800 flex items-center gap-1.5">
+                    <CreditCard size={13} />
+                    <span>Rekening Pembayaran Resmi</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div>
+                      <div className="font-extrabold text-primary-blue text-xs">BANK MUAMALAT INDONESIA</div>
+                      <div className="font-mono text-sm font-black text-gray-900 tracking-wide">1130011857</div>
+                      <div className="text-[11px] text-gray-700 font-semibold">a/n Yayasan Istiqamah Bandung</div>
+                      <div className="text-[10px] text-gray-500 font-medium">(HETI HERAWATI OR ANTY NUDIANTI IMANI)</div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText('1130011857')
+                        toast.success('Nomor rekening berhasil disalin!')
+                      }}
+                      className="rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-[11px] font-bold text-amber-900 hover:bg-amber-100 flex items-center gap-1 cursor-pointer shrink-0 transition-colors shadow-2xs"
+                    >
+                      <Copy size={12} />
+                      <span>Salin</span>
+                    </button>
+                  </div>
+                </div>
+
                 <div className="space-y-1">
                   <span className="text-[10px] font-extrabold text-primary-blue">Nama Siswa:</span>
                   <div className="font-extrabold text-primary-blue text-sm">{studentData?.nama || 'Murid Terdaftar'}</div>

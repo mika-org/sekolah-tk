@@ -38,11 +38,12 @@ export default function SettingsPage() {
   const [socialFacebook, setSocialFacebook] = useState('TK Istiqamah Bandung')
   
   const [academicYear, setAcademicYear] = useState('2026/2027')
-  const [ppdbFee, setPpdbFee] = useState('250000')
+  const [ppdbFee, setPpdbFee] = useState('500000')
 
-  const [paymentBankName, setPaymentBankName] = useState('Bank Mandiri')
-  const [paymentAccountNumber, setPaymentAccountNumber] = useState('131-00-1234567-8')
+  const [paymentBankName, setPaymentBankName] = useState('BANK MUAMALAT INDONESIA')
+  const [paymentAccountNumber, setPaymentAccountNumber] = useState('1130011857')
   const [paymentAccountName, setPaymentAccountName] = useState('Yayasan Istiqamah Bandung')
+  const [paymentAccountSubname, setPaymentAccountSubname] = useState('HETI HERAWATI OR ANTY NUDIANTI IMANI')
 
   const loadSettings = async () => {
     setLoading(true)
@@ -61,6 +62,7 @@ export default function SettingsPage() {
       if (s.payment_bank_name) setPaymentBankName(s.payment_bank_name)
       if (s.payment_account_number) setPaymentAccountNumber(s.payment_account_number)
       if (s.payment_account_name) setPaymentAccountName(s.payment_account_name)
+      if (s.payment_account_subname) setPaymentAccountSubname(s.payment_account_subname)
     } else {
       toast.error('Gagal memuat pengaturan database. Menggunakan data bawaan.')
     }
@@ -88,6 +90,7 @@ export default function SettingsPage() {
       payment_bank_name: paymentBankName,
       payment_account_number: paymentAccountNumber,
       payment_account_name: paymentAccountName,
+      payment_account_subname: paymentAccountSubname,
     }
 
     const result = await updateSettings(settingsPayload)
@@ -168,17 +171,22 @@ export default function SettingsPage() {
               <CardContent className="p-8 space-y-5">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-bold text-primary-blue">Nama Bank</Label>
-                  <Input value={paymentBankName} onChange={e => setPaymentBankName(e.target.value)} placeholder="Contoh: Bank Syariah Indonesia (BSI)" className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10" required />
+                  <Input value={paymentBankName} onChange={e => setPaymentBankName(e.target.value)} placeholder="Contoh: BANK MUAMALAT INDONESIA" className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10" required />
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div className="space-y-1.5">
                     <Label className="text-xs font-bold text-primary-blue">Nomor Rekening</Label>
-                    <Input value={paymentAccountNumber} onChange={e => setPaymentAccountNumber(e.target.value)} placeholder="Contoh: 7118229341" className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10" required />
+                    <Input value={paymentAccountNumber} onChange={e => setPaymentAccountNumber(e.target.value)} placeholder="Contoh: 1130011857" className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10" required />
                   </div>
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-bold text-primary-blue">Nama Pemilik Rekening</Label>
-                    <Input value={paymentAccountName} onChange={e => setPaymentAccountName(e.target.value)} placeholder="Contoh: KB TK Istiqamah" className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10" required />
+                    <Label className="text-xs font-bold text-primary-blue">Nama Pemilik Rekening (a/n)</Label>
+                    <Input value={paymentAccountName} onChange={e => setPaymentAccountName(e.target.value)} placeholder="Contoh: Yayasan Istiqamah Bandung" className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10" required />
                   </div>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-bold text-primary-blue">Keterangan / Representatif Rekening</Label>
+                  <Input value={paymentAccountSubname} onChange={e => setPaymentAccountSubname(e.target.value)} placeholder="Contoh: HETI HERAWATI OR ANTY NUDIANTI IMANI" className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10" />
+                  <span className="text-[11px] text-gray-400">Ditampilkan sebagai keterangan pelengkap rekening yayasan.</span>
                 </div>
               </CardContent>
             </Card>

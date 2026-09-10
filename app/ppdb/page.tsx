@@ -553,9 +553,10 @@ export default function PPDBPage() {
     }
   }
 
-  const bankName = dbSettings?.payment_bank_name || 'Bank Muamalat'
-  const accountNumber = dbSettings?.payment_account_number || '131-00-1234567-8'
-  const accountOwner = dbSettings?.payment_account_name || 'Heti'
+  const bankName = dbSettings?.payment_bank_name || 'BANK MUAMALAT INDONESIA'
+  const accountNumber = dbSettings?.payment_account_number || '1130011857'
+  const accountOwner = dbSettings?.payment_account_name || 'Yayasan Istiqamah Bandung'
+  const accountSubOwner = dbSettings?.payment_account_subname || 'HETI HERAWATI OR ANTY NUDIANTI IMANI'
   const rawFee = dbSettings?.ppdb_fee || '500000'
   const formattedFee = new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -1250,7 +1251,12 @@ export default function PPDBPage() {
                           <div className="font-mono text-sm sm:text-base font-black text-gray-900 tracking-wide">
                             {accountNumber}
                           </div>
-                          <div className="text-[11px] text-gray-500 font-medium">a/n {accountOwner}</div>
+                          <div className="text-[11px] text-gray-700 font-semibold">a/n {accountOwner}</div>
+                          {accountSubOwner && (
+                            <div className="text-[10px] text-gray-500 font-medium leading-tight">
+                              ({accountSubOwner})
+                            </div>
+                          )}
                         </div>
                       </div>
 

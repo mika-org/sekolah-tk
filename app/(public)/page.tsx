@@ -551,20 +551,19 @@ export default function HomePage() {
           </div>
         </div>
 
-        {/* Bottom decorative lush foliage curves */}
-        <div className="w-full flex justify-center -mb-8 sm:-mb-12 mt-6 sm:mt-8 pointer-events-none opacity-90">
-          <div className="relative w-full max-w-7xl h-10 sm:h-14">
-            <svg viewBox="0 0 1200 80" fill="none" className="w-full h-full" preserveAspectRatio="none">
-              <path d="M0,80 C150,20 300,50 450,20 C600,-10 750,50 900,15 C1050,45 1150,25 1200,80 Z" fill="#075E38" opacity="0.6"/>
-              <path d="M0,80 C200,30 400,60 600,20 C800,50 1000,10 1200,80 Z" fill="#054A2C" opacity="0.8"/>
-            </svg>
-          </div>
-        </div>
       </section>
 
-      {/* ─── SECTION 2: PENDEKATAN PEMBELAJARAN (SCROLLABLE MULTI-CARD CAROUSEL) ─── */}
-      <section className="gsap-reveal relative w-full bg-[#054A2C] pb-8 sm:pb-12 px-4 sm:px-6 lg:px-8 z-20">
-        <div className="max-w-6xl xl:max-w-7xl mx-auto bg-[#102A4E] rounded-[26px] sm:rounded-[34px] p-5 sm:p-8 lg:p-10 shadow-2xl border border-white/10">
+      {/* ─── WAVE TRANSITION FROM SECTION 1 GREEN TO SOFT WHITE ─── */}
+      <div className="w-full overflow-hidden leading-none bg-[#0A7043] -mt-1 z-20 relative">
+        <svg viewBox="0 0 1200 45" fill="none" className="w-full h-7 sm:h-10" preserveAspectRatio="none">
+          <path d="M0,0 C300,40 600,0 900,35 C1050,48 1150,22 1200,40 L1200,45 L0,45 Z" fill="#FDFBF7" />
+        </svg>
+      </div>
+
+      <div className="bg-[#FDFBF7] pt-2 sm:pt-4 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8">
+        {/* ─── SECTION 2: PENDEKATAN PEMBELAJARAN (SCROLLABLE MULTI-CARD CAROUSEL) ─── */}
+        <section className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mb-8 sm:mb-12">
+          <div className="w-full bg-[#102A4E] rounded-[26px] sm:rounded-[34px] p-5 sm:p-8 lg:p-10 shadow-2xl border border-white/10">
           {/* Section Header */}
           <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8">
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 border border-white/15 text-amber-300 text-xs font-bold mb-3 uppercase tracking-wider">
@@ -702,9 +701,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── SECTION 3: PENGEMBANGAN ANAK (COMPACT & SPACE-EFFICIENT) ─── */}
-      <section id="pengembangan-anak" className="gsap-reveal relative w-full bg-[#054A2C] pb-6 sm:pb-8 px-4 sm:px-6 lg:px-8 z-20">
-        <div className="max-w-6xl xl:max-w-7xl mx-auto bg-[#0B7347] rounded-[24px] sm:rounded-[32px] p-4 sm:p-6 lg:p-7 shadow-2xl border border-white/10">
+        {/* ─── SECTION 3: PENGEMBANGAN ANAK (COMPACT & SPACE-EFFICIENT) ─── */}
+        <section id="pengembangan-anak" className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mb-10 sm:mb-14">
+          <div className="w-full bg-[#0B7347] rounded-[24px] sm:rounded-[32px] p-4 sm:p-6 lg:p-7 shadow-2xl border border-white/10">
           {/* Section Header */}
           <div className="text-center mb-4 sm:mb-6">
             <h2 className="text-xl sm:text-2xl lg:text-[30px] font-black text-white tracking-tight">
@@ -773,14 +772,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ─── WAVE TRANSITION FROM PENGEMBANGAN ANAK TO WHITE SECTIONS ─── */}
-      <div className="w-full overflow-hidden leading-none bg-[#054A2C] -mt-1">
-        <svg viewBox="0 0 1200 45" fill="none" className="w-full h-7 sm:h-10" preserveAspectRatio="none">
-          <path d="M0,0 C300,40 600,0 900,35 C1050,48 1150,22 1200,40 L1200,45 L0,45 Z" fill="#FDFBF7" />
-        </svg>
-      </div>
-
-      <div className="bg-[#FDFBF7] pt-4 sm:pt-6 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8">
         {/* ─── SECTION 4: PROGRAM UNGGULAN (HORIZONTAL SCROLL + CLICKABLE DOTS) ─── */}
         <section id="program-unggulan" className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto">
           {/* Header */}
