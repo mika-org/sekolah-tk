@@ -49,6 +49,10 @@ import {
   Printer,
   CheckCircle2,
   Copy,
+  ExternalLink,
+  FileText,
+  Clock,
+  Users,
 } from 'lucide-react'
 
 type SnapshotRecord = Record<string, unknown>
@@ -648,17 +652,22 @@ export default function AdminPPDBPage() {
         .from('payments_tk')
         .select('*')
         .eq('ppdb_id', app.id)
+        .order('id', { ascending: false })
+        .limit(1)
         .maybeSingle()
 
-      // 3. Fetch student
-      const { data: student } = await supabase
-        .from('students_tk')
-        .select('*')
-        .eq('nama', app.student_name)
-        .eq('tanggal_lahir', app.birth_date)
-        .maybeSingle()
+      // 3. Fetch student if synced
+      let student = null
+      if (app.student_name) {
+        const { data: studentData } = await supabase
+          .from('students_tk')
+          .select('*')
+          .eq('nama', app.student_name)
+          .maybeSingle()
+        student = studentData
+      }
 
-      // 4. Fetch parent
+      // 4. Fetch parent if synced
       let parent = null
       if (student) {
         const { data: parentData } = await supabase
@@ -669,11 +678,53 @@ export default function AdminPPDBPage() {
         parent = parentData
       }
 
+      const child = (app.child_details as Record<string, any>) || {}
+      const father = (app.father_details as Record<string, any>) || {}
+      const mother = (app.mother_details as Record<string, any>) || {}
+
+      // Fallback student details from app snapshot if not yet in students_tk
+      const resolvedStudent: StudentDetails = {
+        id: student?.id || app.id,
+        nama: student?.nama || child.student_name || app.student_name || '-',
+        tempat_lahir: student?.tempat_lahir || child.tempat_lahir || null,
+        tanggal_lahir: student?.tanggal_lahir || child.birth_date || (app.birth_date ? String(app.birth_date).slice(0, 10) : null),
+        jenis_kelamin: student?.jenis_kelamin || child.jenis_kelamin || null,
+        agama: student?.agama || child.agama || null,
+        nik: student?.nik || child.nik || null,
+        nisn: student?.nisn || child.nisn || null,
+        alamat: student?.alamat || child.alamat || father.alamat_ayah || null,
+        anak_ke: student?.anak_ke ?? child.anak_ke ?? null,
+        jml_saudara: student?.jml_saudara ?? child.jml_saudara ?? null,
+      }
+
+      // Fallback parent details from app snapshot if not yet in parents_tk
+      const resolvedParent: ParentDetails = {
+        nama_ayah: parent?.nama_ayah || father.nama_ayah || child.parent_name || null,
+        nama_ibu: parent?.nama_ibu || mother.nama_ibu || null,
+        hp: parent?.hp || father.hp_ayah || child.phone || mother.hp_ibu || null,
+        email: parent?.email || father.email_ayah || child.email || mother.email_ibu || null,
+        alamat: parent?.alamat || father.alamat_ayah || child.alamat || mother.alamat_ibu || null,
+        pekerjaan: parent?.pekerjaan || [father.pekerjaan_ayah, mother.pekerjaan_ibu].filter(Boolean).join(' / ') || null,
+      }
+
+      // Fallback payment
+      const resolvedPayment: RegistrationPayment | null = payment ? {
+        method: payment.method || 'Transfer',
+        amount: payment.amount || 500000,
+        status: payment.status || app.payment_status || 'Pending',
+        proof: payment.proof || null,
+      } : (app.payment_status ? {
+        method: 'Transfer',
+        amount: 500000,
+        status: app.payment_status,
+        proof: null
+      } : null)
+
       setSelectedDetails({
         docs: (docs || []) as RegistrationDocument[],
-        payment: (payment || null) as RegistrationPayment | null,
-        student: (student || null) as StudentDetails | null,
-        parent: (parent || null) as ParentDetails | null
+        payment: resolvedPayment,
+        student: resolvedStudent,
+        parent: resolvedParent
       })
     } catch (err) {
       console.error(err)
@@ -1766,194 +1817,488 @@ export default function AdminPPDBPage() {
             <div className="py-20 text-center text-gray-400 font-bold">Memuat detail data calon siswa...</div>
           ) : !selectedDetails ? (
             <div className="py-20 text-center text-red-500 font-bold">Gagal memuat data. Silakan coba lagi.</div>
-          ) : (
-            <div className="space-y-8 pt-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* LEFT COLUMN: STUDENT & PARENT DETAILS */}
-              <div className="space-y-6">
-                {/* 1. DATA CALON SISWA */}
-                <div className="space-y-4">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-primary-green">1. Data Calon Siswa</h3>
-                  <div className="bg-[#F8F6F2] rounded-2xl p-5 space-y-3 border border-gray-50 text-xs">
-                    <div className="grid grid-cols-3 gap-1">
-                      <span className="text-gray-400 font-semibold">Nama Lengkap:</span>
-                      <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.student?.nama}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <span className="text-gray-400 font-semibold">Tempat/Tgl Lahir:</span>
-                      <span className="col-span-2 font-bold text-primary-blue">
-                        {selectedDetails.student?.tempat_lahir || '-'}, {selectedDetails.student?.tanggal_lahir ? new Date(selectedDetails.student.tanggal_lahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <span className="text-gray-400 font-semibold">Jenis Kelamin:</span>
-                      <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.student?.jenis_kelamin === 'P' ? '👧 Perempuan' : '👦 Laki-laki'}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <span className="text-gray-400 font-semibold">Agama:</span>
-                      <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.student?.agama || '-'}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <span className="text-gray-400 font-semibold">NIK Anak:</span>
-                      <span className="col-span-2 font-bold text-primary-blue font-mono">{selectedDetails.student?.nik || '-'}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <span className="text-gray-400 font-semibold">NISN Anak:</span>
-                      <span className="col-span-2 font-bold text-primary-blue font-mono">{selectedDetails.student?.nisn || '-'}</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <span className="text-gray-400 font-semibold">Keluarga:</span>
-                      <span className="col-span-2 font-bold text-primary-blue">Anak Ke-{selectedDetails.student?.anak_ke || '1'} dari {selectedDetails.student?.jml_saudara || '0'} bersaudara</span>
-                    </div>
-                    <div className="grid grid-cols-3 gap-1 pt-2 border-t border-gray-200/60">
-                      <span className="text-gray-400 font-semibold">Alamat:</span>
-                      <span className="col-span-2 font-semibold text-primary-blue leading-relaxed">{selectedDetails.student?.alamat || '-'}</span>
-                    </div>
-                  </div>
-                </div>
+          ) : (() => {
+            const child = (selectedApp?.child_details as Record<string, any>) || {}
+            const father = (selectedApp?.father_details as Record<string, any>) || {}
+            const mother = (selectedApp?.mother_details as Record<string, any>) || {}
+            const student = selectedDetails.student
+            const parent = selectedDetails.parent
+            const payment = selectedDetails.payment
+            const docs = selectedDetails.docs || []
 
-                {/* 2. DATA ORANG TUA */}
-                <div className="space-y-4">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-primary-green">2. Data Orang Tua</h3>
-                  <div className="bg-[#F8F6F2] rounded-2xl p-5 space-y-4 border border-gray-50 text-xs">
-                    {/* AYAH */}
-                    <div className="space-y-2 pb-3 border-b border-gray-200/60">
-                      <div className="font-extrabold text-primary-blue flex items-center gap-1.5">👨 Identitas Ayah Kandung</div>
-                      <div className="grid grid-cols-3 gap-1">
-                        <span className="text-gray-400 font-semibold">Nama Ayah:</span>
-                        <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.parent?.nama_ayah || '-'}</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1">
-                        <span className="text-gray-400 font-semibold">Pekerjaan:</span>
-                        <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.parent?.pekerjaan?.split('/')?.[0]?.trim() || '-'}</span>
-                      </div>
-                    </div>
-                    {/* IBU */}
-                    <div className="space-y-2">
-                      <div className="font-extrabold text-primary-blue flex items-center gap-1.5">👩 Identitas Ibu Kandung</div>
-                      <div className="grid grid-cols-3 gap-1">
-                        <span className="text-gray-400 font-semibold">Nama Ibu:</span>
-                        <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.parent?.nama_ibu || '-'}</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1">
-                        <span className="text-gray-400 font-semibold">Pekerjaan:</span>
-                        <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.parent?.pekerjaan?.split('/')?.[1]?.trim() || '-'}</span>
-                      </div>
-                    </div>
-                    {/* CONTACT */}
-                    <div className="space-y-2 pt-3 border-t border-gray-200/60">
-                      <div className="font-extrabold text-primary-blue flex items-center gap-1.5">📞 Kontak & Alamat</div>
-                      <div className="grid grid-cols-3 gap-1">
-                        <span className="text-gray-400 font-semibold">No. HP / WA:</span>
-                        <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.parent?.hp || '-'}</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1">
-                        <span className="text-gray-400 font-semibold">Email:</span>
-                        <span className="col-span-2 font-bold text-primary-blue">{selectedDetails.parent?.email || '-'}</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-1">
-                        <span className="text-gray-400 font-semibold">Alamat Orang Tua:</span>
-                        <span className="col-span-2 font-semibold text-primary-blue leading-relaxed">{selectedDetails.parent?.alamat || '-'}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            // Deteksi apakah sudah mengisi biodata lanjutan atau baru registrasi awal
+            const hasFullBiodata = Boolean(
+              child.nik ||
+              child.tempat_lahir ||
+              child.no_kartu_keluarga ||
+              child.nama_panggilan ||
+              child.agama ||
+              child.no_registrasi_akta ||
+              father.nik_ayah ||
+              father.pekerjaan_ayah ||
+              mother.nama_ibu ||
+              mother.nik_ibu ||
+              docs.length > 0 ||
+              student?.nik ||
+              student?.tempat_lahir
+            )
 
-              {/* RIGHT COLUMN: DOCUMENTS & PAYMENT */}
-              <div className="space-y-6">
-                {/* 3. DOKUMEN BERKAS */}
-                <div className="space-y-4">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-primary-green">3. Dokumen Lampiran</h3>
-                  <div className="bg-[#F8F6F2] rounded-2xl p-5 space-y-3 border border-gray-50 text-xs">
-                    {selectedDetails.docs.length === 0 ? (
-                      <div className="text-center text-gray-400 py-4 font-semibold">Tidak ada berkas yang diunggah.</div>
-                    ) : (
-                      <div className="space-y-2.5">
-                        {selectedDetails.docs.map((doc) => (
-                          <div key={doc.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm hover:border-[#07A363]/30 transition-all">
-                            <div>
-                              <div className="font-bold text-primary-blue">{documentLabel(doc.type)}</div>
-                              <div className="text-[10px] text-gray-400 font-medium">Dokumen PPDB</div>
-                            </div>
-                            <a
-                              href={doc.file_url}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-3 py-1.5 bg-[#07265F]/5 hover:bg-[#07265F]/10 text-primary-blue hover:text-primary-blue/90 font-extrabold rounded-lg text-[10px] transition-colors"
-                            >
-                              Lihat Berkas
-                            </a>
-                          </div>
-                        ))}
+            const initialStudentName = child.student_name || selectedApp?.student_name || student?.nama || '-'
+            const initialParentName = child.parent_name || father.nama_ayah || mother.nama_ibu || parent?.nama_ayah || parent?.nama_ibu || '-'
+            const initialPhone = child.phone || father.hp_ayah || mother.hp_ibu || parent?.hp || ''
+            const initialEmail = child.email || father.email_ayah || mother.email_ibu || parent?.email || '-'
+            const initialAddress = child.alamat || father.alamat_ayah || mother.alamat_ibu || student?.alamat || parent?.alamat || '-'
+            const formToken = child.form_token || null
+            const regDate = selectedApp?.created_at || child.created_at || child.purchased_at
+
+            const birthDateStr = child.birth_date || student?.tanggal_lahir || selectedApp?.birth_date
+            let childAgeStr = ''
+            if (birthDateStr) {
+              const bDate = new Date(birthDateStr)
+              if (!isNaN(bDate.getTime())) {
+                const now = new Date()
+                let years = now.getFullYear() - bDate.getFullYear()
+                let months = now.getMonth() - bDate.getMonth()
+                if (months < 0) {
+                  years--
+                  months += 12
+                }
+                if (years >= 0 && years < 15) {
+                  childAgeStr = `${years} thn ${months} bln`
+                }
+              }
+            }
+
+            return (
+              <div className="space-y-8 pt-5">
+                {/* ══════════════════════════════════════════════════════════════ */}
+                {/* SECTION 1 (ATAS): DATA PENDAFTARAN AWAL PPDB                  */}
+                {/* ══════════════════════════════════════════════════════════════ */}
+                <div className="rounded-3xl border border-primary-green/20 bg-gradient-to-br from-[#F0FAF5] via-[#F8FCF9] to-[#F3F9F5] p-6 shadow-xs">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-primary-green/15">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-2xl bg-primary-green text-white flex items-center justify-center font-bold shadow-md shadow-primary-green/20">
+                        <FileText size={20} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-black text-primary-blue">Data Pendaftaran Awal PPDB</h3>
+                          <Badge className="bg-primary-green/15 text-primary-green border border-primary-green/30 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                            Formulir Pendaftaran Awal
+                          </Badge>
+                        </div>
+                        <p className="text-xs font-semibold text-gray-500">
+                          Data utama calon murid &amp; wali yang diinput saat pendaftaran / pembelian formulir
+                        </p>
+                      </div>
+                    </div>
+                    {regDate && (
+                      <div className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold bg-white/90 px-3 py-1.5 rounded-xl border border-gray-200/60 shadow-2xs self-start sm:self-auto">
+                        <Calendar size={13} className="text-primary-green" />
+                        <span>Daftar: {new Date(regDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       </div>
                     )}
                   </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-5">
+                    {/* IDENTITAS PENDAFTAR UTAMA (7 COLS) */}
+                    <div className="md:col-span-7 bg-white/95 rounded-2xl p-5 border border-primary-green/15 shadow-2xs space-y-3.5 text-xs">
+                      <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                        <span className="font-extrabold text-primary-blue text-xs uppercase tracking-wider flex items-center gap-1.5">
+                          <User size={14} className="text-primary-green" /> Calon Murid &amp; Wali Pendaftar
+                        </span>
+                        {formToken ? (
+                          <div className="flex items-center gap-1">
+                            <span className="text-[11px] font-bold text-gray-400">Kode Akses:</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(formToken)
+                                toast.success(`Kode akses ${formToken} disalin!`)
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-mono font-black text-xs rounded-lg border border-emerald-200 transition-colors cursor-pointer"
+                              title="Salin Kode Akses"
+                            >
+                              <span>{formToken}</span>
+                              <Copy size={11} />
+                            </button>
+                          </div>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-200 bg-amber-50 font-bold">
+                            Kode Akses: Belum Terbit
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-y-2.5 gap-x-2">
+                        <span className="text-gray-500 font-semibold">Nama Calon Murid:</span>
+                        <span className="sm:col-span-2 font-black text-primary-blue text-sm">
+                          {initialStudentName}
+                        </span>
+
+                        <span className="text-gray-500 font-semibold">Nama Orang Tua / Wali:</span>
+                        <span className="sm:col-span-2 font-bold text-primary-blue">
+                          {initialParentName}
+                        </span>
+
+                        <span className="text-gray-500 font-semibold">No. WhatsApp / HP:</span>
+                        <div className="sm:col-span-2 flex items-center gap-2">
+                          <span className="font-bold text-primary-blue font-mono">{initialPhone || '-'}</span>
+                          {initialPhone && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                let clean = initialPhone.replace(/[^0-9]/g, '')
+                                if (clean.startsWith('0')) clean = '62' + clean.slice(1)
+                                else if (!clean.startsWith('62')) clean = '62' + clean
+                                window.open(`https://wa.me/${clean}`, '_blank')
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg bg-[#25D366]/10 text-[#25D366] hover:bg-[#25D366]/20 font-bold text-[11px] transition-colors cursor-pointer"
+                            >
+                              <MessageCircle size={12} /> Chat WA
+                            </button>
+                          )}
+                        </div>
+
+                        <span className="text-gray-500 font-semibold">Email:</span>
+                        <span className="sm:col-span-2 font-medium text-gray-700 font-mono">
+                          {initialEmail}
+                        </span>
+
+                        <span className="text-gray-500 font-semibold">Alamat Tempat Tinggal:</span>
+                        <span className="sm:col-span-2 font-medium text-gray-700 leading-relaxed">
+                          {initialAddress}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* BIAYA FORMULIR & PEMBAYARAN (5 COLS) */}
+                    <div className="md:col-span-5 bg-white/95 rounded-2xl p-5 border border-primary-green/15 shadow-2xs space-y-3 text-xs flex flex-col justify-between">
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between pb-2 border-b border-gray-100">
+                          <span className="font-extrabold text-primary-blue text-xs uppercase tracking-wider flex items-center gap-1.5">
+                            <CreditCard size={14} className="text-primary-green" /> Biaya Formulir PPDB
+                          </span>
+                          <Badge className={cn(
+                            "border-none font-bold rounded-full text-[10px]",
+                            payment?.status === 'Verified' ? "bg-emerald-100 text-emerald-800" :
+                            payment?.status === 'Rejected' ? "bg-rose-100 text-rose-800" :
+                            "bg-amber-100 text-amber-800"
+                          )}>
+                            {payment?.status === 'Verified' ? 'Diverifikasi' : 
+                             payment?.status === 'Rejected' ? 'Ditolak' : 'Menunggu Pembayaran'}
+                          </Badge>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-500 font-semibold">Nominal Biaya:</span>
+                            <span className="font-black text-primary-green text-sm">
+                              Rp {parseFloat(String(payment?.amount || 500000)).toLocaleString('id-ID')}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-500 font-semibold">Metode Pembayaran:</span>
+                            <span className="font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md text-[11px]">
+                              {payment?.method || 'Transfer Bank'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="pt-2 border-t border-gray-100">
+                        {payment?.proof ? (
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-gray-500 font-semibold">Bukti Transfer:</span>
+                            <a
+                              href={payment.proof}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-green text-white hover:bg-primary-green/90 font-bold rounded-xl text-xs shadow-2xs transition-colors"
+                            >
+                              <ExternalLink size={13} /> Lihat Bukti Transfer
+                            </a>
+                          </div>
+                        ) : (
+                          <div className="rounded-xl bg-amber-50 border border-amber-200/60 p-2 text-center text-amber-800 text-[11px] font-semibold">
+                            Belum ada bukti transfer diunggah
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {/* 4. INFORMASI BIAYA & PEMBAYARAN */}
-                <div className="space-y-4">
-                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-primary-green">4. Riwayat Pembayaran</h3>
-                  <div className="bg-[#F8F6F2] rounded-2xl p-5 space-y-4 border border-gray-50 text-xs">
-                    {!selectedDetails.payment ? (
-                      <div className="text-center text-gray-400 py-4 font-semibold">Tidak ada data pembayaran.</div>
+                {/* ══════════════════════════════════════════════════════════════ */}
+                {/* SECTION 2 (BAWAH): DETAIL LENGKAP BIODATA & BERKAS (SPMB)     */}
+                {/* ══════════════════════════════════════════════════════════════ */}
+                <div className="space-y-6 pt-2">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-gray-100">
+                    <div>
+                      <h3 className="text-sm font-black text-primary-blue uppercase tracking-wider flex items-center gap-2">
+                        <School size={16} className="text-primary-green" /> Detail Lanjutan Biodata &amp; Berkas (SPMB)
+                      </h3>
+                      <p className="text-xs font-semibold text-gray-400">
+                        Rincian biodata calon siswa, identitas orang tua lengkap, dokumen berkas, dan riwayat formulir.
+                      </p>
+                    </div>
+                    {hasFullBiodata ? (
+                      <Badge className="bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-[10px] rounded-full self-start sm:self-auto">
+                        ✓ Biodata Lengkap Diisi
+                      </Badge>
                     ) : (
-                      <>
-                        <div className="space-y-2">
-                          <div className="flex justify-between">
-                            <span className="text-gray-400 font-semibold">Metode Pembayaran:</span>
-                            <Badge className="bg-blue-50 text-blue-700 border-none font-bold rounded-full">{selectedDetails.payment.method}</Badge>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400 font-semibold">Jumlah Biaya:</span>
-                            <span className="font-bold text-primary-blue">Rp {parseFloat(String(selectedDetails.payment.amount)).toLocaleString('id-ID')}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-gray-400 font-semibold">Status:</span>
-                            <Badge className={cn(
-                              "border-none font-bold rounded-full",
-                              selectedDetails.payment.status === 'Verified' ? "bg-emerald-100 text-emerald-800" :
-                              selectedDetails.payment.status === 'Rejected' ? "bg-rose-100 text-rose-800" :
-                              "bg-amber-100 text-amber-800"
-                            )}>
-                              {selectedDetails.payment.status === 'Verified' ? 'Diverifikasi' : 
-                               selectedDetails.payment.status === 'Rejected' ? 'Ditolak' : 'Menunggu Verifikasi'}
-                            </Badge>
+                      <Badge className="bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px] rounded-full self-start sm:self-auto">
+                        ⏳ Menunggu Pengisian Biodata Lengkap
+                      </Badge>
+                    )}
+                  </div>
+
+                  {!hasFullBiodata ? (
+                    /* NOTICE KETIKA BIODATA BELUM DIISI (AGAR DATA TIDAK BERCECERAN / KOSONG) */
+                    <div className="rounded-3xl border border-dashed border-gray-200 bg-[#FDFBF7] p-8 text-center space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mx-auto shadow-2xs">
+                        <Clock size={24} />
+                      </div>
+                      <div className="max-w-md mx-auto space-y-1.5">
+                        <h4 className="text-sm font-bold text-gray-800">Menunggu Pengisian Formulir Biodata Lengkap</h4>
+                        <p className="text-xs text-gray-500 leading-relaxed font-medium">
+                          Pendaftar ananda <span className="font-bold text-primary-blue">{initialStudentName}</span> saat ini berada pada tahap pendaftaran awal / pembelian formulir. Data biodata lanjutan (NIK anak, No. Akta, riwayat tumbuh kembang, identitas rinci orang tua, dan dokumen KK/Akta) akan diisi oleh orang tua setelah pembayaran diverifikasi.
+                        </p>
+                      </div>
+                      {formToken && (
+                        <div className="pt-2 flex flex-wrap items-center justify-center gap-2 text-xs">
+                          <span className="text-gray-500 font-semibold">Kode Akses Pengisian:</span>
+                          <span className="font-mono font-black text-primary-green bg-white px-3 py-1 rounded-lg border border-gray-200 shadow-2xs">
+                            {formToken}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* TAMPILKAN RINCIAN KETIKA BIODATA LENGKAP SUDAH DIINPUT */
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                      {/* KOLOM KIRI: DATA SISWA & DATA ORANG TUA */}
+                      <div className="space-y-6">
+                        {/* 1. DATA CALON SISWA */}
+                        <div className="space-y-4">
+                          <h4 className="text-xs font-extrabold uppercase tracking-wider text-primary-green flex items-center gap-1.5">
+                            <User size={13} /> 1. Data Calon Siswa
+                          </h4>
+                          <div className="bg-[#F8F6F2] rounded-2xl p-5 space-y-3 border border-gray-50 text-xs">
+                            <div className="grid grid-cols-3 gap-1">
+                              <span className="text-gray-400 font-semibold">Nama Lengkap:</span>
+                              <span className="col-span-2 font-bold text-primary-blue">{child.student_name || student?.nama || initialStudentName}</span>
+                            </div>
+                            {child.nama_panggilan && (
+                              <div className="grid grid-cols-3 gap-1">
+                                <span className="text-gray-400 font-semibold">Nama Panggilan:</span>
+                                <span className="col-span-2 font-bold text-primary-blue">{child.nama_panggilan}</span>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-3 gap-1">
+                              <span className="text-gray-400 font-semibold">Tempat/Tgl Lahir:</span>
+                              <span className="col-span-2 font-bold text-primary-blue">
+                                {child.tempat_lahir || student?.tempat_lahir || '-'}, {birthDateStr ? new Date(birthDateStr).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'} {childAgeStr && <span className="text-gray-500 font-semibold">({childAgeStr})</span>}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1">
+                              <span className="text-gray-400 font-semibold">Jenis Kelamin:</span>
+                              <span className="col-span-2 font-bold text-primary-blue">
+                                {(child.jenis_kelamin === 'P' || student?.jenis_kelamin === 'P' || child.jenis_kelamin === 'Perempuan') ? '👧 Perempuan' : '👦 Laki-laki'}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1">
+                              <span className="text-gray-400 font-semibold">Agama:</span>
+                              <span className="col-span-2 font-bold text-primary-blue">{child.agama || student?.agama || 'Islam'}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1">
+                              <span className="text-gray-400 font-semibold">NIK Anak:</span>
+                              <span className="col-span-2 font-bold text-primary-blue font-mono">{child.nik || student?.nik || '-'}</span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-1">
+                              <span className="text-gray-400 font-semibold">NISN Anak:</span>
+                              <span className="col-span-2 font-bold text-primary-blue font-mono">{child.nisn || student?.nisn || '-'}</span>
+                            </div>
+                            {child.no_kartu_keluarga && (
+                              <div className="grid grid-cols-3 gap-1">
+                                <span className="text-gray-400 font-semibold">No. Kartu Keluarga:</span>
+                                <span className="col-span-2 font-bold text-primary-blue font-mono">{child.no_kartu_keluarga}</span>
+                              </div>
+                            )}
+                            {child.no_registrasi_akta && (
+                              <div className="grid grid-cols-3 gap-1">
+                                <span className="text-gray-400 font-semibold">No. Akta Kelahiran:</span>
+                                <span className="col-span-2 font-bold text-primary-blue font-mono">{child.no_registrasi_akta}</span>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-3 gap-1">
+                              <span className="text-gray-400 font-semibold">Keluarga:</span>
+                              <span className="col-span-2 font-bold text-primary-blue">
+                                Anak Ke-{child.anak_ke || student?.anak_ke || '1'} dari {child.jml_saudara || student?.jml_saudara || '0'} bersaudara
+                              </span>
+                            </div>
+                            {(child.berat_badan_kg || child.tinggi_badan_cm || child.golongan_darah) && (
+                              <div className="grid grid-cols-3 gap-1">
+                                <span className="text-gray-400 font-semibold">Fisik &amp; Darah:</span>
+                                <span className="col-span-2 font-bold text-primary-blue">
+                                  TB: {child.tinggi_badan_cm || '-'} cm, BB: {child.berat_badan_kg || '-'} kg, Gol: {child.golongan_darah || '-'}
+                                </span>
+                              </div>
+                            )}
+                            {child.riwayat_pendidikan && (
+                              <div className="grid grid-cols-3 gap-1">
+                                <span className="text-gray-400 font-semibold">Pendidikan Sebelumnya:</span>
+                                <span className="col-span-2 font-bold text-primary-blue">
+                                  {child.riwayat_pendidikan} {child.nama_sekolah_sebelumnya ? `(${child.nama_sekolah_sebelumnya})` : ''}
+                                </span>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-3 gap-1 pt-2 border-t border-gray-200/60">
+                              <span className="text-gray-400 font-semibold">Alamat Domisili:</span>
+                              <span className="col-span-2 font-semibold text-primary-blue leading-relaxed">{child.alamat || student?.alamat || initialAddress}</span>
+                            </div>
                           </div>
                         </div>
 
-                        {selectedDetails.payment.proof && (
-                          <div className="pt-3 border-t border-gray-200/60 flex items-center justify-between">
-                            <span className="text-gray-400 font-semibold">Bukti Pembayaran:</span>
-                            <a
-                              href={selectedDetails.payment.proof}
-                              target="_blank"
-                              rel="noreferrer"
-                              className="px-3.5 py-1.5 bg-[#07A363]/10 hover:bg-[#07A363]/25 text-[#07A363] font-extrabold rounded-lg text-[10px] transition-all"
-                            >
-                              Lihat Bukti Transfer
-                            </a>
+                        {/* 2. DATA ORANG TUA */}
+                        <div className="space-y-4">
+                          <h4 className="text-xs font-extrabold uppercase tracking-wider text-primary-green flex items-center gap-1.5">
+                            <Users size={13} /> 2. Data Orang Tua
+                          </h4>
+                          <div className="bg-[#F8F6F2] rounded-2xl p-5 space-y-4 border border-gray-50 text-xs">
+                            {/* AYAH */}
+                            <div className="space-y-2 pb-3 border-b border-gray-200/60">
+                              <div className="font-extrabold text-primary-blue flex items-center gap-1.5">👨 Identitas Ayah Kandung/Wali</div>
+                              <div className="grid grid-cols-3 gap-1">
+                                <span className="text-gray-400 font-semibold">Nama Ayah:</span>
+                                <span className="col-span-2 font-bold text-primary-blue">{father.nama_ayah || parent?.nama_ayah || initialParentName}</span>
+                              </div>
+                              {father.nik_ayah && (
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-gray-400 font-semibold">NIK Ayah:</span>
+                                  <span className="col-span-2 font-bold text-primary-blue font-mono">{father.nik_ayah}</span>
+                                </div>
+                              )}
+                              <div className="grid grid-cols-3 gap-1">
+                                <span className="text-gray-400 font-semibold">Pekerjaan:</span>
+                                <span className="col-span-2 font-bold text-primary-blue">{father.pekerjaan_ayah || parent?.pekerjaan?.split('/')?.[0]?.trim() || '-'}</span>
+                              </div>
+                              {father.pendidikan_ayah && (
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-gray-400 font-semibold">Pendidikan:</span>
+                                  <span className="col-span-2 font-bold text-primary-blue">{father.pendidikan_ayah}</span>
+                                </div>
+                              )}
+                              {father.penghasilan_ayah && (
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-gray-400 font-semibold">Penghasilan:</span>
+                                  <span className="col-span-2 font-bold text-primary-blue">{father.penghasilan_ayah}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* IBU */}
+                            <div className="space-y-2 pb-3 border-b border-gray-200/60">
+                              <div className="font-extrabold text-primary-blue flex items-center gap-1.5">👩 Identitas Ibu Kandung/Wali</div>
+                              <div className="grid grid-cols-3 gap-1">
+                                <span className="text-gray-400 font-semibold">Nama Ibu:</span>
+                                <span className="col-span-2 font-bold text-primary-blue">{mother.nama_ibu || parent?.nama_ibu || '-'}</span>
+                              </div>
+                              {mother.nik_ibu && (
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-gray-400 font-semibold">NIK Ibu:</span>
+                                  <span className="col-span-2 font-bold text-primary-blue font-mono">{mother.nik_ibu}</span>
+                                </div>
+                              )}
+                              <div className="grid grid-cols-3 gap-1">
+                                <span className="text-gray-400 font-semibold">Pekerjaan:</span>
+                                <span className="col-span-2 font-bold text-primary-blue">{mother.pekerjaan_ibu || parent?.pekerjaan?.split('/')?.[1]?.trim() || '-'}</span>
+                              </div>
+                              {mother.pendidikan_ibu && (
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-gray-400 font-semibold">Pendidikan:</span>
+                                  <span className="col-span-2 font-bold text-primary-blue">{mother.pendidikan_ibu}</span>
+                                </div>
+                              )}
+                              {mother.penghasilan_ibu && (
+                                <div className="grid grid-cols-3 gap-1">
+                                  <span className="text-gray-400 font-semibold">Penghasilan:</span>
+                                  <span className="col-span-2 font-bold text-primary-blue">{mother.penghasilan_ibu}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* CONTACT & ALAMAT KELUARGA */}
+                            <div className="space-y-2">
+                              <div className="font-extrabold text-primary-blue flex items-center gap-1.5">📞 Kontak &amp; Alamat Keluarga</div>
+                              <div className="grid grid-cols-3 gap-1">
+                                <span className="text-gray-400 font-semibold">No. HP / WA:</span>
+                                <span className="col-span-2 font-bold text-primary-blue">{father.hp_ayah || mother.hp_ibu || parent?.hp || initialPhone}</span>
+                              </div>
+                              <div className="grid grid-cols-3 gap-1">
+                                <span className="text-gray-400 font-semibold">Email:</span>
+                                <span className="col-span-2 font-bold text-primary-blue">{father.email_ayah || mother.email_ibu || parent?.email || initialEmail}</span>
+                              </div>
+                              <div className="grid grid-cols-3 gap-1">
+                                <span className="text-gray-400 font-semibold">Alamat Rumah:</span>
+                                <span className="col-span-2 font-semibold text-primary-blue leading-relaxed">{father.alamat_ayah || mother.alamat_ibu || parent?.alamat || initialAddress}</span>
+                              </div>
+                            </div>
                           </div>
-                        )}
-                      </>
-                    )}
+                        </div>
+                      </div>
+
+                      {/* KOLOM KANAN: DOKUMEN LAMPIRAN */}
+                      <div className="space-y-6">
+                        {/* 3. DOKUMEN BERKAS */}
+                        <div className="space-y-4">
+                          <h4 className="text-xs font-extrabold uppercase tracking-wider text-primary-green flex items-center gap-1.5">
+                            <FileText size={13} /> 3. Dokumen Lampiran
+                          </h4>
+                          <div className="bg-[#F8F6F2] rounded-2xl p-5 space-y-3 border border-gray-50 text-xs">
+                            {docs.length === 0 ? (
+                              <div className="text-center text-gray-400 py-6 font-semibold">Tidak ada berkas lampiran yang diunggah.</div>
+                            ) : (
+                              <div className="space-y-2.5">
+                                {docs.map((doc) => (
+                                  <div key={doc.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-2xs hover:border-[#07A363]/30 transition-all">
+                                    <div>
+                                      <div className="font-bold text-primary-blue">{documentLabel(doc.type)}</div>
+                                      <div className="text-[10px] text-gray-400 font-medium">Dokumen Persyaratan PPDB</div>
+                                    </div>
+                                    <a
+                                      href={doc.file_url}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="inline-flex items-center gap-1 px-3 py-1.5 bg-[#07265F]/5 hover:bg-[#07265F]/10 text-primary-blue hover:text-primary-blue/90 font-extrabold rounded-lg text-[10px] transition-colors"
+                                    >
+                                      <ExternalLink size={11} /> Lihat Berkas
+                                    </a>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* SNAPSHOT FORMULIR LENGKAP ACCORDION */}
+                  <div className="space-y-4 border-t border-gray-100 pt-6">
+                    <div>
+                      <h4 className="text-sm font-black text-primary-blue">Snapshot Formulir Pendaftaran Lengkap</h4>
+                      <p className="mt-1 text-[11px] font-medium text-gray-400">Arsip jawaban formulir online yang diisi oleh orang tua/wali.</p>
+                    </div>
+                    <SnapshotGroup title="A. Keterangan Calon Siswa" sections={CHILD_FORM_SECTIONS} data={selectedApp?.child_details} defaultOpen={false} />
+                    <SnapshotGroup title="B. Identitas Ayah" sections={FATHER_FORM_SECTIONS} data={selectedApp?.father_details} />
+                    <SnapshotGroup title="B. Identitas Ibu" sections={MOTHER_FORM_SECTIONS} data={selectedApp?.mother_details} />
+                    <SnapshotGroup title="C. Perkembangan dan Kesehatan Anak" sections={HEALTH_FORM_SECTIONS} data={selectedApp?.development_health} />
                   </div>
                 </div>
               </div>
-            </div>
-
-              <div className="space-y-4 border-t border-gray-100 pt-6">
-                <div>
-                  <h3 className="text-sm font-black text-primary-blue">Formulir Pendaftaran Lengkap</h3>
-                  <p className="mt-1 text-[11px] font-medium text-gray-400">Snapshot jawaban yang dikirim orang tua/wali saat pendaftaran.</p>
-                </div>
-                <SnapshotGroup title="A. Keterangan Anak" sections={CHILD_FORM_SECTIONS} data={selectedApp?.child_details} defaultOpen />
-                <SnapshotGroup title="B. Identitas Ayah" sections={FATHER_FORM_SECTIONS} data={selectedApp?.father_details} />
-                <SnapshotGroup title="B. Identitas Ibu" sections={MOTHER_FORM_SECTIONS} data={selectedApp?.mother_details} />
-                <SnapshotGroup title="C. Perkembangan dan Kesehatan Anak" sections={HEALTH_FORM_SECTIONS} data={selectedApp?.development_health} />
-              </div>
-            </div>
-          )}
+            )
+          })()}
 
           {/* DIALOG FOOTER ACTIONS */}
           <div className="mt-8 pt-4 border-t border-gray-100 flex flex-wrap gap-3 justify-end items-center">
