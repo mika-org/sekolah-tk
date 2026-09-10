@@ -186,7 +186,7 @@ export default function PPDBStatusPage() {
                 <span>Status Uang Pendaftaran:</span>
                 <StatusBadge
                   status={ppdbData?.payment_status}
-                  customLabel={ppdbData?.payment_status === 'Verified' ? 'Lunas / Terverifikasi (Rp 250.000)' : 'Menunggu Verifikasi Transfer'}
+                  customLabel={ppdbData?.payment_status === 'Verified' ? 'Lunas / Terverifikasi (Rp 500.000)' : 'Menunggu Verifikasi Transfer'}
                 />
               </div>
             </CardContent>

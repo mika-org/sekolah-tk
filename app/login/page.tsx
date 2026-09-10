@@ -2,6 +2,7 @@
 
 import React, { useActionState, useState } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { ArrowLeft, Lock, User, Eye, EyeOff } from 'lucide-react'
 import { login } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
@@ -28,10 +29,13 @@ export default function LoginPage() {
         {/* Branding header */}
         <div className="relative z-10 flex items-center space-x-3 cursor-pointer">
           <Link href="/" className="flex items-center space-x-3">
-            <div className="w-10 h-10 bg-primary-green rounded-full flex items-center justify-center text-white font-extrabold text-lg">
-              I
+            <div className="relative w-11 h-11 bg-white rounded-full p-1 shadow-sm flex-shrink-0">
+              <Image src="/images/hero_gsap/logo.png" alt="Logo KB & TK Istiqamah" fill className="object-contain p-0.5" />
             </div>
-            <span className="font-extrabold text-xl tracking-tight">KB & TK Istiqamah</span>
+            <div className="flex flex-col text-left">
+              <span className="font-black text-xl tracking-tight text-white leading-tight">KB &amp; TK Istiqamah</span>
+              <span className="text-white/80 text-xs font-semibold tracking-wider">NPSN: 20255241</span>
+            </div>
           </Link>
         </div>
 

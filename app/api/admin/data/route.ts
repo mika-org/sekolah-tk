@@ -50,7 +50,7 @@ export async function GET(req: NextRequest) {
     } else if (table === 'students_tk_with_classes') {
       query = supabase
         .from('students_tk')
-        .select('*, classes_tk(nama)')
+        .select('*, classes_tk(nama), parents_tk(*)')
         .order(requestedOrderBy || 'nama', { ascending: true })
         .limit(limit)
     } else if (table === 'materials_tk_with_classes') {

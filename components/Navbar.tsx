@@ -46,12 +46,17 @@ export default function Navbar() {
               href="/"
               className="flex items-center gap-2.5 transition-all duration-300 flex-shrink-0 mr-4"
             >
-              <div className="relative w-7 h-7 sm:w-8 sm:h-8 flex-shrink-0">
-                <Image src="/images/school_logo.png" alt="Logo" fill className="object-contain" />
+              <div className="relative w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0">
+                <Image src="/images/hero_gsap/logo.png" alt="Logo KB & TK Istiqamah" fill className="object-contain" />
               </div>
-              <span className="font-extrabold text-xs sm:text-sm text-[#16325C] tracking-tight hidden lg:inline">
-                KB &amp; TK Istiqamah
-              </span>
+              <div className="flex flex-col text-left">
+                <span className="font-black text-xs sm:text-sm text-[#16325C] tracking-tight leading-tight hidden lg:inline">
+                  KB &amp; TK Istiqamah
+                </span>
+                <span className="text-[10px] text-gray-500 font-semibold tracking-wider hidden lg:inline">
+                  NPSN: 20255241
+                </span>
+              </div>
             </Link>
           )}
 
@@ -88,10 +93,13 @@ export default function Navbar() {
           {/* Mobile Bar: Logo on left, CTA + Hamburger on right */}
           <div className="flex md:hidden items-center justify-between w-full gap-2">
             <Link href="/" className="flex items-center gap-2 min-w-0">
-              <div className="relative w-7 h-7 flex-shrink-0">
-                <Image src="/images/school_logo.png" alt="Logo" fill className="object-contain" />
+              <div className="relative w-8 h-8 flex-shrink-0">
+                <Image src="/images/hero_gsap/logo.png" alt="Logo KB & TK Istiqamah" fill className="object-contain" />
               </div>
-              <span className="font-extrabold text-xs text-[#16325C] truncate">Istiqamah</span>
+              <div className="flex flex-col min-w-0 text-left">
+                <span className="font-black text-xs text-[#16325C] truncate leading-tight">KB &amp; TK Istiqamah</span>
+                <span className="text-[9px] text-gray-500 font-semibold truncate">NPSN: 20255241</span>
+              </div>
             </Link>
 
             <div className="flex items-center gap-2 flex-shrink-0 pointer-events-auto">

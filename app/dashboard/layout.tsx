@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/database/client'
 import { logout } from '@/actions/auth'
@@ -393,11 +394,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-primary-blue text-white flex-shrink-0 relative select-none">
         {/* Brand Header */}
         <div className="p-5 border-b border-white/10 flex items-center space-x-3 bg-primary-blue/90">
-          <div className="w-9 h-9 bg-primary-green text-white rounded-xl flex items-center justify-center font-black text-base shadow-sm">
-            I
+          <div className="relative w-9 h-9 bg-white rounded-xl p-0.5 flex items-center justify-center shadow-sm flex-shrink-0">
+            <Image src="/images/hero_gsap/logo.png" alt="Logo KB & TK Istiqamah" fill className="object-contain p-0.5" />
           </div>
           <div className="min-w-0">
             <div className="font-black text-sm tracking-tight leading-tight truncate">TK Istiqamah</div>
+            <div className="text-[10px] text-white/70 font-semibold leading-tight">NPSN: 20255241</div>
             <div className="inline-flex items-center gap-1 mt-0.5">
               <ShieldCheck size={11} className="text-primary-green" />
               <span className="text-[9px] uppercase font-black text-primary-green tracking-wider">{formatRoleName(role)}</span>
@@ -478,7 +480,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <button onClick={() => setMobileOpen(!mobileOpen)} className="p-1 rounded-lg hover:bg-white/10 focus:outline-none cursor-pointer">
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
-            <span className="font-black text-sm tracking-tight">Portal TK Istiqamah</span>
+            <div className="relative w-7 h-7 bg-white rounded-lg p-0.5 flex-shrink-0">
+              <Image src="/images/hero_gsap/logo.png" alt="Logo KB & TK Istiqamah" fill className="object-contain" />
+            </div>
+            <div className="flex flex-col">
+              <span className="font-black text-sm tracking-tight leading-tight">Portal TK Istiqamah</span>
+              <span className="text-[9px] text-white/70 font-semibold leading-none">NPSN: 20255241</span>
+            </div>
           </div>
           <button onClick={handleLogout} className="text-red-300 hover:text-red-200 p-1.5 cursor-pointer">
             <LogOut size={18} />
@@ -495,11 +503,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <div className="relative flex-1 flex flex-col max-w-xs w-full bg-primary-blue text-white z-50 shadow-2xl">
               <div className="p-5 border-b border-white/10 flex justify-between items-center bg-primary-blue">
                 <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-primary-green text-white rounded-xl flex items-center justify-center font-black text-sm">
-                    I
+                  <div className="relative w-8 h-8 bg-white rounded-xl p-0.5 flex items-center justify-center shadow-sm flex-shrink-0">
+                    <Image src="/images/hero_gsap/logo.png" alt="Logo KB & TK Istiqamah" fill className="object-contain p-0.5" />
                   </div>
                   <div>
                     <span className="font-extrabold text-sm block leading-none">Menu Portal</span>
+                    <span className="text-[9px] text-white/70 font-semibold block mt-0.5">NPSN: 20255241</span>
                     <span className="text-[9px] uppercase font-bold text-primary-green tracking-wider">{formatRoleName(role)}</span>
                   </div>
                 </div>

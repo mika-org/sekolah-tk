@@ -74,7 +74,7 @@ const fieldsByTable: Record<TableName, ReadonlySet<string>> = {
 const relationTarget: Partial<Record<TableName, Record<string, TableName>>> = {
   teachers_tk: { users_tk: 'users_tk' },
   classes_tk: { teachers_tk: 'teachers_tk' },
-  students_tk: { users_tk: 'users_tk', classes_tk: 'classes_tk' },
+  students_tk: { users_tk: 'users_tk', classes_tk: 'classes_tk', parents_tk: 'parents_tk' },
   parents_tk: { users_tk: 'users_tk', students_tk: 'students_tk' },
   ppdb_documents_tk: { ppdb_tk: 'ppdb_tk' },
   payments_tk: { ppdb_tk: 'ppdb_tk' },

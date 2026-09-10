@@ -207,22 +207,25 @@ const GALLERY_SHOWCASE = [
 
 const TESTIMONIALS_DATA = [
   {
-    name: 'Bunda Mila',
-    role: 'Orang Tua Murid',
-    content: 'Alhamdulillah anak kami sangat senang bersekolah di KB TK Istiqamah. Guru-gurunya penuh perhatian, sabar, dan menanamkan nilai-nilai Islami dengan cara yang menyenangkan.',
-    avatar: '/images/parent_bunda_mila.png',
-  },
-  {
-    name: 'Ayah Rizki',
-    role: 'Orang Tua Murid',
-    content: 'Perkembangan kemandirian dan adab anak kami sangat terasa setelah bergabung di sini. Program Tilawati dan pembiasaan sholatnya luar biasa.',
+    name: 'Shakil Athaya Mumtaz',
+    role: 'Kelas Shafa Marwah',
+    content:
+      'Terima kasih kepada seluruh guru dan pihak sekolah atas perhatian, kesabaran, serta pendampingan yang telah diberikan kepada Shakil selama bulan ini. Kami melihat adanya perkembangan yang baik dalam sikap, kemandirian, dan semangat belajar Shakil. Sebagai saran dan masukan, kami berharap komunikasi mengenai perkembangan Shakil dapat terus terjalin dengan baik antara sekolah dan orang tua. Kami juga berharap sekolah dapat terus memberikan rekomendasi kegiatan sederhana yang dapat dilakukan di rumah sehingga stimulasi yang diberikan di sekolah dan di rumah dapat berjalan selaras demi mendukung tumbuh kembang Shakil secara optimal.',
     avatar: '/images/parent_ayah_rizki.png',
   },
   {
-    name: 'Papah Adit',
-    role: 'Orang Tua Murid',
-    content: 'Fasilitas lengkap, lingkungan belajar aman dan asri. Anak menjadi lebih aktif bereksplorasi dan percaya diri setiap hari.',
+    name: 'Faeyza Zidan Al Karim',
+    role: 'Hamzah bin Abdul Muthalib',
+    content:
+      'Saya mau minta masukan terkait laporan kegiatan bulanan anak contoh hal nya melalui foto kegiatan yg di share di grup kelas Agar saya bisa mendapat gambaran tentang aktivitas dan perkembangan anak di sekolah, baik akademik maupun non-akademik. Tujuannya supaya saya bisa bantu dukung anak dari rumah dan untuk menyelaraskan pola didik anak di rumah dengan disekolah Terima kasih atas perhatian dan kerja samanya',
     avatar: '/images/parent_papah_adit.png',
+  },
+  {
+    name: 'Raheeq Satvik Relaksana',
+    role: 'Umar bin Khattab',
+    content:
+      'Terima kasih sudah menghargai Raheeq untuk melindungi dirinya ketika temannya mengganggunya. Pada dasaranya Raheeq bukan anak yang suka memulai masalah/pertengkaran, hanya apabila diganggu dia anak yang siap melawan. Saya cukup bangga juga dengan dia. Dia tidak menceritakan hal tersebut ke orangtuanya karena saya yakin dia sudah merasa bisa menyelesaikan masalahnya sendiri.',
+    avatar: '/images/parent_bunda_mila.png',
   },
 ]
 
@@ -253,6 +256,34 @@ export default function HomePage() {
   const [activePillar, setActivePillar] = useState(0)
   const [galleryCategory, setGalleryCategory] = useState<'all' | 'kegiatan' | 'program'>('all')
   const [openFaq, setOpenFaq] = useState<number | null>(0)
+  const [testimonials, setTestimonials] = useState(TESTIMONIALS_DATA)
+
+  useEffect(() => {
+    async function loadTestimonials() {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('testimonials_tk')
+          .select('id, name, job, content, photo')
+          .eq('published', true)
+          .order('id', { ascending: false })
+
+        if (!error && data && data.length > 0) {
+          setTestimonials(
+            data.map((item: any) => ({
+              name: item.name,
+              role: item.job || 'Orang Tua Murid',
+              content: item.content,
+              avatar: item.photo || '/images/parent_ayah_rizki.png',
+            }))
+          )
+        }
+      } catch (err) {
+        console.error('Error fetching testimonials:', err)
+      }
+    }
+    loadTestimonials()
+  }, [])
 
   // Pendekatan Pembelajaran horizontal carousel state & ref
   const [activePendekatanIndex, setActivePendekatanIndex] = useState(0)
@@ -1000,25 +1031,32 @@ export default function HomePage() {
 
             {/* 3 Testimonial Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-5">
-              {TESTIMONIALS_DATA.map((t, idx) => (
+              {testimonials.map((t, idx) => (
                 <div
                   key={idx}
-                  className="bg-white rounded-2xl p-4 sm:p-4.5 flex items-start gap-3.5 shadow-md border border-white/80 hover:shadow-lg transition-all"
+                  className="bg-white rounded-2xl p-4 sm:p-5 flex flex-col justify-between shadow-md border border-white/80 hover:shadow-lg transition-all"
                 >
-                  <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-amber-100 bg-[#DCE8FA]">
-                    <Image
-                      src={t.avatar}
-                      alt={t.name}
-                      fill
-                      className="object-cover"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="font-extrabold text-[#1B3B6F] text-xs sm:text-sm truncate">
-                      {t.name}
-                    </h3>
-                    <p className="text-[#4A607A] text-[11px] sm:text-xs leading-relaxed mt-1 font-medium line-clamp-3">
-                      {t.content}
+                  <div>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="relative w-11 h-11 sm:w-12 sm:h-12 rounded-full overflow-hidden flex-shrink-0 border-2 border-[#0B7347]/30 bg-[#DCE8FA]">
+                        <Image
+                          src={t.avatar}
+                          alt={t.name}
+                          fill
+                          className="object-cover"
+                        />
+                      </div>
+                      <div className="min-w-0">
+                        <h3 className="font-extrabold text-[#1B3B6F] text-xs sm:text-sm truncate">
+                          {t.name}
+                        </h3>
+                        <p className="text-[10px] sm:text-[11px] text-[#0B7347] font-bold truncate">
+                          {t.role}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-[#4A607A] text-[11px] sm:text-xs leading-relaxed font-medium">
+                      &ldquo;{t.content}&rdquo;
                     </p>
                   </div>
                 </div>
@@ -1139,46 +1177,45 @@ export default function HomePage() {
 
         {/* ─── SECTION 8: PENERIMAAN PESERTA DIDIK BARU (PPDB BANNER) ─── */}
         <section className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mt-8 sm:mt-10">
-          <div className="bg-[#FFFDF4] rounded-[26px] sm:rounded-[34px] p-5 sm:p-8 lg:p-10 shadow-md border border-amber-200/60 relative overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center relative z-10">
-              {/* Left Column: Information & Action */}
-              <div className="lg:col-span-7 flex flex-col justify-center text-left">
-                <h3 className="text-base sm:text-lg font-bold text-[#1B3B6F]">
-                  Penerimaan Peserta Didik Baru
-                </h3>
-                <h2 className="text-xl sm:text-2xl lg:text-[30px] font-black text-[#1B3B6F] tracking-tight leading-tight mt-1">
-                  Tahun Ajaran 2026/2027 Telah Dibuka
-                </h2>
+          <div className="relative rounded-[26px] sm:rounded-[34px] overflow-hidden shadow-md border border-amber-200/60 bg-[#FFF8E9] min-h-[260px] sm:min-h-[290px] lg:min-h-[320px] flex items-center">
+            {/* Fullscreen Banner Background Image */}
+            <div className="absolute inset-0 w-full h-full pointer-events-none">
+              <Image
+                src="/images/ppdb_banner_kids.png"
+                alt="Banner PPDB KB & TK Istiqamah"
+                fill
+                priority
+                className="object-cover object-right md:object-right-bottom pointer-events-none"
+              />
+            </div>
 
-                <div className="flex flex-wrap items-center gap-4 sm:gap-6 mt-3.5 text-xs sm:text-sm text-[#4A607A] font-semibold">
-                  <div className="flex items-center gap-2">
-                    <Clock size={16} className="text-[#F5B744]" />
-                    <span>Usia 2 - 6 Tahun</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <MapPin size={16} className="text-[#F5B744]" />
-                    <span>Jl. Taman Citarum, Kota Bandung</span>
-                  </div>
+            {/* Content overlay on left */}
+            <div className="relative z-10 p-6 sm:p-8 lg:p-12 max-w-md sm:max-w-lg lg:max-w-xl flex flex-col justify-center text-left bg-gradient-to-r from-[#FFF8E9] via-[#FFF8E9]/80 to-transparent sm:bg-none rounded-2xl sm:rounded-none">
+              <h3 className="text-sm sm:text-base lg:text-lg font-bold text-[#1B3B6F]">
+                Penerimaan Peserta Didik Baru
+              </h3>
+              <h2 className="text-xl sm:text-2xl lg:text-[30px] font-black text-[#1B3B6F] tracking-tight leading-tight mt-1">
+                Tahun Ajaran 2026/2027 Telah Dibuka
+              </h2>
+
+              <div className="flex flex-wrap items-center gap-3 sm:gap-6 mt-3.5 text-xs sm:text-sm text-[#4A607A] font-semibold">
+                <div className="flex items-center gap-2">
+                  <Clock size={16} className="text-[#F5B744] shrink-0" />
+                  <span>Usia 2 - 6 Tahun</span>
                 </div>
-
-                <div className="mt-5">
-                  <Link
-                    href="/ppdb"
-                    className="bg-[#F5B744] hover:bg-[#F59E0B] text-white font-bold text-xs sm:text-sm px-8 py-2.5 sm:py-3 rounded-full shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0"
-                  >
-                    Daftar Sekarang <ArrowRight size={16} />
-                  </Link>
+                <div className="flex items-center gap-2">
+                  <MapPin size={16} className="text-[#F5B744] shrink-0" />
+                  <span>Jl. Taman Citarum, Kota Bandung</span>
                 </div>
               </div>
 
-              {/* Right Column: 3D Kids Illustration with rolling hills & stars */}
-              <div className="lg:col-span-5 relative h-40 sm:h-48 lg:h-52 w-full">
-                <Image
-                  src="/images/ppdb_banner_kids.png"
-                  alt="Siswa KB TK Istiqamah"
-                  fill
-                  className="object-contain object-right-bottom"
-                />
+              <div className="mt-5 sm:mt-6">
+                <Link
+                  href="/ppdb"
+                  className="bg-[#F5B744] hover:bg-[#F59E0B] text-white font-bold text-xs sm:text-sm px-7 sm:px-8 py-2.5 sm:py-3 rounded-full shadow-md hover:shadow-lg transition-all inline-flex items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0"
+                >
+                  Daftar Sekarang <ArrowRight size={16} />
+                </Link>
               </div>
             </div>
           </div>

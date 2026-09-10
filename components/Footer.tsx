@@ -11,11 +11,16 @@ export default function Footer() {
           {/* Col 1: Brand Info */}
           <div className="md:col-span-4 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="relative w-10 h-10 bg-white rounded-full p-1">
-                <Image src="/images/school_logo.png" alt="Logo" fill className="object-contain p-1" />
+              <div className="relative w-11 h-11 bg-white rounded-full p-1 shadow-sm shrink-0">
+                <Image src="/images/hero_gsap/logo.png" alt="Logo KB & TK Istiqamah" fill className="object-contain p-0.5" />
               </div>
-              <div className="relative h-8 w-40">
-                <Image src="/images/Asset 12.png" alt="KB & TK ISTIQAMAH" fill className="object-contain object-left" />
+              <div className="flex flex-col justify-center">
+                <span className="text-white font-black text-sm sm:text-base tracking-tight leading-tight">
+                  KB &amp; TK ISTIQAMAH
+                </span>
+                <span className="text-white/90 text-xs font-semibold tracking-wider mt-0.5">
+                  NPSN: 20255241
+                </span>
               </div>
             </div>
             <p className="text-xs text-white/75 leading-relaxed">
