@@ -19,9 +19,12 @@ const ALLOWED_FILE_TYPES = new Set([
   'image/png',
   'image/x-png',
   'image/pjpeg',
+  'image/apng',
+  'image/webp',
   'application/pdf',
+  'application/octet-stream',
 ])
-const ALLOWED_FILE_EXTENSION = /\.(jpe?g|png|pdf)$/i
+const ALLOWED_FILE_EXTENSION = /\.(jpe?g|png|pdf|webp)$/i
 
 export type PPDBActionState = {
   success: boolean

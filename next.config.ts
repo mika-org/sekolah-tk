@@ -7,6 +7,12 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  experimental: {
+    serverActions: {
+      bodySizeLimit: '15mb',
+    },
+    middlewareClientMaxBodySize: '15mb',
+  },
   images: {
     unoptimized: true,
     remotePatterns: [

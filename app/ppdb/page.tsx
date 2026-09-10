@@ -424,6 +424,68 @@ export default function PPDBPage() {
     }
   }
 
+  // Helper kompresi gambar otomatis di sisi client (menghindari payload terlalu besar pada PNG resolusi tinggi)
+  const compressImageFile = async (file: File | null): Promise<File | null> => {
+    if (!file || !file.type.startsWith('image/') || file.size <= 1.5 * 1024 * 1024) {
+      return file
+    }
+    return new Promise((resolve) => {
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const img = new window.Image()
+        img.onload = () => {
+          try {
+            const canvas = document.createElement('canvas')
+            let { width, height } = img
+            const maxDimension = 1920
+
+            if (width > maxDimension || height > maxDimension) {
+              if (width > height) {
+                height = Math.round((height * maxDimension) / width)
+                width = maxDimension
+              } else {
+                width = Math.round((width * maxDimension) / height)
+                height = maxDimension
+              }
+            }
+
+            canvas.width = width
+            canvas.height = height
+            const ctx = canvas.getContext('2d')
+            if (!ctx) {
+              resolve(file)
+              return
+            }
+            ctx.drawImage(img, 0, 0, width, height)
+
+            canvas.toBlob(
+              (blob) => {
+                if (!blob || blob.size >= file.size) {
+                  resolve(file)
+                } else {
+                  const cleanName = file.name.replace(/\.[^/.]+$/, '') + '.jpg'
+                  const newFile = new File([blob], cleanName, {
+                    type: 'image/jpeg',
+                    lastModified: Date.now(),
+                  })
+                  resolve(newFile)
+                }
+              },
+              'image/jpeg',
+              0.85
+            )
+          } catch {
+            resolve(file)
+          }
+        }
+        img.onerror = () => resolve(file)
+        img.src = event.target?.result as string
+      }
+      reader.onerror = () => resolve(file)
+      reader.readAsDataURL(file)
+    })
+  }
+
   // Step 2: Kirim Pembelian Formulir (Berikutnya)
   const handlePurchaseSubmit = async () => {
     if (!proofFile) {
@@ -440,7 +502,8 @@ export default function PPDBPage() {
       data.append('alamat', formData.alamat || '')
       data.append('phone', formData.phone || '')
       data.append('email', formData.email || '')
-      data.append('bukti_pembayaran', proofFile)
+      const optimizedProof = (await compressImageFile(proofFile)) || proofFile
+      data.append('bukti_pembayaran', optimizedProof)
 
       const res = await purchasePPDBForm({ success: false, error: '', ppdbId: '' }, data)
       if (res.success) {
@@ -528,11 +591,26 @@ export default function PPDBPage() {
       if (!data.get('status_ayah')) data.set('status_ayah', formData.status_ayah || 'Kandung')
       if (!data.get('status_ibu')) data.set('status_ibu', formData.status_ibu || 'Kandung')
 
-      if (proofFile) data.append('bukti_pembayaran', proofFile)
-      if (fotoAnakFile) data.append('foto_anak', fotoAnakFile)
-      if (kkFile) data.append('kk', kkFile)
-      if (aktaFile) data.append('akta', aktaFile)
-      if (ktpFile) data.append('ktp_ortu', ktpFile)
+      if (proofFile) {
+        const file = (await compressImageFile(proofFile)) || proofFile
+        data.append('bukti_pembayaran', file)
+      }
+      if (fotoAnakFile) {
+        const file = (await compressImageFile(fotoAnakFile)) || fotoAnakFile
+        data.append('foto_anak', file)
+      }
+      if (kkFile) {
+        const file = (await compressImageFile(kkFile)) || kkFile
+        data.append('kk', file)
+      }
+      if (aktaFile) {
+        const file = (await compressImageFile(aktaFile)) || aktaFile
+        data.append('akta', file)
+      }
+      if (ktpFile) {
+        const file = (await compressImageFile(ktpFile)) || ktpFile
+        data.append('ktp_ortu', file)
+      }
 
       const res = await submitPPDB(initialFormState, data)
       setFullSubmitState(res)
