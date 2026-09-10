@@ -166,14 +166,29 @@ const FACILITIES = [
     image: '/images/fasilitas/8.webp',
   },
   {
+    title: 'Playground Semi-Outdoor',
+    desc: 'Area bermain berkanopi pelindung dengan wahana rumah bermain dan seluncuran ramah anak.',
+    image: '/images/fasilitas/4.webp',
+  },
+  {
     title: 'Taman Bermain Outdoor',
     desc: 'Area bermain terbuka yang luas dan asri untuk melatih motorik kasar, ketangkasan, dan keberanian.',
     image: '/images/fasilitas/5.webp',
   },
   {
+    title: 'Area Wudhu & Selasar Bersih',
+    desc: 'Fasilitas tempat wudhu khusus anak yang aman dan higienis untuk pembiasaan ibadah sejak dini.',
+    image: '/images/fasilitas/2.webp',
+  },
+  {
     title: 'Playground Rumput Sintetis',
     desc: 'Area bermain mini outdoor berlapis rumput sintetis higienis yang aman untuk anak beraktivitas.',
     image: '/images/fasilitas/3.webp',
+  },
+  {
+    title: 'Lingkungan Sekolah Asri & Aman',
+    desc: 'Halaman sekolah terbuka yang teduh, tertata asri, berpagar aman, dan nyaman bagi anak.',
+    image: '/images/fasilitas/10.webp',
   },
 ]
 
@@ -339,6 +354,60 @@ export default function HomePage() {
 
     setActiveProgramIndex(closestIdx)
   }, [])
+
+  // Fasilitas horizontal carousel state & ref
+  const [activeFacilityIndex, setActiveFacilityIndex] = useState(0)
+  const facilityScrollRef = useRef<HTMLDivElement>(null)
+
+  const scrollToFacility = useCallback((index: number) => {
+    if (!facilityScrollRef.current) return
+    const container = facilityScrollRef.current
+    const cards = container.querySelectorAll<HTMLElement>('.facility-card')
+    if (cards[index]) {
+      const card = cards[index]
+      const cardRect = card.getBoundingClientRect()
+      const containerRect = container.getBoundingClientRect()
+      const currentScrollLeft = container.scrollLeft
+      const targetScroll = currentScrollLeft + (cardRect.left - containerRect.left) - (containerRect.width - cardRect.width) / 2
+      container.scrollTo({
+        left: Math.max(0, targetScroll),
+        behavior: 'smooth'
+      })
+    }
+    setActiveFacilityIndex(index)
+  }, [])
+
+  const handleFacilityScroll = useCallback(() => {
+    if (!facilityScrollRef.current) return
+    const container = facilityScrollRef.current
+    const cards = container.querySelectorAll<HTMLElement>('.facility-card')
+    if (cards.length === 0) return
+
+    const containerRect = container.getBoundingClientRect()
+    const containerCenter = containerRect.left + containerRect.width / 2
+
+    let closestIdx = 0
+    let minDiff = Infinity
+
+    cards.forEach((card, idx) => {
+      const cardRect = card.getBoundingClientRect()
+      const cardCenter = cardRect.left + cardRect.width / 2
+      const diff = Math.abs(cardCenter - containerCenter)
+      if (diff < minDiff) {
+        minDiff = diff
+        closestIdx = idx
+      }
+    })
+
+    setActiveFacilityIndex(closestIdx)
+  }, [])
+
+  const scrollFacilityDir = useCallback((direction: 'left' | 'right') => {
+    const nextIdx = direction === 'left'
+      ? (activeFacilityIndex - 1 + FACILITIES.length) % FACILITIES.length
+      : (activeFacilityIndex + 1) % FACILITIES.length
+    scrollToFacility(nextIdx)
+  }, [activeFacilityIndex, scrollToFacility])
 
   // Register GSAP ScrollTrigger for standard smooth entrance animations on all sections
   useEffect(() => {
@@ -808,35 +877,110 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Green Facility Container */}
-          <div className="bg-[#0B7347] rounded-[26px] sm:rounded-[34px] p-4 sm:p-6 lg:p-7 shadow-xl border border-white/10">
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4">
-              {FACILITIES.map((facility, idx) => (
-                <div
-                  key={idx}
-                  className="bg-white rounded-[20px] overflow-hidden flex flex-col shadow-md hover:shadow-xl transition-all duration-300 hover:-translate-y-1 group"
-                >
-                  <div className="relative w-full aspect-[4/3] overflow-hidden bg-gray-100">
-                    <Image
-                      src={facility.image}
-                      alt={facility.title}
-                      fill
-                      className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
+          {/* Green Facility Container with Interactive Slider */}
+          <div className="bg-[#0B7347] rounded-[26px] sm:rounded-[34px] p-4 sm:p-6 lg:p-7 shadow-xl border border-white/10 relative">
+            <div className="relative group/slider px-0 sm:px-2">
+              {/* Desktop Floating Prev Arrow */}
+              <button
+                type="button"
+                onClick={() => scrollFacilityDir('left')}
+                aria-label="Fasilitas Sebelumnya"
+                className="hidden sm:flex absolute -left-2 lg:-left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 lg:w-11 lg:h-11 rounded-full bg-white text-[#0B7347] shadow-xl items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 border border-emerald-100/60 cursor-pointer hover:bg-emerald-50"
+              >
+                <ChevronLeft className="w-5 h-5 text-[#0B7347]" />
+              </button>
+
+              {/* Scrollable Track */}
+              <div
+                ref={facilityScrollRef}
+                onScroll={handleFacilityScroll}
+                className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden gap-3.5 sm:gap-4.5 py-2 px-1"
+              >
+                {FACILITIES.map((facility, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => scrollToFacility(idx)}
+                    className="facility-card w-[240px] sm:w-[270px] md:w-[290px] lg:w-[310px] flex-shrink-0 snap-start bg-white rounded-[22px] overflow-hidden flex flex-col shadow-md hover:shadow-2xl transition-all duration-300 hover:-translate-y-1.5 group border border-emerald-50 cursor-pointer"
+                  >
+                    <div className="relative w-full aspect-[4/3] overflow-hidden bg-emerald-50/50">
+                      <Image
+                        src={facility.image}
+                        alt={facility.title}
+                        fill
+                        sizes="(max-width: 640px) 240px, (max-width: 1024px) 290px, 310px"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute top-2.5 right-2.5 bg-black/45 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white tracking-wide">
+                        {idx + 1} / {FACILITIES.length}
+                      </div>
+                    </div>
+                    <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between text-left">
+                      <div>
+                        <h3 className="font-extrabold text-[#1B3B6F] text-xs sm:text-[14px] leading-tight group-hover:text-[#0B7347] transition-colors">
+                          {facility.title}
+                        </h3>
+                        <p className="text-[#4A607A] text-[10.5px] sm:text-[11.5px] leading-relaxed mt-1.5 font-medium line-clamp-3">
+                          {facility.desc}
+                        </p>
+                      </div>
+                    </div>
                   </div>
-                  <div className="p-3 sm:p-3.5 flex flex-col flex-1 justify-between text-center">
-                    <h3 className="font-extrabold text-[#1B3B6F] text-xs sm:text-[13px] leading-tight">
-                      {facility.title}
-                    </h3>
-                    <p className="text-[#4A607A] text-[10px] sm:text-[11px] leading-snug mt-1 font-medium line-clamp-3">
-                      {facility.desc}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                ))}
+              </div>
+
+              {/* Desktop Floating Next Arrow */}
+              <button
+                type="button"
+                onClick={() => scrollFacilityDir('right')}
+                aria-label="Fasilitas Selanjutnya"
+                className="hidden sm:flex absolute -right-2 lg:-right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 lg:w-11 lg:h-11 rounded-full bg-white text-[#0B7347] shadow-xl items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95 border border-emerald-100/60 cursor-pointer hover:bg-emerald-50"
+              >
+                <ChevronRight className="w-5 h-5 text-[#0B7347]" />
+              </button>
             </div>
 
-            <p className="text-emerald-100/90 text-xs sm:text-sm text-center font-medium mt-4 sm:mt-6 max-w-2xl mx-auto leading-relaxed">
+            {/* Indicator Dots & Controls */}
+            <div className="flex items-center justify-center gap-3 mt-4 sm:mt-5">
+              <button
+                type="button"
+                onClick={() => scrollFacilityDir('left')}
+                aria-label="Fasilitas Sebelumnya"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-[#0B7347] backdrop-blur-sm shadow-sm flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+
+              {/* Clickable Indicator Dots */}
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                {FACILITIES.map((_, idx) => {
+                  const isActive = activeFacilityIndex === idx
+                  return (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => scrollToFacility(idx)}
+                      aria-label={`Fasilitas ${idx + 1}`}
+                      className={`transition-all duration-300 rounded-full cursor-pointer ${
+                        isActive
+                          ? 'w-6 sm:w-7 h-2 bg-[#F5B744] shadow-sm'
+                          : 'w-2 h-2 bg-white/40 hover:bg-white/70'
+                      }`}
+                    />
+                  )
+                })}
+              </div>
+
+              <button
+                type="button"
+                onClick={() => scrollFacilityDir('right')}
+                aria-label="Fasilitas Selanjutnya"
+                className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white/20 hover:bg-white text-white hover:text-[#0B7347] backdrop-blur-sm shadow-sm flex items-center justify-center transition-all cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+
+            <p className="text-emerald-100/90 text-xs sm:text-sm text-center font-medium mt-3 sm:mt-4 max-w-2xl mx-auto leading-relaxed">
               Lingkungan belajar yang aman, nyaman dan menyenangkan untuk mendukung anak belajar, bermain, bergerak serta mengeksplorasi berbagai pengalaman baru!
             </p>
           </div>

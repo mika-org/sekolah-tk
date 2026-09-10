@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import gsap from 'gsap'
@@ -38,6 +38,8 @@ export default function GsapHeroBanner() {
   const descRef = useRef<HTMLParagraphElement>(null)
   const buttonsRef = useRef<HTMLDivElement>(null)
   const badgeRef = useRef<HTMLDivElement>(null)
+
+  const [logoSrc, setLogoSrc] = useState('/images/hero_gsap/logo.png')
 
   useEffect(() => {
     // GSAP context ensures clean setup & teardown
@@ -163,13 +165,12 @@ export default function GsapHeroBanner() {
 
       // 7. LEFT CONTENT (TEXT & BUTTONS) SLIDE IN TOWARDS RIGHT
       if (logoRef.current) {
-        tl.from(logoRef.current, {
-          scale: 0,
-          y: -25,
-          opacity: 0,
-          duration: 0.6,
-          ease: 'back.out(1.8)',
-        }, 0.4)
+        tl.fromTo(
+          logoRef.current,
+          { scale: 0, y: -25, opacity: 0 },
+          { scale: 1, y: 0, opacity: 1, duration: 0.6, ease: 'back.out(1.8)' },
+          0.4
+        )
       }
 
       if (titleLine1Ref.current && titleLine2Ref.current) {
@@ -626,23 +627,25 @@ export default function GsapHeroBanner() {
         </div>
       </div>
 
-      {/* ─── LAYER 7: HERO TEXT CONTENT (z-30, MATCHING MOCKUP) ─── */}
+      {/* ─── LAYER 7: HERO TEXT CONTENT (z-50, MATCHING MOCKUP) ─── */}
       <div
         ref={contentRef}
-        className="relative z-30 max-w-7xl mx-auto w-full h-full px-4 sm:px-6 md:px-6 lg:px-14 pt-16 sm:pt-20 md:pt-14 lg:pt-20 flex flex-col justify-start md:justify-center items-center md:items-start pointer-events-auto"
+        className="relative z-50 max-w-7xl mx-auto w-full h-full px-4 sm:px-6 md:px-6 lg:px-14 pt-20 sm:pt-24 md:pt-24 lg:pt-28 pb-8 flex flex-col justify-start md:justify-center items-center md:items-start pointer-events-auto"
       >
         <div className="w-full max-w-[340px] sm:max-w-[380px] md:max-w-[360px] lg:max-w-[480px] flex flex-col items-center text-center">
-          {/* Official School Crest Logo (Enlarged) */}
+          {/* Official School Crest Logo */}
           <div
             ref={logoRef}
-            className="relative w-14 h-18 sm:w-18 sm:h-22 md:w-20 md:h-24 lg:w-24 lg:h-28 mb-2 sm:mb-2.5 drop-shadow-md hover:scale-105 transition-transform"
+            className="relative flex items-center justify-center mb-2 sm:mb-2.5 drop-shadow-md hover:scale-105 transition-transform"
           >
             <Image
-              src="/images/hero_gsap/logo.png"
+              src={logoSrc}
               alt="Logo KB & TK Istiqamah"
-              fill
-              className="object-contain"
+              width={70}
+              height={88}
+              className="w-14 sm:w-16 md:w-20 lg:w-[84px] h-auto object-contain drop-shadow-sm"
               priority
+              onError={() => setLogoSrc('/images/school_logo.png')}
             />
           </div>
 
