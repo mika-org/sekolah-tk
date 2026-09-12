@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState, useEffect, useMemo } from 'react'
+import Image from 'next/image'
 import { createClient } from '@/lib/database/client'
 import { uploadPaymentProof } from '@/actions/admin'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -260,12 +261,22 @@ export default function BillingPage() {
                     <CreditCard size={13} />
                     <span>Rekening Pembayaran Resmi</span>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <div className="font-extrabold text-primary-blue text-xs">BANK MUAMALAT INDONESIA</div>
-                      <div className="font-mono text-sm font-black text-gray-900 tracking-wide">1130011857</div>
-                      <div className="text-[11px] text-gray-700 font-semibold">a/n Yayasan Istiqamah Bandung</div>
-                      <div className="text-[10px] text-gray-500 font-medium">(HETI HERAWATI OR ANTY NUDIANTI IMANI)</div>
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="relative h-10 w-14 shrink-0 bg-white p-1 rounded-lg border border-amber-200/60">
+                        <Image
+                          src="/images/muamalat_logo.png"
+                          alt="Bank Muamalat"
+                          fill
+                          className="object-contain"
+                        />
+                      </div>
+                      <div>
+                        <div className="font-extrabold text-primary-blue text-xs">BANK MUAMALAT INDONESIA</div>
+                        <div className="font-mono text-sm font-black text-gray-900 tracking-wide">1130011857</div>
+                        <div className="text-[11px] text-gray-700 font-semibold">a/n Yayasan Istiqamah Bandung</div>
+                        <div className="text-[10px] text-gray-500 font-medium">(HETI HERAWATI OR ANTY NUDIANTI IMANI)</div>
+                      </div>
                     </div>
                     <button
                       type="button"

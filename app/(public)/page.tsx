@@ -35,7 +35,7 @@ const FEATURED_PROGRAMS = [
     layout: 'image-top' as const
   },
   {
-    title: "Outbound",
+    title: "Outbound Ceria & Motorik",
     desc: "Aktivitas luar ruangan yang melatih keberanian, kemandirian, kerja sama, serta kemampuan motorik anak melalui berbagai tantangan yang menyenangkan.",
     image: '/images/fasilitas/5.webp',
     layout: 'text-top' as const
@@ -57,6 +57,24 @@ const FEATURED_PROGRAMS = [
     desc: "Mengenal keagungan ciptaan Allah melalui eksperimen sains sederhana, berkebun, dan pembiasaan peduli lingkungan.",
     image: '/images/fasilitas/3.webp',
     layout: 'image-top' as const
+  },
+  {
+    title: "Manasik Haji Cilik",
+    desc: "Simulasi ibadah haji sejak dini mengenalkan rukun Islam kelima, thawaf, sa'i, dan wukuf dengan penuh kekhusyukan dan sukacita.",
+    image: '/images/activity_haji.png',
+    layout: 'text-top' as const
+  },
+  {
+    title: "Field Trip & Edukasi Luar",
+    desc: "Kunjungan edukatif ke tempat bernilai sejarah, sains, dan alam untuk memperluas wawasan serta pengalaman nyata anak.",
+    image: '/images/activity_fieldtrip.png',
+    layout: 'image-top' as const
+  },
+  {
+    title: "Jumat Berbagi & Kepedulian",
+    desc: "Melatih kebiasaan berinfaq dan empati sosial sejak dini dengan berbagi berkah makanan serta sedekah kepada sesama.",
+    image: '/images/activity_charity.png',
+    layout: 'text-top' as const
   }
 ]
 
@@ -107,41 +125,29 @@ const DEVELOPMENT_PILLARS = [
 
 const LEARNING_APPROACHES = [
   {
+    id: 'life-skill',
+    title: 'Life Skill',
+    desc: 'Melatih kemandirian dan keterampilan hidup anak melalui aktivitas nyata sesuai usia dan tahap perkembangannya',
+    iconType: 'lifeskill'
+  },
+  {
+    id: 'stem-pbl',
+    title: 'Project Based Learning & STEM',
+    desc: 'Mengembangkan rasa ingin tahu, kreativitas, kemampuan berpikir kritis dan pemecahan masalah melalui eksplorasi serta proyek sederhana yang menyenangkan',
+    iconType: 'science'
+  },
+  {
     id: 'islamic-learning',
     title: 'Islamic Learning',
-    desc: 'Menanamkan nilai-nilai Islam dan kecintaan kepada Allah SWT melalui pembelajaran Al-Qur\'an, ibadah, doa harian, dan pembiasaan sejak dini.',
+    desc: 'Menanamkan nilai-nilai Islam dan kecintaan kepada Allah SWT melalui pembelajaran Al-Qur\'an, ibadah, doa, dan pembiasaan sehari-hari',
     iconType: 'quran'
   },
   {
     id: 'character-building',
     title: 'Moslem Character Building',
-    desc: 'Membangun karakter Islami melalui pembiasaan adab mulia, akhlakul karimah, pilar SMART dan kepedulian terhadap sesama.',
+    desc: 'Membangun karakter Islami melalui pembiasaan adab, akhlakul karimah, karakter SMART dan kepedulian terhadap sesama',
     iconType: 'character'
-  },
-  {
-    id: 'life-skill',
-    title: 'Life Skill & Kemandirian',
-    desc: 'Melatih kemandirian, tanggung jawab, kerapian, dan keterampilan hidup praktis melalui aktivitas nyata sesuai usia anak.',
-    iconType: 'lifeskill'
-  },
-  {
-    id: 'bilingual-literacy',
-    title: 'Bilingual & Smart Literacy',
-    desc: 'Mengenalkan dasar literasi, bahasa Arab dan Inggris sederhana melalui dongeng islami, bernyanyi ceria, dan komunikasi interaktif.',
-    iconType: 'literacy'
-  },
-  {
-    id: 'creative-science',
-    title: 'Creative & Science Exploration',
-    desc: 'Membuka wawasan rasa ingin tahu dan daya cipta anak melalui percobaan sains seru, melukis kreatif, dan bermain terarah.',
-    iconType: 'science'
-  },
-  {
-    id: 'motoric-development',
-    title: 'Physical & Motoric Fun',
-    desc: 'Mengoptimalkan pertumbuhan motorik kasar dan halus melalui senam ceria, permainan fisik ketangkasan, dan olahraga ramah anak.',
-    iconType: 'motoric'
-  },
+  }
 ]
 
 const FACILITIES = [
@@ -231,30 +237,29 @@ const TESTIMONIALS_DATA = [
 
 const FAQ_ITEMS = [
   {
-    q: 'Berapa usia anak yang dapat mendaftar',
+    q: 'Berapa usia anak yang dapat mendaftar di KB & TK Istiqamah?',
     a: 'Kelompok Bermain (KB) melayani usia 2 - 4 tahun, sedangkan Taman Kanak-kanak (TK) melayani usia 4 - 6 tahun per bulan Juli pada tahun ajaran baru.',
   },
   {
-    q: 'Bagaimana proses pendaftarannya',
-    a: 'Pendaftaran dapat dilakukan secara online melalui website ini pada menu PPDB, atau datang langsung ke ruang administrasi KB TK Istiqamah Bandung untuk pengisian formulir dan observasi ramah anak.',
+    q: 'Bagaimana alur proses pendaftarannya?',
+    a: 'Pendaftaran dapat dilakukan secara online melalui website ini pada menu PPDB (beli formulir, transfer pembayaran, lalu isi biodata lengkap online), atau dapat langsung hadir ke sekretariat SPMB KB & TK Istiqamah Bandung.',
   },
   {
-    q: 'Apa saja syarat pendaftarannya',
-    a: 'Syarat administrasi meliputi: formulir pendaftaran yang telah diisi, fotokopi Akta Kelahiran anak, fotokopi Kartu Keluarga (KK), fotokopi KTP kedua orang tua, serta pas foto calon peserta didik.',
+    q: 'Apa saja berkas persyaratan pendaftaran?',
+    a: 'Syarat administrasi meliputi: fotokopi / scan Akta Kelahiran anak, fotokopi / scan Kartu Keluarga (KK), fotokopi / scan KTP kedua orang tua, serta pas foto calon peserta didik.',
   },
   {
-    q: 'Berapa biaya pendidikan di TK Istiqamah',
-    a: 'Rincian biaya pendaftaran, dana pengembangan, uang seragam, dan SPP bulanan dapat dilihat pada brosur resmi PPDB atau langsung menghubungi layanan informasi WhatsApp kami.',
+    q: 'Berapa rincian biaya pendidikan di TK Istiqamah?',
+    a: 'Biaya pembelian formulir pendaftaran adalah Rp 500.000. Untuk rincian biaya dana pengembangan, perlengkapan seragam, dan SPP bulanan dapat dilihat pada saat pendaftaran atau langsung menghubungi WhatsApp kami.',
   },
   {
-    q: 'Kapan tahun ajaran dimulai',
-    a: 'Tahun ajaran baru dimulai pada pertengahan bulan Juli setiap tahunnya, diawali dengan Masa Pengenalan Lingkungan Sekolah (MPLS) yang ramah anak dan menyenangkan.',
+    q: 'Kapan tahun ajaran baru dimulai?',
+    a: 'Tahun ajaran baru dimulai pada pertengahan bulan Juli setiap tahunnya, diawali dengan Masa Pengenalan Lingkungan Sekolah (MPLS) yang ramah anak, edukatif, dan menyenangkan.',
   },
 ]
 
 export default function HomePage() {
   const [activePillar, setActivePillar] = useState(0)
-  const [galleryCategory, setGalleryCategory] = useState<'all' | 'kegiatan' | 'program'>('all')
   const [openFaq, setOpenFaq] = useState<number | null>(0)
   const [testimonials, setTestimonials] = useState(TESTIMONIALS_DATA)
 
@@ -284,60 +289,6 @@ export default function HomePage() {
     }
     loadTestimonials()
   }, [])
-
-  // Pendekatan Pembelajaran horizontal carousel state & ref
-  const [activePendekatanIndex, setActivePendekatanIndex] = useState(0)
-  const pendekatanScrollRef = useRef<HTMLDivElement>(null)
-
-  const scrollToPendekatan = useCallback((index: number) => {
-    if (!pendekatanScrollRef.current) return
-    const container = pendekatanScrollRef.current
-    const cards = container.querySelectorAll<HTMLElement>('.pendekatan-card')
-    if (cards[index]) {
-      const card = cards[index]
-      const cardRect = card.getBoundingClientRect()
-      const containerRect = container.getBoundingClientRect()
-      const currentScrollLeft = container.scrollLeft
-      const targetScroll = currentScrollLeft + (cardRect.left - containerRect.left) - (containerRect.width - cardRect.width) / 2
-      container.scrollTo({
-        left: Math.max(0, targetScroll),
-        behavior: 'smooth'
-      })
-    }
-    setActivePendekatanIndex(index)
-  }, [])
-
-  const handlePendekatanScroll = useCallback(() => {
-    if (!pendekatanScrollRef.current) return
-    const container = pendekatanScrollRef.current
-    const cards = container.querySelectorAll<HTMLElement>('.pendekatan-card')
-    if (cards.length === 0) return
-
-    const containerRect = container.getBoundingClientRect()
-    const containerCenter = containerRect.left + containerRect.width / 2
-
-    let closestIdx = 0
-    let minDiff = Infinity
-
-    cards.forEach((card, idx) => {
-      const cardRect = card.getBoundingClientRect()
-      const cardCenter = cardRect.left + cardRect.width / 2
-      const diff = Math.abs(cardCenter - containerCenter)
-      if (diff < minDiff) {
-        minDiff = diff
-        closestIdx = idx
-      }
-    })
-
-    setActivePendekatanIndex(closestIdx)
-  }, [])
-
-  const scrollPendekatanDir = useCallback((direction: 'left' | 'right') => {
-    const nextIdx = direction === 'left'
-      ? Math.max(0, activePendekatanIndex - 1)
-      : Math.min(LEARNING_APPROACHES.length - 1, activePendekatanIndex + 1)
-    scrollToPendekatan(nextIdx)
-  }, [activePendekatanIndex, scrollToPendekatan])
 
   // Program Unggulan horizontal carousel state & ref
   const [activeProgramIndex, setActiveProgramIndex] = useState(0)
@@ -561,65 +512,45 @@ export default function HomePage() {
       </div>
 
       <div className="bg-[#FDFBF7] pt-2 sm:pt-4 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8">
-        {/* ─── SECTION 2: PENDEKATAN PEMBELAJARAN (SCROLLABLE MULTI-CARD CAROUSEL) ─── */}
+        {/* ─── SECTION 2: PENDEKATAN PEMBELAJARAN (2X2 GRID SESUAI GAMBAR 1) ─── */}
         <section className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mb-8 sm:mb-12">
-          <div className="w-full bg-[#102A4E] rounded-[26px] sm:rounded-[34px] p-5 sm:p-8 lg:p-10 shadow-2xl border border-white/10">
-          {/* Section Header */}
-          <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 border border-white/15 text-amber-300 text-xs font-bold mb-3 uppercase tracking-wider">
-              <span>Kurikulum &amp; Metode</span>
+          <div className="w-full bg-[#102A4E] rounded-[26px] sm:rounded-[34px] p-6 sm:p-10 lg:p-12 shadow-2xl border border-white/10">
+            {/* Section Header */}
+            <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
+              <h2 className="text-2xl sm:text-3xl lg:text-[34px] font-black text-white tracking-tight">
+                Pendekatan Pembelajaran
+              </h2>
+              <p className="mt-2.5 text-xs sm:text-sm text-blue-100/80 font-medium leading-relaxed">
+                Pembelajaran yang dirancang untuk menumbuhkan iman, karakter, kemandirian, kreativitas dan keterampilan anak secara utuh
+              </p>
             </div>
-            <h2 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-white tracking-tight">
-              Pendekatan Pembelajaran
-            </h2>
-            <p className="mt-2 text-xs sm:text-sm text-blue-100/80 font-medium leading-relaxed">
-              Pembelajaran yang dirancang untuk menumbuhkan iman, karakter, kemandirian, kreativitas dan keterampilan anak secara utuh
-            </p>
-          </div>
 
-          {/* Carousel Track with Left/Right Buttons and Native Smooth Scroll */}
-          <div className="relative">
-            {/* Prev Button (Desktop & Tablet) */}
-            <button
-              type="button"
-              onClick={() => scrollPendekatanDir('left')}
-              disabled={activePendekatanIndex === 0}
-              aria-label="Pendekatan Sebelumnya"
-              className="hidden sm:flex absolute -left-3 lg:-left-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 lg:w-11 lg:h-11 items-center justify-center rounded-full bg-white text-[#102A4E] shadow-xl hover:bg-amber-400 hover:text-white transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer border border-slate-100"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
-              </svg>
-            </button>
-
-            {/* Next Button (Desktop & Tablet) */}
-            <button
-              type="button"
-              onClick={() => scrollPendekatanDir('right')}
-              disabled={activePendekatanIndex === LEARNING_APPROACHES.length - 1}
-              aria-label="Pendekatan Berikutnya"
-              className="hidden sm:flex absolute -right-3 lg:-right-5 top-1/2 -translate-y-1/2 z-20 w-10 h-10 lg:w-11 lg:h-11 items-center justify-center rounded-full bg-white text-[#102A4E] shadow-xl hover:bg-amber-400 hover:text-white transition-all disabled:opacity-30 disabled:pointer-events-none cursor-pointer border border-slate-100"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-
-            {/* Scrollable Track */}
-            <div
-              ref={pendekatanScrollRef}
-              onScroll={handlePendekatanScroll}
-              className="flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-4 pt-2 px-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
-            >
-              {LEARNING_APPROACHES.map((item, idx) => (
+            {/* 2x2 Grid matching Gambar 1 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-7 max-w-5xl mx-auto">
+              {LEARNING_APPROACHES.map((item) => (
                 <div
                   key={item.id}
-                  className="pendekatan-card w-[270px] sm:w-[300px] md:w-[330px] flex-shrink-0 snap-center bg-white rounded-[22px] p-5 sm:p-6 flex flex-col items-center text-center shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1.5 border border-white/50 group cursor-default"
+                  className="bg-white rounded-[26px] sm:rounded-[32px] p-6 sm:p-8 flex flex-col items-center text-center shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-1 border border-white/70 group cursor-default"
                 >
                   {/* Icon Circle */}
-                  <div className="w-13 h-13 sm:w-15 sm:h-15 rounded-full bg-[#DCE8FA] flex items-center justify-center text-[#1B3B6F] mb-3.5 shadow-inner group-hover:scale-110 transition-transform">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-[#DCE8FA] flex items-center justify-center text-[#1B3B6F] mb-4 shadow-inner group-hover:scale-105 transition-transform">
+                    {item.iconType === 'lifeskill' && (
+                      <svg viewBox="0 0 40 40" fill="none" stroke="#1B3B6F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 sm:w-10 sm:h-10">
+                        <path d="M19 14.5C17.5 12.5 14.5 12.5 13 14C11.5 15.5 11.5 18.5 13.5 20.5L19 26L24.5 20.5C26.5 18.5 26.5 15.5 25 14C23.5 12.5 20.5 12.5 19 14.5Z" />
+                        <ellipse cx="23" cy="20" rx="5.5" ry="7" transform="rotate(30 23 20)" stroke="#1B3B6F" strokeWidth="2" fill="none"/>
+                      </svg>
+                    )}
+                    {item.iconType === 'science' && (
+                      <svg viewBox="0 0 40 40" fill="none" stroke="#1B3B6F" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 sm:w-10 sm:h-10">
+                        <path d="M17 10H23M18 10V16L12 28C11 30 12.5 32 15 32H25C27.5 32 29 30 28 28L22 16V10" />
+                        <path d="M14 24H26" strokeDasharray="1.5 2" />
+                        <circle cx="18" cy="27" r="1.5" fill="#1B3B6F" />
+                        <circle cx="22" cy="25" r="1.5" fill="#1B3B6F" />
+                        <path d="M25 8L27 11L29 9" stroke="#F5B744" strokeWidth="2" />
+                      </svg>
+                    )}
                     {item.iconType === 'quran' && (
-                      <svg viewBox="0 0 40 40" fill="currentColor" className="w-7 h-7 sm:w-8 sm:h-8 text-[#1B3B6F]">
+                      <svg viewBox="0 0 40 40" fill="currentColor" className="w-8 h-8 sm:w-10 sm:h-10 text-[#1B3B6F]">
                         <rect x="8" y="8" width="24" height="24" rx="4" fill="#1B3B6F"/>
                         <rect x="11" y="27" width="18" height="3" rx="1.5" fill="#DCE8FA"/>
                         <path d="M21.5 14C19.5 14 18 15.5 18 17.5C18 19.5 19.5 21 21.5 21C22.2 21 22.8 20.8 23.3 20.5C22.5 21.2 21.5 21.7 20.3 21.7C17.9 21.7 16 19.8 16 17.4C16 15 17.9 13.1 20.3 13.1C20.7 13.1 21.1 13.2 21.5 13.3V14Z" fill="#FFFFFF"/>
@@ -627,150 +558,100 @@ export default function HomePage() {
                       </svg>
                     )}
                     {item.iconType === 'character' && (
-                      <svg viewBox="0 0 40 40" fill="currentColor" className="w-7 h-7 sm:w-8 sm:h-8 text-[#1B3B6F]">
+                      <svg viewBox="0 0 40 40" fill="currentColor" className="w-8 h-8 sm:w-10 sm:h-10 text-[#1B3B6F]">
                         <path d="M20 9C15.5 9 13 12.5 13 17C13 22 14.5 27 15.5 30H24.5C25.5 27 27 22 27 17C27 12.5 24.5 9 20 9Z" fill="#1B3B6F"/>
                         <ellipse cx="20" cy="18" rx="4.5" ry="5.5" fill="#DCE8FA"/>
                         <path d="M20 15L21 17.5H23.5L21.5 19L22.2 21.5L20 20L17.8 21.5L18.5 19L16.5 17.5H19L20 15Z" fill="#1B3B6F"/>
                       </svg>
                     )}
-                    {item.iconType === 'lifeskill' && (
-                      <svg viewBox="0 0 40 40" fill="none" stroke="#1B3B6F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 sm:w-8 sm:h-8">
-                        <path d="M19 14.5C17.5 12.5 14.5 12.5 13 14C11.5 15.5 11.5 18.5 13.5 20.5L19 26L24.5 20.5C26.5 18.5 26.5 15.5 25 14C23.5 12.5 20.5 12.5 19 14.5Z" />
-                        <ellipse cx="23" cy="20" rx="5.5" ry="7" transform="rotate(30 23 20)" stroke="#1B3B6F" strokeWidth="2" fill="none"/>
-                      </svg>
-                    )}
-                    {item.iconType === 'literacy' && (
-                      <svg viewBox="0 0 40 40" fill="none" stroke="#1B3B6F" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 sm:w-8 sm:h-8">
-                        <path d="M10 12C10 12 14 10 20 12C26 10 30 12 30 12V28C30 28 26 26 20 28C14 26 10 28 10 28V12Z" fill="#DCE8FA" />
-                        <path d="M20 12V28" />
-                        <path d="M14 17H17M14 21H18" stroke="#1B3B6F" strokeWidth="2" />
-                        <circle cx="25" cy="18" r="1.5" fill="#1B3B6F" />
-                        <path d="M23 23L27 19" stroke="#1B3B6F" strokeWidth="1.8" />
-                      </svg>
-                    )}
-                    {item.iconType === 'science' && (
-                      <svg viewBox="0 0 40 40" fill="none" stroke="#1B3B6F" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 sm:w-8 sm:h-8">
-                        <path d="M17 10H23M18 10V16L12 28C11 30 12.5 32 15 32H25C27.5 32 29 30 28 28L22 16V10" />
-                        <path d="M14 24H26" strokeDasharray="1.5 2" />
-                        <circle cx="18" cy="27" r="1" fill="#1B3B6F" />
-                        <circle cx="22" cy="25" r="1.5" fill="#1B3B6F" />
-                        <path d="M25 8L27 11L29 9" stroke="#F5B744" strokeWidth="2" />
-                      </svg>
-                    )}
-                    {item.iconType === 'motoric' && (
-                      <svg viewBox="0 0 40 40" fill="none" stroke="#1B3B6F" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-7 h-7 sm:w-8 sm:h-8">
-                        <circle cx="20" cy="12" r="3.5" fill="#DCE8FA" />
-                        <path d="M15 20L20 17L25 19L28 24" />
-                        <path d="M20 17V24L16 31" />
-                        <path d="M20 24L24 31" />
-                        <circle cx="29" cy="15" r="2" fill="#F5B744" stroke="none" />
-                      </svg>
-                    )}
                   </div>
 
                   {/* Title */}
-                  <h3 className="font-extrabold text-[#1B3B6F] text-sm sm:text-base group-hover:text-emerald-700 transition-colors">
+                  <h3 className="font-extrabold text-[#1B3B6F] text-lg sm:text-xl group-hover:text-emerald-700 transition-colors">
                     {item.title}
                   </h3>
 
                   {/* Description */}
-                  <p className="mt-1.5 text-xs sm:text-[13px] text-[#4A607A] font-medium leading-[1.65]">
+                  <p className="mt-2 text-xs sm:text-sm text-[#4A607A] font-medium leading-[1.7] max-w-sm">
                     {item.desc}
                   </p>
                 </div>
               ))}
             </div>
-
-            {/* Clickable Pagination Dots */}
-            <div className="flex items-center justify-center gap-2 mt-4 sm:mt-6">
-              {LEARNING_APPROACHES.map((_, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => scrollToPendekatan(idx)}
-                  aria-label={`Lihat pendekatan ${idx + 1}`}
-                  className={`transition-all duration-300 rounded-full cursor-pointer ${
-                    activePendekatanIndex === idx
-                      ? 'w-7 h-2.5 bg-[#F5B744] shadow-[0_2px_8px_rgba(245,183,68,0.5)]'
-                      : 'w-2.5 h-2.5 bg-white/35 hover:bg-white/70'
-                  }`}
-                />
-              ))}
-            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
         {/* ─── SECTION 3: PENGEMBANGAN ANAK (COMPACT & SPACE-EFFICIENT) ─── */}
-        <section id="pengembangan-anak" className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mb-10 sm:mb-14">
-          <div className="w-full bg-[#0B7347] rounded-[24px] sm:rounded-[32px] p-4 sm:p-6 lg:p-7 shadow-2xl border border-white/10">
-          {/* Section Header */}
-          <div className="text-center mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl lg:text-[30px] font-black text-white tracking-tight">
-              Pengembangan Anak
-            </h2>
-          </div>
-
-          {/* Compact Space-Efficient Layout matching reference */}
-          <div className="flex flex-col md:flex-row items-center justify-center gap-5 sm:gap-7 lg:gap-8 max-w-4xl mx-auto">
-            {/* Left: Active Enlarged Pillar Card */}
-            <div className="relative w-36 h-36 sm:w-44 sm:h-44 md:w-48 md:h-48 rounded-[24px] sm:rounded-[30px] bg-white p-3 sm:p-4 shadow-xl flex items-center justify-center flex-shrink-0 border-2 border-white/80 group">
-              <div className="relative w-full h-full">
-                <Image
-                  src={DEVELOPMENT_PILLARS[activePillar].image}
-                  alt={DEVELOPMENT_PILLARS[activePillar].title}
-                  fill
-                  className="object-contain drop-shadow-sm transition-all duration-300 group-hover:scale-105"
-                  priority
-                />
-              </div>
+        {/* ─── SECTION 3: PENGEMBANGAN ANAK (ENLARGED & PROMINENT DISPLAY) ─── */}
+        <section id="pengembangan-anak" className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mb-10 sm:mb-16">
+          <div className="w-full bg-[#0B7347] rounded-[28px] sm:rounded-[38px] p-6 sm:p-10 lg:p-12 shadow-2xl border border-white/10">
+            {/* Section Header */}
+            <div className="text-center mb-6 sm:mb-8">
+              <h2 className="text-2xl sm:text-3xl lg:text-[36px] font-black text-white tracking-tight">
+                Pengembangan Anak
+              </h2>
             </div>
 
-            {/* Right: Active Text & Other Pillar Buttons Row */}
-            <div className="flex-1 flex flex-col justify-center text-center md:text-left min-w-0">
-              {/* Text Description */}
-              <div className="min-h-[70px] sm:min-h-[80px] flex flex-col justify-center">
-                <h3 className="text-lg sm:text-xl lg:text-2xl font-black text-white tracking-tight leading-tight">
-                  {DEVELOPMENT_PILLARS[activePillar].title}
-                </h3>
-                <p className="mt-1.5 text-xs sm:text-[13px] lg:text-sm text-emerald-100/95 font-medium leading-relaxed max-w-xl">
-                  {DEVELOPMENT_PILLARS[activePillar].desc}
-                </p>
+            {/* Enlarged Layout */}
+            <div className="flex flex-col lg:flex-row items-center justify-center gap-7 sm:gap-10 lg:gap-14 max-w-5xl mx-auto">
+              {/* Left: Active Enlarged Pillar Card */}
+              <div className="relative w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 lg:w-96 lg:h-96 rounded-[30px] sm:rounded-[38px] bg-white p-5 sm:p-7 shadow-2xl flex items-center justify-center flex-shrink-0 border-4 border-white/90 group transition-all duration-300">
+                <div className="relative w-full h-full">
+                  <Image
+                    src={DEVELOPMENT_PILLARS[activePillar].image}
+                    alt={DEVELOPMENT_PILLARS[activePillar].title}
+                    fill
+                    className="object-contain drop-shadow-md transition-all duration-300 group-hover:scale-105"
+                    priority
+                  />
+                </div>
               </div>
 
-              {/* Small Pillar Icon Cards Row */}
-              <div className="flex items-center justify-center md:justify-start gap-2.5 sm:gap-3.5 mt-3 sm:mt-4">
-                {DEVELOPMENT_PILLARS.map((pillar, idx) => {
-                  const isActive = activePillar === idx
-                  return (
-                    <button
-                      key={pillar.id}
-                      type="button"
-                      onClick={() => setActivePillar(idx)}
-                      aria-label={`Pilar: ${pillar.title}`}
-                      className={`relative w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl p-1.5 sm:p-2 cursor-pointer transition-all duration-300 shadow-md ${
-                        isActive
-                          ? 'bg-white ring-3 ring-amber-300 scale-105 opacity-100 shadow-lg'
-                          : 'bg-white/90 hover:bg-white hover:scale-105 opacity-80 hover:opacity-100'
-                      }`}
-                    >
-                      <div className="relative w-full h-full">
-                        <Image
-                          src={pillar.image}
-                          alt={pillar.title}
-                          fill
-                          className="object-contain"
-                          sizes="(max-width: 640px) 48px, 64px"
-                        />
-                      </div>
-                    </button>
-                  )
-                })}
+              {/* Right: Active Text & Other Pillar Buttons */}
+              <div className="flex-1 flex flex-col justify-center text-center lg:text-left min-w-0">
+                {/* Text Description */}
+                <div className="min-h-[90px] sm:min-h-[100px] flex flex-col justify-center">
+                  <h3 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-white tracking-tight leading-tight">
+                    {DEVELOPMENT_PILLARS[activePillar].title}
+                  </h3>
+                  <p className="mt-3 text-sm sm:text-base lg:text-[17px] text-emerald-100/95 font-medium leading-relaxed max-w-xl">
+                    {DEVELOPMENT_PILLARS[activePillar].desc}
+                  </p>
+                </div>
+
+                {/* Pillar Selector Buttons */}
+                <div className="flex items-center justify-center lg:justify-start gap-3 sm:gap-4 mt-6 sm:mt-8 flex-wrap">
+                  {DEVELOPMENT_PILLARS.map((pillar, idx) => {
+                    const isActive = activePillar === idx
+                    return (
+                      <button
+                        key={pillar.id}
+                        type="button"
+                        onClick={() => setActivePillar(idx)}
+                        aria-label={`Pilar: ${pillar.title}`}
+                        className={`relative w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl p-2 sm:p-2.5 cursor-pointer transition-all duration-300 shadow-md ${
+                          isActive
+                            ? 'bg-white ring-4 ring-amber-300 scale-110 opacity-100 shadow-xl'
+                            : 'bg-white/90 hover:bg-white hover:scale-105 opacity-80 hover:opacity-100'
+                        }`}
+                      >
+                        <div className="relative w-full h-full">
+                          <Image
+                            src={pillar.image}
+                            alt={pillar.title}
+                            fill
+                            className="object-contain"
+                            sizes="(max-width: 640px) 56px, 80px"
+                          />
+                        </div>
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
         {/* ─── SECTION 4: PROGRAM UNGGULAN (HORIZONTAL SCROLL + CLICKABLE DOTS) ─── */}
         <section id="program-unggulan" className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto">
@@ -1077,74 +958,23 @@ export default function HomePage() {
                 Lihat bagaimana anak-anak belajar, bermain, bereksplorasi dan menciptakan pengalaman bermakna di KB TK Istiqamah
               </p>
 
-              {/* Category Filter Pills */}
-              <div className="flex items-center justify-center flex-wrap gap-2.5 sm:gap-3 mt-4">
-                <button
-                  onClick={() => setGalleryCategory('all')}
-                  className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm ${
-                    galleryCategory === 'all'
-                      ? 'bg-[#054A2C] text-white shadow-inner'
-                      : 'bg-white text-[#0B7347] hover:bg-emerald-50'
-                  }`}
-                >
-                  Semua
-                </button>
-                <button
-                  onClick={() => setGalleryCategory('kegiatan')}
-                  className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm ${
-                    galleryCategory === 'kegiatan'
-                      ? 'bg-[#054A2C] text-white shadow-inner'
-                      : 'bg-white text-[#0B7347] hover:bg-emerald-50'
-                  }`}
-                >
-                  Kegiatan Pembelajaran
-                </button>
-                <button
-                  onClick={() => setGalleryCategory('program')}
-                  className={`px-5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer shadow-sm ${
-                    galleryCategory === 'program'
-                      ? 'bg-[#054A2C] text-white shadow-inner'
-                      : 'bg-white text-[#0B7347] hover:bg-emerald-50'
-                  }`}
-                >
-                  Program Unggulan
-                </button>
-              </div>
             </div>
 
             {/* Gallery Grid matching reference (Left portrait + Right 2x3 grid) */}
-            {galleryCategory === 'all' ? (
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 mt-5">
-                {/* Left Tall Portrait Card */}
-                <div className="md:col-span-4 relative rounded-2xl overflow-hidden shadow-md aspect-[3/4] md:aspect-auto min-h-[250px] md:min-h-full border border-white/20 group">
-                  <Image
-                    src={GALLERY_SHOWCASE[0].src}
-                    alt={GALLERY_SHOWCASE[0].alt}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                  />
-                </div>
-
-                {/* Right 2x3 Grid */}
-                <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                  {GALLERY_SHOWCASE.slice(1).map((item) => (
-                    <div
-                      key={item.id}
-                      className="relative rounded-2xl overflow-hidden shadow-md aspect-[4/3] border border-white/20 group"
-                    >
-                      <Image
-                        src={item.src}
-                        alt={item.alt}
-                        fill
-                        className="object-cover group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
-                  ))}
-                </div>
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 mt-6">
+              {/* Left Tall Portrait Card */}
+              <div className="md:col-span-4 relative rounded-2xl overflow-hidden shadow-md aspect-[3/4] md:aspect-auto min-h-[250px] md:min-h-full border border-white/20 group">
+                <Image
+                  src={GALLERY_SHOWCASE[0].src}
+                  alt={GALLERY_SHOWCASE[0].alt}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
               </div>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 sm:gap-4 mt-5">
-                {GALLERY_SHOWCASE.filter((item) => item.category === galleryCategory).map((item) => (
+
+              {/* Right 2x3 Grid */}
+              <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                {GALLERY_SHOWCASE.slice(1).map((item) => (
                   <div
                     key={item.id}
                     className="relative rounded-2xl overflow-hidden shadow-md aspect-[4/3] border border-white/20 group"
@@ -1158,7 +988,7 @@ export default function HomePage() {
                   </div>
                 ))}
               </div>
-            )}
+            </div>
 
             {/* Button Lihat Semua Galeri */}
             <div className="flex justify-center mt-6 sm:mt-8">
@@ -1227,8 +1057,8 @@ export default function HomePage() {
             </h2>
           </div>
 
-          {/* 2-Column FAQ Layout */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
+          {/* 2-Column FAQ Layout with Bottom-Aligned Map */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
             {/* Left Column: 5 Accordion Questions */}
             <div className="lg:col-span-7 flex flex-col gap-2.5 sm:gap-3">
               {FAQ_ITEMS.map((item, idx) => {
@@ -1269,8 +1099,8 @@ export default function HomePage() {
               })}
             </div>
 
-            {/* Right Column: Contact Card & Map Location */}
-            <div className="lg:col-span-5 flex flex-col gap-3.5 sm:gap-4">
+            {/* Right Column: Contact Card & Map Location Aligned Flush at Bottom */}
+            <div className="lg:col-span-5 flex flex-col justify-between gap-3.5 sm:gap-4 h-full">
               {/* Card 1: Masih ada Pertanyaan? */}
               <div className="border border-[#48A97A]/40 rounded-2xl bg-[#F5FBF8] p-4 sm:p-5 shadow-sm flex items-center gap-4">
                 <div className="relative w-20 h-28 sm:w-24 sm:h-32 flex-shrink-0">
@@ -1299,12 +1129,12 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Card 2: Interactive Location Map Card */}
+              {/* Card 2: Interactive Location Map Card (Aligned with bottom of FAQ) */}
               <a
                 href="https://maps.google.com/?q=KB+TK+Istiqamah+Bandung+Jl+Taman+Citarum"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block border border-[#48A97A]/40 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-all group relative h-28 sm:h-32"
+                className="flex-1 min-h-[130px] sm:min-h-[150px] border border-[#48A97A]/40 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-all group relative block"
                 title="Buka Lokasi di Google Maps"
               >
                 {/* Visual Map graphic background */}

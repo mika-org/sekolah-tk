@@ -39,8 +39,9 @@ import {
   MONTHS_SEMESTER_1,
   MONTHS_SEMESTER_2,
   ALL_MONTHS,
-  PAUD_CP_GENERAL_10,
+  PAUD_CP_NABP_4,
   PAUD_CP_JATI_DIRI_8,
+  PAUD_CP_STEAM_6,
   ALL_PAUD_TPS,
   type TKGradeCriteria,
   type PAUDMonth,
@@ -62,7 +63,7 @@ export default function GuruGradesPage() {
   const [semester, setSemester] = useState<PAUDSemester>('Semester 1')
   const [selectedMonth, setSelectedMonth] = useState<PAUDMonth>('Juli')
   const [academicYear, setAcademicYear] = useState('2026/2027')
-  const [activeElementTab, setActiveElementTab] = useState<'cp_umum' | 'jati_diri'>('cp_umum')
+  const [activeElementTab, setActiveElementTab] = useState<'agama' | 'jati_diri' | 'steam'>('agama')
   const [tpNotes, setTpNotes] = useState<Record<string, string>>({})
 
   // History Filters
@@ -288,7 +289,12 @@ export default function GuruGradesPage() {
     window.print()
   }
 
-  const activeTPs = activeElementTab === 'cp_umum' ? PAUD_CP_GENERAL_10 : PAUD_CP_JATI_DIRI_8
+  const activeTPs =
+    activeElementTab === 'agama'
+      ? PAUD_CP_NABP_4
+      : activeElementTab === 'jati_diri'
+      ? PAUD_CP_JATI_DIRI_8
+      : PAUD_CP_STEAM_6
 
   return (
     <div className="space-y-8 print:space-y-4">
@@ -306,7 +312,7 @@ export default function GuruGradesPage() {
             )}
           </div>
           <p className="text-gray-500 font-semibold text-xs mt-1">
-            Kurikulum Merdeka PAUD: 10 TP Capaian Pembelajaran &amp; 8 TP Jati Diri per bulan (BB, MB, BSH, BSB).
+            Kurikulum Merdeka PAUD: 3 Elemen Capaian Pembelajaran (Nilai Agama &amp; Budi Pekerti, Jati Diri, Dasar Literasi &amp; STEAM).
             {students.length > 0 && ` • Menampilkan ${students.length} murid kelas binaan.`}
           </p>
         </div>
@@ -349,21 +355,21 @@ export default function GuruGradesPage() {
           {/* Top Control Bar: Select Student, Semester, Month */}
           <Card className="bg-white rounded-[32px] shadow-sm border-none p-6">
             <div className="grid grid-cols-1 md:grid-cols-12 gap-5 items-end">
-              {/* Select Student */}
+              {/* Select Student - Native select to guarantee student name always renders */}
               <div className="md:col-span-4 space-y-1.5">
                 <Label className="text-xs font-bold text-primary-blue">Nama Murid *</Label>
-                <Select value={selectedStudent} onValueChange={(val) => setSelectedStudent(val as string)}>
-                  <SelectTrigger className="bg-[#F8F6F2] border-transparent rounded-xl text-sm font-bold">
-                    <SelectValue placeholder="-- Pilih Murid --" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl max-h-64">
-                    {students.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>
-                        {s.nama} {s.classes_tk?.nama ? `(${s.classes_tk.nama})` : ''}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={selectedStudent}
+                  onChange={(e) => setSelectedStudent(e.target.value)}
+                  className="w-full h-10 px-3.5 bg-[#F8F6F2] hover:bg-gray-100 border border-transparent focus:border-primary-green focus:bg-white rounded-xl text-sm font-bold text-primary-blue outline-none cursor-pointer transition-all"
+                >
+                  <option value="" disabled>-- Pilih Murid --</option>
+                  {students.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nama} {s.classes_tk?.nama ? `(${s.classes_tk.nama})` : ''}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               {/* Select Semester */}
@@ -407,36 +413,51 @@ export default function GuruGradesPage() {
             </div>
           </Card>
 
-          {/* Element Selection Tabs: Capaian Umum (10 TP) vs Jati Diri (8 TP) */}
-          <div className="flex items-center gap-3">
+          {/* Element Selection Tabs: 3 Elemen Capaian Pembelajaran Kurikulum Merdeka */}
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
-              onClick={() => setActiveElementTab('cp_umum')}
+              onClick={() => setActiveElementTab('agama')}
               className={cn(
-                'px-6 py-3 rounded-2xl font-black text-xs transition-all cursor-pointer flex items-center gap-2',
-                activeElementTab === 'cp_umum'
+                'px-5 py-3 rounded-2xl font-black text-xs transition-all cursor-pointer flex items-center gap-2',
+                activeElementTab === 'agama'
                   ? 'bg-primary-blue text-white shadow-md'
                   : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-100'
               )}
             >
-              <BookOpen size={16} />
-              <span>Capaian Pembelajaran (10 TP)</span>
-              <Badge className="ml-1 bg-emerald-500 text-white border-none text-[10px]">10</Badge>
+              <BookOpen size={15} />
+              <span>1. Nilai Agama &amp; Budi Pekerti</span>
+              <Badge className="ml-1 bg-emerald-500 text-white border-none text-[10px]">4 TP</Badge>
             </button>
 
             <button
               type="button"
               onClick={() => setActiveElementTab('jati_diri')}
               className={cn(
-                'px-6 py-3 rounded-2xl font-black text-xs transition-all cursor-pointer flex items-center gap-2',
+                'px-5 py-3 rounded-2xl font-black text-xs transition-all cursor-pointer flex items-center gap-2',
                 activeElementTab === 'jati_diri'
                   ? 'bg-primary-blue text-white shadow-md'
                   : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-100'
               )}
             >
-              <HeartHandshake size={16} />
-              <span>Capaian Jati Diri (8 TP)</span>
-              <Badge className="ml-1 bg-purple-500 text-white border-none text-[10px]">8</Badge>
+              <HeartHandshake size={15} />
+              <span>2. Jati Diri</span>
+              <Badge className="ml-1 bg-purple-500 text-white border-none text-[10px]">8 TP</Badge>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveElementTab('steam')}
+              className={cn(
+                'px-5 py-3 rounded-2xl font-black text-xs transition-all cursor-pointer flex items-center gap-2',
+                activeElementTab === 'steam'
+                  ? 'bg-primary-blue text-white shadow-md'
+                  : 'bg-white text-gray-600 hover:bg-gray-100 border border-gray-100'
+              )}
+            >
+              <Sparkles size={15} />
+              <span>3. Dasar Literasi &amp; STEAM</span>
+              <Badge className="ml-1 bg-blue-500 text-white border-none text-[10px]">6 TP</Badge>
             </button>
           </div>
 
@@ -581,17 +602,16 @@ export default function GuruGradesPage() {
                   placeholder="Cari murid / TP..."
                 />
 
-                <Select value={filterStudent} onValueChange={(val) => { setFilterStudent(val || 'all'); setHistoryPage(1) }}>
-                  <SelectTrigger className="bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold h-9 w-40">
-                    <SelectValue placeholder="Semua Murid" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl max-h-56">
-                    <SelectItem value="all">Semua Murid</SelectItem>
-                    {students.map((s) => (
-                      <SelectItem key={s.id} value={s.id}>{s.nama}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={filterStudent}
+                  onChange={(e) => { setFilterStudent(e.target.value); setHistoryPage(1) }}
+                  className="bg-[#F8F6F2] hover:bg-gray-100 border border-transparent rounded-xl text-xs font-semibold h-9 px-3 outline-none cursor-pointer"
+                >
+                  <option value="all">Semua Murid</option>
+                  {students.map((s) => (
+                    <option key={s.id} value={s.id}>{s.nama}</option>
+                  ))}
+                </select>
 
                 <Select value={filterMonth} onValueChange={(val) => { setFilterMonth(val || 'all'); setHistoryPage(1) }}>
                   <SelectTrigger className="bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold h-9 w-36">
@@ -632,7 +652,9 @@ export default function GuruGradesPage() {
                         return (
                           <tr key={g.id} className="hover:bg-gray-50/60 transition-colors">
                             <td className="p-4 pl-6">
-                              <div className="font-bold text-primary-blue">{g.students_tk?.nama}</div>
+                              <div className="font-bold text-primary-blue">
+                                {g.students_tk?.nama || students.find((s) => s.id === g.student_id)?.nama || 'Siswa'}
+                              </div>
                               <div className="text-[10px] text-gray-400">
                                 {classes.find((c) => c.id === g.students_tk?.kelas_id)?.nama || 'KB / TK'}
                               </div>

@@ -195,7 +195,7 @@ export default function OrangTuaGradesPage() {
           </div>
           <h1 className="text-2xl sm:text-3xl font-black">Capaian Pembelajaran Ananda</h1>
           <p className="text-gray-300 font-medium text-xs">
-            Laporan observasi bulanan kompetensi anak: Capaian Pembelajaran &amp; Jati Diri berbasis standar PAUD/TK Nasional.
+            Laporan observasi bulanan kompetensi anak: Nilai Agama &amp; Budi Pekerti, Jati Diri, serta Dasar Literasi &amp; STEAM berbasis Kurikulum Merdeka PAUD.
           </p>
         </div>
         {filteredLogs.length > 0 && (

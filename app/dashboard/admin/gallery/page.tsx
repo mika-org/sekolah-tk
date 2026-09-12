@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
 import {
   Camera,
@@ -29,14 +28,12 @@ export default function AdminGalleryPage() {
 
   // Form states
   const [title, setTitle] = useState('')
-  const [category, setCategory] = useState('Kegiatan')
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Search & Pagination
   const [searchQuery, setSearchQuery] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(6)
 
@@ -86,7 +83,7 @@ export default function AdminGalleryPage() {
       const formData = new FormData()
       formData.append('file', compressedFile)
       formData.append('title', title)
-      formData.append('category', category)
+      formData.append('category', 'Galeri')
 
       const result = await uploadGalleryPhoto(formData)
 
@@ -97,7 +94,6 @@ export default function AdminGalleryPage() {
       setGalleryList(prev => [result.data, ...prev])
       setCurrentSlide(0)
       setTitle('')
-      setCategory('Kegiatan')
       setImageFile(null)
       setPreviewUrl(null)
       if (fileInputRef.current) fileInputRef.current.value = ''
@@ -137,10 +133,9 @@ export default function AdminGalleryPage() {
       const matchSearch =
         !searchQuery ||
         (item.title || '').toLowerCase().includes(searchQuery.toLowerCase())
-      const matchCat = categoryFilter === 'all' || item.category === categoryFilter
-      return matchSearch && matchCat
+      return matchSearch
     })
-  }, [galleryList, searchQuery, categoryFilter])
+  }, [galleryList, searchQuery])
 
   const totalPages = Math.ceil(filteredGallery.length / pageSize) || 1
   const paginatedGallery = useMemo(() => {
@@ -208,21 +203,6 @@ export default function AdminGalleryPage() {
                   />
                 </div>
 
-                <div className="space-y-1.5">
-                  <Label htmlFor="category" className="text-xs font-bold text-primary-blue">Kategori</Label>
-                  <select
-                    id="category"
-                    value={category}
-                    onChange={e => setCategory(e.target.value)}
-                    className="w-full px-3.5 py-2.5 bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium outline-none"
-                  >
-                    <option value="Kegiatan">Kegiatan Siswa</option>
-                    <option value="Fasilitas">Fasilitas Sekolah</option>
-                    <option value="Prestasi">Prestasi & Penghargaan</option>
-                    <option value="Lainnya">Lainnya</option>
-                  </select>
-                </div>
-
                 <Button
                   type="submit"
                   disabled={uploading || !imageFile}
@@ -257,27 +237,6 @@ export default function AdminGalleryPage() {
                   }}
                   placeholder="Cari foto..."
                 />
-
-                <Select
-                  value={categoryFilter}
-                  onValueChange={(val) => {
-                    if (val) {
-                      setCategoryFilter(val)
-                      setCurrentPage(1)
-                    }
-                  }}
-                >
-                  <SelectTrigger className="h-9 w-36 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
-                    <SelectValue placeholder="Semua Kategori" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-xl">
-                    <SelectItem value="all">Semua Kategori</SelectItem>
-                    <SelectItem value="Kegiatan">Kegiatan Siswa</SelectItem>
-                    <SelectItem value="Fasilitas">Fasilitas</SelectItem>
-                    <SelectItem value="Prestasi">Prestasi</SelectItem>
-                    <SelectItem value="Lainnya">Lainnya</SelectItem>
-                  </SelectContent>
-                </Select>
               </div>
             </CardHeader>
             <CardContent className="p-6">
@@ -295,9 +254,6 @@ export default function AdminGalleryPage() {
                         alt={item.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-all duration-300"
                       />
-                      <span className="absolute top-2.5 left-2.5 bg-primary-blue/90 text-white text-[9px] uppercase font-bold px-2 py-0.5 rounded-full backdrop-blur-xs">
-                        {item.category}
-                      </span>
                       <button
                         onClick={() => handleDelete(item)}
                         className="absolute top-2.5 right-2.5 bg-red-500/90 hover:bg-red-600 text-white p-1.5 rounded-lg transition-all cursor-pointer opacity-90 hover:opacity-100"

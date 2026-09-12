@@ -2,26 +2,23 @@
 
 import React, { useState, useEffect } from 'react'
 import { createClient } from '@/lib/database/client'
-import { Star, Image as ImageIcon, X, Play } from 'lucide-react'
+import { Image as ImageIcon, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 
-const CATEGORIES = ['Semua', 'Kegiatan Pembelajaran', 'Sarana', 'Prestasi']
-
 const FALLBACK_GALLERY = [
-  { id: 'f1', title: 'Belajar Berhitung & Menulis di Kelas Ceria', image: '/images/gallery/1.jpg', category: 'Kegiatan Pembelajaran' },
-  { id: 'f2', title: 'Pentas Seni Tari Tradisional Anak', image: '/images/gallery/2.jpg', category: 'Kegiatan Pembelajaran' },
-  { id: 'f3', title: 'Prestasi Juara Lomba Siswa & Apresiasi', image: '/images/gallery/3.jpg', category: 'Prestasi' },
-  { id: 'f4', title: 'Keceriaan Drama & Pentas Seni Budaya Daerah', image: '/images/gallery/4.jpg', category: 'Kegiatan Pembelajaran' },
-  { id: 'f5', title: 'Cooking Day & Kreasi Masak Cilik', image: '/images/gallery/5.jpg', category: 'Kegiatan Pembelajaran' },
-  { id: 'f6', title: 'Sarana Bermain Keseimbangan Outdoor', image: '/images/gallery/6.jpg', category: 'Sarana' },
-  { id: 'f7', title: 'Ketangkasan Memanjat Jaring Outbound', image: '/images/gallery/7.jpg', category: 'Kegiatan Pembelajaran' },
-  { id: 'f8', title: 'Lomba Adzan & Iqomah Pentas PAI', image: '/images/gallery/8.jpg', category: 'Prestasi' },
-  { id: 'f9', title: 'Petualangan Naik Rakit Air Outbound', image: '/images/gallery/9.jpg', category: 'Kegiatan Pembelajaran' },
-  { id: 'f10', title: 'Edukasi Mengenal & Menyayangi Hewan Kelinci', image: '/images/gallery/10.jpg', category: 'Kegiatan Pembelajaran' },
+  { id: 'f1', title: 'Belajar Berhitung & Menulis di Kelas Ceria', image: '/images/gallery/1.jpg' },
+  { id: 'f2', title: 'Pentas Seni Tari Tradisional Anak', image: '/images/gallery/2.jpg' },
+  { id: 'f3', title: 'Prestasi Juara Lomba Siswa & Apresiasi', image: '/images/gallery/3.jpg' },
+  { id: 'f4', title: 'Keceriaan Drama & Pentas Seni Budaya Daerah', image: '/images/gallery/4.jpg' },
+  { id: 'f5', title: 'Cooking Day & Kreasi Masak Cilik', image: '/images/gallery/5.jpg' },
+  { id: 'f6', title: 'Sarana Bermain Keseimbangan Outdoor', image: '/images/gallery/6.jpg' },
+  { id: 'f7', title: 'Ketangkasan Memanjat Jaring Outbound', image: '/images/gallery/7.jpg' },
+  { id: 'f8', title: 'Lomba Adzan & Iqomah Pentas PAI', image: '/images/gallery/8.jpg' },
+  { id: 'f9', title: 'Petualangan Naik Rakit Air Outbound', image: '/images/gallery/9.jpg' },
+  { id: 'f10', title: 'Edukasi Mengenal & Menyayangi Hewan Kelinci', image: '/images/gallery/10.jpg' },
 ]
 
 export default function GaleriPage() {
-  const [selectedCategory, setSelectedCategory] = useState('Semua')
   const [galleryItems, setGalleryItems] = useState<any[]>(FALLBACK_GALLERY)
   const [activePhoto, setActivePhoto] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
@@ -33,31 +30,17 @@ export default function GaleriPage() {
       setLoading(true)
       const { data, error } = await supabase
         .from('galleries_tk')
-        .select('id, title, image, category')
+        .select('id, title, image')
         .neq('category', 'Hero Banner')
         .order('created_at', { ascending: false })
 
       if (!error && data && data.length > 0) {
-        const mapped = data.map((item: any) => ({
-          ...item,
-          category: item.category === 'Kegiatan' ? 'Kegiatan Pembelajaran' : item.category
-        }))
-        setGalleryItems(mapped)
+        setGalleryItems(data)
       }
       setLoading(false)
     }
     loadGallery()
   }, [])
-
-  const filteredItems = galleryItems.filter((item) => {
-    if (selectedCategory === 'Semua') return true
-    const cat = item.category?.toLowerCase()
-    const sel = selectedCategory.toLowerCase()
-    if (sel === 'kegiatan pembelajaran') {
-      return cat === 'kegiatan pembelajaran' || cat === 'kegiatan'
-    }
-    return cat === sel
-  })
 
   return (
     <div className="w-full pt-24">
@@ -71,40 +54,19 @@ export default function GaleriPage() {
         </p>
       </section>
 
-      {/* ─── GALLERY INTERACTIVE FILTER ─────────── */}
+      {/* ─── GALLERY SHOWCASE ─────────── */}
       <section className="py-6 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-        {/* Category Tabs */}
-        <div className="flex flex-wrap justify-center items-center gap-3 mb-10">
-          {CATEGORIES.map((cat) => {
-            const active = selectedCategory === cat
-            return (
-              <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
-                className={`px-6 py-2.5 rounded-full font-bold text-xs sm:text-sm tracking-wide transition-all duration-300 cursor-pointer border ${
-                  active
-                    ? 'bg-[#07A363] border-[#07A363] text-white shadow-md'
-                    : 'bg-white border-gray-200 text-[#07265F] hover:bg-gray-50'
-                }`}
-              >
-                {cat}
-              </button>
-            )
-          })}
-        </div>
-
-        {/* Gallery Grid */}
         {loading ? (
           <div className="flex justify-center items-center py-20">
             <div className="animate-spin rounded-full h-10 w-10 border-t-2 border-[#07A363]" />
           </div>
-        ) : filteredItems.length > 0 ? (
+        ) : galleryItems.length > 0 ? (
           <motion.div
             layout
             className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6"
           >
             <AnimatePresence mode="popLayout">
-              {filteredItems.map((item) => (
+              {galleryItems.map((item) => (
                 <motion.div
                   key={item.id}
                   layout
@@ -126,9 +88,6 @@ export default function GaleriPage() {
 
                   {/* Info */}
                   <div className="absolute bottom-0 left-0 right-0 p-5 z-10 text-left">
-                    <span className="text-[9px] text-white bg-[#07A363] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider">
-                      {item.category}
-                    </span>
                     <p className="text-white font-extrabold text-xs sm:text-sm leading-snug mt-2 line-clamp-2">
                       {item.title}
                     </p>
@@ -142,7 +101,7 @@ export default function GaleriPage() {
             <div className="inline-flex p-3 bg-gray-100 rounded-full text-gray-400 mb-2">
               <ImageIcon size={28} />
             </div>
-            <p className="text-sm font-semibold text-gray-400">Tidak ada foto dalam kategori ini.</p>
+            <p className="text-sm font-semibold text-gray-400">Tidak ada foto galeri.</p>
           </div>
         )}
       </section>
@@ -180,10 +139,7 @@ export default function GaleriPage() {
                   className="w-full h-full object-contain"
                 />
               </div>
-              <div className="w-full p-6 text-white text-left space-y-2.5">
-                <span className="bg-[#07A363] text-white px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                  {activePhoto.category}
-                </span>
+              <div className="w-full p-6 text-white text-left space-y-1.5">
                 <h3 className="font-extrabold text-sm sm:text-base leading-snug">{activePhoto.title}</h3>
               </div>
             </motion.div>

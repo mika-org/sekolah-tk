@@ -138,6 +138,7 @@ export default function MasterMuridPage() {
   const [detailOpen, setDetailOpen] = useState(false)
   const [detailLoading, setDetailLoading] = useState(false)
   const [detailData, setDetailData] = useState<any>(null)
+  const [detailTab, setDetailTab] = useState<'tahap1' | 'tahap2'>('tahap1')
 
   const initForm = { nama: '', nik: '', nisn: '', tempat_lahir: '', tanggal_lahir: '', jenis_kelamin: 'L', agama: 'Islam', alamat: '', kelas_id: '', status: 'active' }
   const [form, setForm] = useState(initForm)
@@ -231,6 +232,7 @@ export default function MasterMuridPage() {
 
   const handleOpenDetail = async (s: any) => {
     setSelected(s)
+    setDetailTab('tahap1')
     setDetailOpen(true)
     setDetailLoading(true)
     setDetailData(null)
@@ -355,7 +357,12 @@ export default function MasterMuridPage() {
         (s.nama || '').toLowerCase().includes(search.toLowerCase()) ||
         (s.nisn || '').includes(search) ||
         (s.nik || '').includes(search)
-      const matchClass = classFilter === 'all' || s.kelas_id === classFilter
+      const matchClass =
+        classFilter === 'all'
+          ? true
+          : classFilter === 'unassigned'
+          ? !s.kelas_id
+          : s.kelas_id === classFilter
       const matchStatus = statusFilter === 'all' || s.status === statusFilter
       return matchSearch && matchClass && matchStatus
     })
@@ -450,6 +457,7 @@ export default function MasterMuridPage() {
               </SelectTrigger>
               <SelectContent className="rounded-xl">
                 <SelectItem value="all">Semua Kelas</SelectItem>
+                <SelectItem value="unassigned">Belum Masuk Kelas</SelectItem>
                 {classes.map(c => (
                   <SelectItem key={c.id} value={c.id}>{c.nama}</SelectItem>
                 ))}
@@ -681,6 +689,38 @@ export default function MasterMuridPage() {
             </div>
           </DialogHeader>
 
+          {/* TABS SELECTOR TAHAP 1 & TAHAP 2 */}
+          <div className="flex items-center gap-2 pt-2 border-b border-gray-100">
+            <button
+              type="button"
+              onClick={() => setDetailTab('tahap1')}
+              className={cn(
+                "px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer",
+                detailTab === 'tahap1'
+                  ? "bg-primary-blue text-white shadow-xs"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              )}
+            >
+              Tahap 1: Registrasi &amp; Akun
+            </button>
+            <button
+              type="button"
+              onClick={() => setDetailTab('tahap2')}
+              className={cn(
+                "px-4 py-2 rounded-xl text-xs font-black transition-all cursor-pointer flex items-center gap-1.5",
+                detailTab === 'tahap2'
+                  ? "bg-primary-green text-white shadow-xs"
+                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+              )}
+            >
+              <Sparkles size={13} />
+              Tahap 2: Biodata Lengkap PPDB
+              {detailData?.ppdb && (
+                <span className="ml-1 text-[9px] bg-white/25 text-white px-1.5 py-0.5 rounded-full font-bold">Tersedia</span>
+              )}
+            </button>
+          </div>
+
           {detailLoading ? (
             <div className="py-20 text-center text-gray-400 font-bold text-sm">
               Memuat data lengkap murid dan orang tua...
@@ -689,14 +729,14 @@ export default function MasterMuridPage() {
             <div className="py-20 text-center text-rose-500 font-bold text-sm">
               Gagal memuat data murid.
             </div>
-          ) : (
-            <div className="space-y-8 pt-4">
-              {/* DIPALING ATAS: RINGKASAN PERSIS SEPERTI FORM/MODAL PPDB */}
+          ) : detailTab === 'tahap1' ? (
+            /* ────── TAHAP 1: DATA REGISTRASI & AKUN ────── */
+            <div className="space-y-6 pt-2">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* 1. DATA CALON/MURID AKTIF */}
                 <div className="space-y-4">
                   <h3 className="text-xs font-extrabold uppercase tracking-wider text-primary-green flex items-center gap-1.5">
-                    <UserCheck size={14} /> 1. Data Calon / Murid Aktif
+                    <UserCheck size={14} /> 1. Data Murid
                   </h3>
                   <div className="bg-[#F8F6F2] rounded-2xl p-5 space-y-3 border border-gray-100 text-xs">
                     <div className="grid grid-cols-3 gap-1">
@@ -738,14 +778,6 @@ export default function MasterMuridPage() {
                         {detailData.student?.classes_tk ? `${detailData.student.classes_tk.nama} (${detailData.student.classes_tk.tahun_ajaran})` : 'Belum ditentukan'}
                       </span>
                     </div>
-                    <div className="grid grid-cols-3 gap-1">
-                      <span className="text-gray-400 font-semibold">Keluarga:</span>
-                      <span className="col-span-2 font-bold text-primary-blue">
-                        {detailData.ppdb?.child_details?.anak_ke
-                          ? `Anak Ke-${detailData.ppdb.child_details.anak_ke} dari ${detailData.ppdb.child_details.jml_saudara || '0'} bersaudara`
-                          : '-'}
-                      </span>
-                    </div>
                     <div className="grid grid-cols-3 gap-1 pt-2 border-t border-gray-200/60">
                       <span className="text-gray-400 font-semibold">Alamat:</span>
                       <span className="col-span-2 font-semibold text-primary-blue leading-relaxed">
@@ -755,10 +787,10 @@ export default function MasterMuridPage() {
                   </div>
                 </div>
 
-                {/* 2. DATA ORANG TUA */}
+                {/* 2. DATA ORANG TUA & AKUN PORTAL */}
                 <div className="space-y-4">
                   <h3 className="text-xs font-extrabold uppercase tracking-wider text-primary-green flex items-center gap-1.5">
-                    <Users size={14} /> 2. Data Orang Tua
+                    <Users size={14} /> 2. Data Orang Tua &amp; Akun
                   </h3>
                   <div className="bg-[#F8F6F2] rounded-2xl p-5 space-y-4 border border-gray-100 text-xs">
                     {/* AYAH */}
@@ -793,7 +825,7 @@ export default function MasterMuridPage() {
 
                     {/* KONTAK & ALAMAT */}
                     <div className="space-y-2 pt-3 border-t border-gray-200/60">
-                      <div className="font-extrabold text-primary-blue flex items-center gap-1.5">📞 Kontak & Alamat</div>
+                      <div className="font-extrabold text-primary-blue flex items-center gap-1.5">📞 Kontak &amp; Alamat</div>
                       <div className="grid grid-cols-3 gap-1 items-center">
                         <span className="text-gray-400 font-semibold">No. HP / WA:</span>
                         <div className="col-span-2 flex items-center gap-2">
@@ -876,53 +908,28 @@ export default function MasterMuridPage() {
                     </div>
                   </div>
                 </div>
+              </div>
 
-                {/* 3. DOKUMEN LAMPIRAN (JIKA ADA DARI PPDB) */}
-                {detailData.documents && detailData.documents.length > 0 && (
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-primary-green flex items-center gap-1.5">
-                      <FileText size={14} /> 3. Dokumen Lampiran PPDB
-                    </h3>
-                    <div className="bg-[#F8F6F2] rounded-2xl p-5 space-y-2.5 border border-gray-100 text-xs">
-                      {detailData.documents.map((doc: any) => (
-                        <div key={doc.id} className="flex items-center justify-between p-3 bg-white rounded-xl border border-gray-100 shadow-sm hover:border-[#07A363]/30 transition-all">
-                          <div>
-                            <div className="font-bold text-primary-blue">{documentLabel(doc.type)}</div>
-                            <div className="text-[10px] text-gray-400 font-medium">Dokumen PPDB</div>
-                          </div>
-                          <a
-                            href={doc.file_url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-3 py-1.5 bg-[#07265F]/5 hover:bg-[#07265F]/10 text-primary-blue font-extrabold rounded-lg text-[10px] transition-colors"
-                          >
-                            Lihat Berkas
-                          </a>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 4. INFORMASI PEMBAYARAN PPDB (JIKA ADA) */}
-                {detailData.payment && (
-                  <div className="space-y-4">
-                    <h3 className="text-xs font-extrabold uppercase tracking-wider text-primary-green flex items-center gap-1.5">
-                      <CheckCircle2 size={14} /> 4. Riwayat Pembayaran PPDB
-                    </h3>
-                    <div className="bg-[#F8F6F2] rounded-2xl p-5 space-y-3 border border-gray-100 text-xs">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400 font-semibold">Metode Pembayaran:</span>
-                        <Badge className="bg-blue-50 text-blue-700 border-none font-bold rounded-full">{detailData.payment.method}</Badge>
+              {/* RIWAYAT PEMBAYARAN PPDB */}
+              {detailData.payment && (
+                <div className="space-y-3 pt-2 border-t border-gray-100">
+                  <h3 className="text-xs font-extrabold uppercase tracking-wider text-primary-green flex items-center gap-1.5">
+                    <CheckCircle2 size={14} /> 3. Riwayat Pembayaran Registrasi PPDB
+                  </h3>
+                  <div className="bg-[#F8F6F2] rounded-2xl p-5 space-y-3 border border-gray-100 text-xs">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div>
+                        <span className="text-gray-400 font-semibold block">Metode Pembayaran:</span>
+                        <Badge className="bg-blue-50 text-blue-700 border-none font-bold rounded-full mt-1">{detailData.payment.method}</Badge>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400 font-semibold">Jumlah Biaya:</span>
-                        <span className="font-bold text-primary-blue">Rp {parseFloat(String(detailData.payment.amount)).toLocaleString('id-ID')}</span>
+                      <div>
+                        <span className="text-gray-400 font-semibold block">Jumlah Biaya:</span>
+                        <span className="font-bold text-primary-blue mt-1 block">Rp {parseFloat(String(detailData.payment.amount)).toLocaleString('id-ID')}</span>
                       </div>
-                      <div className="flex justify-between">
-                        <span className="text-gray-400 font-semibold">Status Pembayaran:</span>
+                      <div>
+                        <span className="text-gray-400 font-semibold block">Status Pembayaran:</span>
                         <Badge className={cn(
-                          "border-none font-bold rounded-full",
+                          "border-none font-bold rounded-full mt-1",
                           detailData.payment.status === 'Verified' ? "bg-emerald-100 text-emerald-800" :
                           detailData.payment.status === 'Rejected' ? "bg-rose-100 text-rose-800" :
                           "bg-amber-100 text-amber-800"
@@ -931,40 +938,79 @@ export default function MasterMuridPage() {
                            detailData.payment.status === 'Rejected' ? 'Ditolak' : 'Menunggu Verifikasi'}
                         </Badge>
                       </div>
-                      {detailData.payment.proof && (
-                        <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between">
-                          <span className="text-gray-400 font-semibold">Bukti Transfer:</span>
-                          <a
-                            href={detailData.payment.proof}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="px-3.5 py-1.5 bg-[#07A363]/10 hover:bg-[#07A363]/25 text-[#07A363] font-extrabold rounded-lg text-[10px] transition-all"
-                          >
-                            Lihat Bukti Transfer
-                          </a>
-                        </div>
-                      )}
                     </div>
+                    {detailData.payment.proof && (
+                      <div className="pt-2 border-t border-gray-200/60 flex items-center justify-between">
+                        <span className="text-gray-400 font-semibold">Bukti Transfer:</span>
+                        <a
+                          href={detailData.payment.proof}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="px-3.5 py-1.5 bg-[#07A363]/10 hover:bg-[#07A363]/25 text-[#07A363] font-extrabold rounded-lg text-[10px] transition-all"
+                        >
+                          Lihat Bukti Transfer
+                        </a>
+                      </div>
+                    )}
                   </div>
-                )}
-              </div>
-
-              {/* FORMULIR PENDAFTARAN LENGKAP (SNAPSHOT ACCORDION JIKA TERHUBUNG PPDB) */}
-              {detailData.ppdb && (
-                <div className="space-y-4 border-t border-gray-100 pt-6">
+                </div>
+              )}
+            </div>
+          ) : (
+            /* ────── TAHAP 2: BIODATA LENGKAP PPDB (SPMB) ────── */
+            <div className="space-y-6 pt-2">
+              {detailData.ppdb ? (
+                <div className="space-y-4">
                   <div>
                     <h3 className="text-sm font-black text-primary-blue flex items-center gap-2">
                       <Sparkles size={16} className="text-primary-green" />
-                      Formulir Pendaftaran Lengkap (SPMB)
+                      Formulir Biodata Lengkap SPMB Tahap 2
                     </h3>
                     <p className="mt-1 text-[11px] font-medium text-gray-400">
-                      Snapshot jawaban lengkap dan data kesehatan yang dikirim orang tua/wali saat pendaftaran.
+                      Rincian lengkap data anak, identitas orang tua/wali, serta riwayat kesehatan yang disubmit via form SPMB.
                     </p>
                   </div>
-                  <SnapshotGroup title="A. Keterangan Anak" sections={CHILD_FORM_SECTIONS} data={detailData.ppdb.child_details} defaultOpen />
-                  <SnapshotGroup title="B. Identitas Ayah" sections={FATHER_FORM_SECTIONS} data={detailData.ppdb.father_details} />
-                  <SnapshotGroup title="B. Identitas Ibu" sections={MOTHER_FORM_SECTIONS} data={detailData.ppdb.mother_details} />
-                  <SnapshotGroup title="C. Perkembangan dan Kesehatan Anak" sections={HEALTH_FORM_SECTIONS} data={detailData.ppdb.development_health} />
+                  <SnapshotGroup title="A. Keterangan Lengkap Anak" sections={CHILD_FORM_SECTIONS} data={detailData.ppdb.child_details} defaultOpen />
+                  <SnapshotGroup title="B. Identitas Ayah Kandung" sections={FATHER_FORM_SECTIONS} data={detailData.ppdb.father_details} defaultOpen />
+                  <SnapshotGroup title="C. Identitas Ibu Kandung" sections={MOTHER_FORM_SECTIONS} data={detailData.ppdb.mother_details} defaultOpen />
+                  <SnapshotGroup title="D. Riwayat Perkembangan & Kesehatan Anak" sections={HEALTH_FORM_SECTIONS} data={detailData.ppdb.development_health} />
+
+                  {/* Dokumen Lampiran PPDB */}
+                  {detailData.documents && detailData.documents.length > 0 && (
+                    <div className="space-y-3 pt-2">
+                      <h4 className="text-xs font-extrabold uppercase tracking-wider text-primary-green flex items-center gap-1.5">
+                        <FileText size={14} /> Dokumen Lampiran Persyaratan PPDB
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        {detailData.documents.map((doc: any) => (
+                          <div key={doc.id} className="flex items-center justify-between p-3.5 bg-[#F8F6F2] rounded-2xl border border-gray-100 hover:border-[#07A363]/30 transition-all">
+                            <div>
+                              <div className="font-bold text-primary-blue text-xs">{documentLabel(doc.type)}</div>
+                              <div className="text-[10px] text-gray-400 font-medium">Berkas Terlampir</div>
+                            </div>
+                            <a
+                              href={doc.file_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              className="px-3 py-1.5 bg-white border border-gray-200 hover:bg-gray-50 text-primary-blue font-extrabold rounded-xl text-[10px] transition-colors shadow-2xs"
+                            >
+                              Lihat Berkas
+                            </a>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="py-14 text-center space-y-2 bg-[#F8F6F2] rounded-3xl border border-gray-100 p-8">
+                  <div className="w-12 h-12 bg-amber-100 text-amber-600 rounded-2xl mx-auto flex items-center justify-center">
+                    <FileText size={24} />
+                  </div>
+                  <h4 className="text-sm font-black text-primary-blue">Belum Ada Formulir Tahap 2</h4>
+                  <p className="text-xs text-gray-400 max-w-md mx-auto">
+                    Murid ini belum mengisi formulir pendaftaran lengkap tahap 2 (SPMB online) atau data diinput secara manual oleh admin.
+                  </p>
                 </div>
               )}
             </div>
