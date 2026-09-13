@@ -27,7 +27,7 @@ const CORE_PROGRAMS = [
     title: 'Islamic Learning',
     category: 'Nilai Agama & Ibadah Praktis',
     icon: BookOpen,
-    desc: 'Membimbing kecintaan anak terhadap Al-Qur\'an dan pembiasaan ibadah sejak usia dini.',
+    desc: 'Menanamkan nilai-nilai Islam dan kecintaan kepada Allah SWT melalui pembelajaran AlQur’an, ibadah, doa, dan pembiasaan sehari-hari',
     longDesc: 'Program Islamic Learning dirancang untuk menanamkan pondasi akidah dan ibadah praktis anak melalui pendekatan yang menyenangkan. Anak dibimbing melafalkan huruf hijaiyah berharakat menggunakan metode Tilawati berlagu Rost, menghafal surat-surat pendek dalam Juz 30, doa-doa harian, serta simulasi wudhu dan shalat berjamaah.',
     age: 'Usia 3 - 6 Tahun',
     target: 'Hafal 15 surat pendek Juz 30, 10 doa harian, tartil melafalkan Tilawati jilid dasar, dan terbiasa wudhu serta shalat.',
@@ -35,12 +35,12 @@ const CORE_PROGRAMS = [
     image: '/images/fasilitas/7.webp'
   },
   {
-    id: 'muslimic-character',
-    title: 'Muslimic Character Building',
+    id: 'moslem-character',
+    title: 'Moslem Character Building',
     category: 'Karakter & Budi Pekerti',
     icon: HeartHandshake,
-    desc: 'Menanamkan adab, kesopanan, kejujuran, dan empati sosial dalam keseharian.',
-    longDesc: 'Pendidikan karakter Islami berfokus pada pembiasaan sikap baik (akhlakul karimah). Melalui budaya 5S (Senyum, Salam, Sapa, Sopan, Santun), anak diajarkan bertutur kata santun (mengucap tolong, maaf, terima kasih), tertib mengantre, berbagi dengan teman, serta berpartisipasi dalam agenda sosial Jumat Berbagi.',
+    desc: 'Membangun karakter Islami melalui pembiasaan adab, akhlakul karimah, karakter SMART dan kepedulian terhadap sesama',
+    longDesc: 'Pendidikan karakter Islami berfokus pada pembiasaan adab dan akhlakul karimah. Melalui pembiasaan karakter SMART dan kepedulian sesama, anak diajarkan bertutur kata santun, tertib mengantre, berbagi dengan teman, serta berpartisipasi dalam agenda kepedulian sosial.',
     age: 'Usia 3 - 6 Tahun',
     target: 'Terbentuknya adab pergaulan islami, empati sosial, kemandirian emosi, dan kejujuran dalam berinteraksi.',
     activities: 'Jumat Berbagi (infaq cilik), bermain peran adab bertamu, lingkaran apresiasi kawan, dan pembiasaan antre tertib.',
@@ -49,10 +49,10 @@ const CORE_PROGRAMS = [
   {
     id: 'life-skill',
     title: 'Life Skill',
-    category: 'Kemandirian & Keterampilan Praktis',
+    category: 'Kemandirian & Keterampilan Hidup',
     icon: Sparkles,
-    desc: 'Melatih kemandirian fungsional sehari-hari dan tanggung jawab pribadi anak.',
-    longDesc: 'Kecakapan hidup (life skill) membekali anak dengan kemandirian merawat diri sendiri sesuai tahap usianya. Meliputi toilet training yang tuntas, mencuci tangan pakai sabun, memakai dan melepas sepatu sendiri, makan secara mandiri dengan adab makan Islami, serta merapikan mainan ke tempatnya.',
+    desc: 'Melatih kemandirian dan keterampilan hidup anak melalui aktivitas nyata sesuai usia dan tahap perkembangannya',
+    longDesc: 'Kecakapan hidup (life skill) melatih kemandirian dan keterampilan hidup anak melalui aktivitas nyata sesuai usia dan tahap perkembangannya. Meliputi toilet training yang tuntas, mencuci tangan pakai sabun, memakai dan melepas sepatu sendiri, makan secara mandiri dengan adab makan Islami, serta merapikan barang pribadi.',
     age: 'Usia 3 - 6 Tahun',
     target: 'Anak mandiri melakukan toilet training, makan sendiri dengan tertib, serta mampu merapikan barang pribadi.',
     activities: 'Praktik mencuci tangan 6 langkah, mengancing baju dan memakai sepatu, merapikan mainan mandiri, dan cooking class mini.',
@@ -60,16 +60,64 @@ const CORE_PROGRAMS = [
   },
   {
     id: 'stem-pbl',
-    title: 'Project Based Learning / STEM',
-    category: 'Sains, Teknologi & Eksplorasi Kreatif',
+    title: 'Project Based Learning & STEM',
+    category: 'Kreativitas & Eksplorasi Sains',
     icon: Atom,
-    desc: 'Merangsang rasa ingin tahu ilmiah, berpikir kritis, dan kreativitas bereksperimen.',
-    longDesc: 'Melalui pendekatan Project Based Learning dan STEM (Science, Technology, Engineering, Mathematics), anak-anak diajak mengeksplorasi fenomena alam di sekitar mereka. Mulai dari eksperimen pencampuran warna, mengenali sifat air dan udara, menghitung menggunakan balok sensorik, hingga merawat tanaman di kebun mini sekolah.',
+    desc: 'Mengembangkan rasa ingin tahu, kreativitas, kemampuan berpikir kritis dan pemecahan masalah melalui eksplorasi serta proyek sederhana yang menyenangkan',
+    longDesc: 'Melalui pendekatan Project Based Learning dan STEM, anak-anak mengembangkan rasa ingin tahu, kreativitas, kemampuan berpikir kritis dan pemecahan masalah melalui eksplorasi serta proyek sederhana yang menyenangkan.',
     age: 'Usia 4 - 6 Tahun',
     target: 'Kemampuan berpikir logis dasar, mengenal konsep angka dan pola alam, serta rasa takjub terhadap ciptaan Allah SWT.',
     activities: 'Eksperimen sains seru (gunung meletus mini, terapung-tenggelam), menanam benih sayur, dan proyek seni kriya ramah lingkungan.',
     image: '/images/fasilitas/6.webp'
   }
+]
+
+const FLAGSHIP_PROGRAMS = [
+  {
+    title: "Al-Qur'an Metode Tilawati",
+    desc: "Mengenalkan dan menumbuhkan kecintaan anak terhadap Al-Qur'an melalui pembelajaran yang menyenangkan dan sesuai tahap perkembangan.",
+    image: '/images/fasilitas/7.webp',
+  },
+  {
+    title: "Qur'an Camp",
+    desc: "Pengalaman belajar Islami yang memadukan kegiatan Al-Qur'an, ibadah, kemandirian, kebersamaan, dan aktivitas menyenangkan.",
+    image: '/images/fasilitas/11.webp',
+  },
+  {
+    title: "Outbound",
+    desc: "Aktivitas luar ruang yang melatih keberanian, kemandirian, kerja sama, serta kemampuan motorik anak melalui berbagai tantangan yang menyenangkan.",
+    image: '/images/gallery/7.jpg',
+  },
+  {
+    title: "Outing Class",
+    desc: "Menghadirkan pengalaman belajar langsung melalui eksplorasi lingkungan dan kunjungan edukatif yang sesuai dengan tema pembelajaran.",
+    image: '/images/activity_fieldtrip.png',
+  },
+  {
+    title: "Pentas Seni & Mini Asembly",
+    desc: "Wadah bagi anak untuk mengekspresikan diri, mengembangkan kreativitas, kepercayaan diri, serta keberanian tampil di depan publik.",
+    image: '/images/activity_artshow.png',
+  },
+  {
+    title: "Family Day",
+    desc: "Membangun kebersamaan dan kolaborasi sekolah dengan keluarga melalui pengalaman bermain dan belajar yang melibatkan anak bersama orang tua.",
+    image: '/images/fasilitas/1.webp',
+  },
+  {
+    title: "Takhosus",
+    desc: "Program pendampingan khusus Hapalan Al -Qur’an untuk mengoptimalkan capaian perkembangan dan kompetensi anak melalui kegiatan yang lebih terarah dan berkelanjutan.",
+    image: '/images/gallery/8.jpg',
+  },
+  {
+    title: "Wisuda Tahfidz",
+    desc: "Momen apresiasi atas perjalanan anak dalam menghafal Al-Qur'an sekaligus menumbuhkan rasa cinta dan bangga terhadap proses belajarnya.",
+    image: '/images/gallery/3.jpg',
+  },
+  {
+    title: "PPMB – Program Pengembangan Minat & Bakat",
+    desc: "Memberikan kesempatan kepada anak untuk mengenali, mengeksplorasi, dan mengembangkan minat serta potensi melalui berbagai pilihan kegiatan.",
+    image: '/images/fasilitas/12.webp',
+  },
 ]
 
 const EXTRACURRICULARS = [
@@ -127,9 +175,9 @@ export default function ProgramPage() {
         <div className="inline-flex items-center gap-2 bg-white/10 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider text-emerald-300 mb-3">
           <Sparkles size={14} /> Kurikulum Merdeka PAUD Terintegrasi
         </div>
-        <h1 className="text-3xl sm:text-4xl font-black mb-4 relative z-10">Program Unggulan</h1>
+        <h1 className="text-3xl sm:text-4xl font-black mb-4 relative z-10">Pendekatan Pembelajaran &amp; Program Unggulan</h1>
         <p className="text-sm sm:text-base font-medium max-w-2xl mx-auto opacity-95 relative z-10 leading-relaxed">
-          Kurikulum yang dirancang khusus untuk memenuhi kebutuhan motorik, kognitif, spiritual, dan sosial-emosional anak usia dini dalam balutan nilai-nilai Islami.
+          Beragam pengalaman belajar bermakna untuk menumbuhkan iman, karakter, kemandirian, kreativitas, dan potensi terbaik setiap anak.
         </p>
       </section>
 
@@ -205,6 +253,47 @@ export default function ProgramPage() {
             </div>
           )
         })}
+      </section>
+
+      {/* ─── 9 PROGRAM UNGGULAN (FLAGSHIP PROGRAMS) ─── */}
+      <section className="py-12 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
+        <div className="text-center mb-12 space-y-3">
+          <div className="inline-flex items-center gap-2 bg-[#07A363]/10 text-[#07A363] px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider">
+            <Award size={14} /> Pengalaman Belajar Bermakna
+          </div>
+          <h2 className="text-3xl sm:text-4xl font-black text-[#07265F]">Program Unggulan</h2>
+          <p className="text-sm text-gray-600 max-w-2xl mx-auto font-medium leading-relaxed">
+            Beragam pengalaman belajar bermakna untuk menumbuhkan iman, karakter, kemandirian, kreativitas, dan potensi terbaik setiap anak.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7">
+          {FLAGSHIP_PROGRAMS.map((item, idx) => (
+            <div
+              key={idx}
+              className="bg-white rounded-[28px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 flex flex-col group"
+            >
+              <div className="relative w-full aspect-[16/10] overflow-hidden bg-gray-100">
+                <Image
+                  src={item.image}
+                  alt={item.title}
+                  fill
+                  className="object-cover group-hover:scale-105 transition-transform duration-300"
+                />
+              </div>
+              <div className="p-5 sm:p-6 flex-1 flex flex-col justify-between">
+                <div>
+                  <h3 className="font-extrabold text-base sm:text-lg text-[#07265F] group-hover:text-[#07A363] transition-colors mb-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-xs sm:text-sm text-gray-600 font-medium leading-relaxed">
+                    {item.desc}
+                  </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* ─── SECTION KHUSUS EKSTRAKURIKULER (Point 11) ─── */}

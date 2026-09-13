@@ -35,45 +35,45 @@ const FEATURED_PROGRAMS = [
     layout: 'image-top' as const
   },
   {
-    title: "Outbound Ceria & Motorik",
-    desc: "Aktivitas luar ruangan yang melatih keberanian, kemandirian, kerja sama, serta kemampuan motorik anak melalui berbagai tantangan yang menyenangkan.",
-    image: '/images/fasilitas/5.webp',
+    title: "Outbound",
+    desc: "Aktivitas luar ruang yang melatih keberanian, kemandirian, kerja sama, serta kemampuan motorik anak melalui berbagai tantangan yang menyenangkan.",
+    image: '/images/gallery/7.jpg',
     layout: 'text-top' as const
   },
   {
-    title: "Calistung & Literasi Ceria",
-    desc: "Pondasi literasi membaca, menulis, dan berhitung melalui pendekatan bermain interaktif tanpa membebani anak.",
-    image: '/images/fasilitas/1.webp',
-    layout: 'image-top' as const
-  },
-  {
-    title: "Seni & Kreativitas Anak",
-    desc: "Mengeksplorasi bakat seni, melukis, kriya, dan pertunjukan islami untuk mengasah imajinasi serta rasa percaya diri.",
-    image: '/images/fasilitas/12.webp',
-    layout: 'text-top' as const
-  },
-  {
-    title: "Eksplorasi Sains & Lingkungan",
-    desc: "Mengenal keagungan ciptaan Allah melalui eksperimen sains sederhana, berkebun, dan pembiasaan peduli lingkungan.",
-    image: '/images/fasilitas/3.webp',
-    layout: 'image-top' as const
-  },
-  {
-    title: "Manasik Haji Cilik",
-    desc: "Simulasi ibadah haji sejak dini mengenalkan rukun Islam kelima, thawaf, sa'i, dan wukuf dengan penuh kekhusyukan dan sukacita.",
-    image: '/images/activity_haji.png',
-    layout: 'text-top' as const
-  },
-  {
-    title: "Field Trip & Edukasi Luar",
-    desc: "Kunjungan edukatif ke tempat bernilai sejarah, sains, dan alam untuk memperluas wawasan serta pengalaman nyata anak.",
+    title: "Outing Class",
+    desc: "Menghadirkan pengalaman belajar langsung melalui eksplorasi lingkungan dan kunjungan edukatif yang sesuai dengan tema pembelajaran.",
     image: '/images/activity_fieldtrip.png',
     layout: 'image-top' as const
   },
   {
-    title: "Jumat Berbagi & Kepedulian",
-    desc: "Melatih kebiasaan berinfaq dan empati sosial sejak dini dengan berbagi berkah makanan serta sedekah kepada sesama.",
-    image: '/images/activity_charity.png',
+    title: "Pentas Seni & Mini Asembly",
+    desc: "Wadah bagi anak untuk mengekspresikan diri, mengembangkan kreativitas, kepercayaan diri, serta keberanian tampil di depan publik.",
+    image: '/images/activity_artshow.png',
+    layout: 'text-top' as const
+  },
+  {
+    title: "Family Day",
+    desc: "Membangun kebersamaan dan kolaborasi sekolah dengan keluarga melalui pengalaman bermain dan belajar yang melibatkan anak bersama orang tua.",
+    image: '/images/fasilitas/1.webp',
+    layout: 'image-top' as const
+  },
+  {
+    title: "Takhosus",
+    desc: "Program pendampingan khusus Hapalan Al -Qur’an untuk mengoptimalkan capaian perkembangan dan kompetensi anak melalui kegiatan yang lebih terarah dan berkelanjutan.",
+    image: '/images/gallery/8.jpg',
+    layout: 'text-top' as const
+  },
+  {
+    title: "Wisuda Tahfidz",
+    desc: "Momen apresiasi atas perjalanan anak dalam menghafal Al-Qur'an sekaligus menumbuhkan rasa cinta dan bangga terhadap proses belajarnya.",
+    image: '/images/gallery/3.jpg',
+    layout: 'image-top' as const
+  },
+  {
+    title: "PPMB – Program Pengembangan Minat & Bakat",
+    desc: "Memberikan kesempatan kepada anak untuk mengenali, mengeksplorasi, dan mengembangkan minat serta potensi melalui berbagai pilihan kegiatan.",
+    image: '/images/fasilitas/12.webp',
     layout: 'text-top' as const
   }
 ]
@@ -87,43 +87,62 @@ const FALLBACK_GALLERY = [
 
 const DEVELOPMENT_PILLARS = [
   {
-    id: 'kreativitas',
-    title: 'Kreativitas & Eksplorasi',
-    shortTitle: 'Kreativitas',
-    desc: 'Memberikan kesempatan anak untuk bereksperimen, berkarya, berimajinasi, dan menemukan berbagai cara dalam menyelesaikan tantangan.',
-    image: '/images/perkembangan_anak/2.png',
+    id: 'agama-akhlak',
+    title: 'Nilai Agama & Akhlak',
+    shortTitle: 'Nilai Agama & Akhlak',
+    desc: 'Menumbuhkan kecintaan kepada Allah, pembiasaan ibadah, adab, serta perilaku terpuji dalam keseharian.',
+    image: '/images/perkembangan_anak/5.png',
   },
   {
-    id: 'sosial',
-    title: 'Sosial & Emosional',
-    shortTitle: 'Sosial',
-    desc: 'Membangun rasa empati, kemampuan bersosialisasi, kerja sama, dan kecerdasan emosional dalam kebersamaan yang hangat.',
+    id: 'karakter-sosial',
+    title: 'Karakter & Sosial Emosional',
+    shortTitle: 'Karakter & Sosial Emosional',
+    desc: 'Mengembangkan percaya diri, tanggung jawab, empati, kemampuan bekerja sama, serta mengelola emosi secara bertahap.',
     image: '/images/perkembangan_anak/1.png',
   },
   {
-    id: 'motorik',
-    title: 'Fisik & Motorik',
-    shortTitle: 'Fisik & Motorik',
-    desc: 'Mengoptimalkan pertumbuhan motorik kasar dan halus anak melalui aktivitas gerak fisik, olahraga terarah, dan permainan aktif.',
-    image: '/images/perkembangan_anak/3.png',
+    id: 'kemandirian-lifeskill',
+    title: 'Kemandirian & Life Skill',
+    shortTitle: 'Kemandirian & Life Skill',
+    desc: 'Membiasakan anak melakukan aktivitas sehari-hari secara mandiri, menjaga diri dan lingkungan, serta bertanggung jawab terhadap kebutuhan pribadinya.',
+    image: '/images/perkembangan_anak/Mask group-1.png',
   },
   {
-    id: 'kemandirian',
-    title: 'Kemandirian & Kebiasaan',
-    shortTitle: 'Kemandirian',
-    desc: 'Melatih kemandirian sejak dini, menjaga kebersihan diri, kerapian, serta tanggung jawab dalam setiap rutinitas sehari-hari.',
+    id: 'literasi-kognitif',
+    title: 'Literasi, Numerasi & Kognitif',
+    shortTitle: 'Literasi, Numerasi & Kognitif',
+    desc: 'Mengembangkan kemampuan berbahasa, kecintaan terhadap buku, konsep matematika awal, rasa ingin tahu, berpikir logis, dan kemampuan memecahkan masalah.',
     image: '/images/perkembangan_anak/4.png',
   },
   {
-    id: 'ibadah',
-    title: 'Ibadah & Nilai Agama',
-    shortTitle: 'Ibadah & Nilai Agama',
-    desc: 'Membimbing pembiasaan sholat, hafalan doa harian, adab Islami, dan akhlak mulia dalam keseharian anak.',
-    image: '/images/perkembangan_anak/5.png',
+    id: 'fisik-motorik',
+    title: 'Fisik & Motorik',
+    shortTitle: 'Fisik & Motorik',
+    desc: 'Mengembangkan gross motor dan fine motor melalui aktivitas gerak, permainan, olahraga sederhana, serta kegiatan manipulatif dan kreativitas.',
+    image: '/images/perkembangan_anak/3.png',
+  },
+  {
+    id: 'kreativitas-eksplorasi',
+    title: 'Kreativitas & Eksplorasi',
+    shortTitle: 'Kreativitas & Eksplorasi',
+    desc: 'Memberikan kesempatan anak untuk bereksperimen, berkarya, berimajinasi, dan menemukan berbagai cara dalam menyelesaikan tantangan.',
+    image: '/images/perkembangan_anak/2.png',
   },
 ]
 
 const LEARNING_APPROACHES = [
+  {
+    id: 'islamic-learning',
+    title: 'Islamic Learning',
+    desc: 'Menanamkan nilai-nilai Islam dan kecintaan kepada Allah SWT melalui pembelajaran AlQur’an, ibadah, doa, dan pembiasaan sehari-hari',
+    iconType: 'quran'
+  },
+  {
+    id: 'character-building',
+    title: 'Moslem Character Building',
+    desc: 'Membangun karakter Islami melalui pembiasaan adab, akhlakul karimah, karakter SMART dan kepedulian terhadap sesama',
+    iconType: 'character'
+  },
   {
     id: 'life-skill',
     title: 'Life Skill',
@@ -135,18 +154,6 @@ const LEARNING_APPROACHES = [
     title: 'Project Based Learning & STEM',
     desc: 'Mengembangkan rasa ingin tahu, kreativitas, kemampuan berpikir kritis dan pemecahan masalah melalui eksplorasi serta proyek sederhana yang menyenangkan',
     iconType: 'science'
-  },
-  {
-    id: 'islamic-learning',
-    title: 'Islamic Learning',
-    desc: 'Menanamkan nilai-nilai Islam dan kecintaan kepada Allah SWT melalui pembelajaran Al-Qur\'an, ibadah, doa, dan pembiasaan sehari-hari',
-    iconType: 'quran'
-  },
-  {
-    id: 'character-building',
-    title: 'Moslem Character Building',
-    desc: 'Membangun karakter Islami melalui pembiasaan adab, akhlakul karimah, karakter SMART dan kepedulian terhadap sesama',
-    iconType: 'character'
   }
 ]
 
@@ -237,24 +244,40 @@ const TESTIMONIALS_DATA = [
 
 const FAQ_ITEMS = [
   {
-    q: 'Berapa usia anak yang dapat mendaftar di KB & TK Istiqamah?',
-    a: 'Kelompok Bermain (KB) melayani usia 2 - 4 tahun, sedangkan Taman Kanak-kanak (TK) melayani usia 4 - 6 tahun per bulan Juli pada tahun ajaran baru.',
+    q: 'Berapa usia minimal masuk KB/TK?',
+    a: '• Usia KB: 2,5 - 3,11 tahun\n• Usia TK: 4 - 6 tahun',
   },
   {
-    q: 'Bagaimana alur proses pendaftarannya?',
-    a: 'Pendaftaran dapat dilakukan secara online melalui website ini pada menu PPDB (beli formulir, transfer pembayaran, lalu isi biodata lengkap online), atau dapat langsung hadir ke sekretariat SPMB KB & TK Istiqamah Bandung.',
+    q: 'Bagaimana rasio guru dan anak?',
+    a: '• KB: 15 siswa ; 2 guru\n• TK: 20 siswa ; 2 guru',
   },
   {
-    q: 'Apa saja berkas persyaratan pendaftaran?',
-    a: 'Syarat administrasi meliputi: fotokopi / scan Akta Kelahiran anak, fotokopi / scan Kartu Keluarga (KK), fotokopi / scan KTP kedua orang tua, serta pas foto calon peserta didik.',
+    q: 'Jam sekolah mulai dan selesai pukul berapa?',
+    a: 'Jam pembelajaran disesuaikan dengan kelompok usia:\n• KB: Senin - Jumat 07.30 - 10.00 WIB\n• TK A: 07.30 - 11.30 WIB (Senin, Selasa, Kamis) | 07.30 - 11.00 WIB (Rabu) | 07.30 - 10.00 WIB (Jumat)\n• TK B: 07.30 - 12.30 WIB (Senin, Selasa, Kamis) | 07.30 - 11.00 WIB (Rabu) | 07.30 - 10.00 WIB (Jumat)',
   },
   {
-    q: 'Berapa rincian biaya pendidikan di TK Istiqamah?',
-    a: 'Biaya pembelian formulir pendaftaran adalah Rp 500.000. Untuk rincian biaya dana pengembangan, perlengkapan seragam, dan SPP bulanan dapat dilihat pada saat pendaftaran atau langsung menghubungi WhatsApp kami.',
+    q: "Bagaimana pembelajaran Al-Qur'annya?",
+    a: 'Pembelajaran Al-Qur’an menggunakan Metode Tilawati, yang dilakukan secara bertahap dan menyenangkan sesuai usia serta kemampuan anak, untuk membangun kemampuan membaca Al-Qur’an sekaligus menumbuhkan kecintaan terhadap Al-Qur’an sejak dini.',
   },
   {
-    q: 'Kapan tahun ajaran baru dimulai?',
-    a: 'Tahun ajaran baru dimulai pada pertengahan bulan Juli setiap tahunnya, diawali dengan Masa Pengenalan Lingkungan Sekolah (MPLS) yang ramah anak, edukatif, dan menyenangkan.',
+    q: 'Bagaimana jika anak masih sulit berpisah dengan orang tua?',
+    a: 'Tidak perlu khawatir. Setiap anak memiliki proses adaptasi yang berbeda. Pada masa awal sekolah, orang tua masih diperkenankan mendampingi/menunggu anak maksimal selama 1 minggu. Selanjutnya, guru akan membantu proses transisi secara bertahap agar anak merasa aman, nyaman, dan semakin percaya diri untuk mengikuti kegiatan secara mandiri.',
+  },
+  {
+    q: 'Apakah sekolah menerima anak yang inklusi?',
+    a: 'Ya. KB–TK Istiqamah terbuka menerima anak dengan kebutuhan dukungan ringan, dengan mempertimbangkan kebutuhan individual anak serta kesiapan sekolah dalam memberikan pendampingan. Sebelum penerimaan, sekolah akan melakukan observasi dan diskusi bersama orang tua untuk memastikan lingkungan dan layanan pembelajaran yang tersedia sesuai dengan kebutuhan anak.',
+  },
+  {
+    q: 'Bagaimana perkembangan anak dilaporkan kepada orang tua?',
+    a: 'Ya. Perkembangan anak dilaporkan kepada orang tua secara berkala dua kali dalam setiap semester, sebagai bentuk komunikasi dan kolaborasi antara sekolah dan keluarga dalam mendampingi tumbuh kembang anak.',
+  },
+  {
+    q: 'Apakah tersedia trial class?',
+    a: 'Ya. KB–TK Istiqamah menyediakan Trial Class pada jadwal tertentu. Informasi mengenai waktu pelaksanaan dan pendaftaran akan diumumkan melalui media sosial resmi KB–TK Istiqamah.',
+  },
+  {
+    q: 'Apakah orang tua dapat melakukan school tour?',
+    a: 'Ya. Orang tua dapat melakukan School Tour KB–TK Istiqamah pada jam operasional Senin - Jumat, pukul 09.00 - 14.00 WIB. Untuk kunjungan pada hari atau waktu tertentu, School Tour dapat dilakukan dengan membuat perjanjian terlebih dahulu dengan pihak sekolah.',
   },
 ]
 
@@ -1053,13 +1076,16 @@ export default function HomePage() {
           {/* Header */}
           <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8">
             <h2 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-[#1B3B6F] tracking-tight">
-              Pertanyaan yang Sering Diajukan
+              FAQ Orang Tua
             </h2>
+            <p className="mt-1.5 text-xs sm:text-sm text-[#4A607A] font-medium leading-relaxed">
+              Pertanyaan yang sering diajukan seputar kegiatan, kurikulum, dan pendaftaran KB &amp; TK Istiqamah
+            </p>
           </div>
 
           {/* 2-Column FAQ Layout with Bottom-Aligned Map */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-stretch">
-            {/* Left Column: 5 Accordion Questions */}
+            {/* Left Column: Accordion Questions */}
             <div className="lg:col-span-7 flex flex-col gap-2.5 sm:gap-3">
               {FAQ_ITEMS.map((item, idx) => {
                 const isOpen = openFaq === idx
@@ -1089,7 +1115,7 @@ export default function HomePage() {
                       }`}
                     >
                       <div className="overflow-hidden">
-                        <p className="px-3.5 pb-3.5 sm:px-4 sm:pb-4 text-xs sm:text-[13px] text-[#4A607A] leading-relaxed font-medium">
+                        <p className="px-3.5 pb-3.5 sm:px-4 sm:pb-4 text-xs sm:text-[13px] text-[#4A607A] leading-relaxed font-medium whitespace-pre-line">
                           {item.a}
                         </p>
                       </div>
@@ -1102,7 +1128,7 @@ export default function HomePage() {
             {/* Right Column: Contact Card & Map Location Aligned Flush at Bottom */}
             <div className="lg:col-span-5 flex flex-col justify-between gap-3.5 sm:gap-4 h-full">
               {/* Card 1: Masih ada Pertanyaan? */}
-              <div className="border border-[#48A97A]/40 rounded-2xl bg-[#F5FBF8] p-4 sm:p-5 shadow-sm flex items-center gap-4">
+              <div className="border border-[#48A97A]/40 rounded-2xl bg-[#F5FBF8] p-4 sm:p-5 shadow-sm flex items-center gap-4 flex-shrink-0">
                 <div className="relative w-20 h-28 sm:w-24 sm:h-32 flex-shrink-0">
                   <Image
                     src="/images/faq_girl.png"
@@ -1134,12 +1160,12 @@ export default function HomePage() {
                 href="https://maps.google.com/?q=KB+TK+Istiqamah+Bandung+Jl+Taman+Citarum"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex-1 min-h-[130px] sm:min-h-[150px] border border-[#48A97A]/40 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-all group relative block"
+                className="flex-1 min-h-[160px] sm:min-h-[180px] border border-[#48A97A]/40 rounded-2xl overflow-hidden bg-white shadow-sm hover:shadow-md transition-all group relative block"
                 title="Buka Lokasi di Google Maps"
               >
                 {/* Visual Map graphic background */}
                 <div className="absolute inset-0 bg-[#E8F0F8] flex items-center justify-center">
-                  <svg className="w-full h-full opacity-60" viewBox="0 0 400 150" fill="none">
+                  <svg className="w-full h-full opacity-60" viewBox="0 0 400 150" preserveAspectRatio="xMidYMid slice" fill="none">
                     <path d="M-20 40 Q80 30 180 60 T380 40" stroke="#CBDCEE" strokeWidth="18" fill="none" />
                     <path d="M120 -10 L140 160" stroke="#CBDCEE" strokeWidth="14" fill="none" />
                     <path d="M260 -10 L240 160" stroke="#CBDCEE" strokeWidth="12" fill="none" />

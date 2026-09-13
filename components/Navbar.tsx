@@ -44,7 +44,7 @@ export default function Navbar() {
           {(!isHome || scrolled) && (
             <Link
               href="/"
-              className="flex items-center gap-2.5 transition-all duration-300 flex-shrink-0 mr-4"
+              className="hidden md:flex items-center gap-2.5 transition-all duration-300 flex-shrink-0 mr-4"
             >
               <div className="relative w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0">
                 <Image src="/images/hero_gsap/logo.png" alt="Logo KB & TK Istiqamah" fill className="object-contain" />
