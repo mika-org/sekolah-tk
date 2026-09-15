@@ -453,9 +453,9 @@ export default function HomePage() {
             "@context": "https://schema.org",
             "@type": "School",
             "name": "KB & TK Istiqamah Bandung",
-            "url": "https://tkistiqamah.sch.id",
-            "logo": "https://tkistiqamah.sch.id/images/school_logo.png",
-            "image": "https://tkistiqamah.sch.id/images/hero_bg_2x.png",
+            "url": "https://tkistiqamah.com",
+            "logo": "https://tkistiqamah.com/images/school_logo.png",
+            "image": "https://tkistiqamah.com/images/hero_bg_2x.png",
             "description": "Website Resmi KB & TK Istiqamah Bandung. Mengembangkan potensi buah hati melalui bermain kreatif, pengenalan akhlak mulia sejak dini, dan kurikulum Islami terarah.",
             "address": {
               "@type": "PostalAddress",
@@ -466,7 +466,7 @@ export default function HomePage() {
               "addressCountry": "ID"
             },
             "telephone": "022-4241799",
-            "email": "info@tkistiqamah.sch.id",
+            "email": "info@tkistiqamah.com",
             "sameAs": [
               "https://www.instagram.com/kbtkistiqamah",
               "https://www.facebook.com/TK-Istiqamah-Bandung"
@@ -560,7 +560,7 @@ export default function HomePage() {
                     {item.iconType === 'lifeskill' && (
                       <svg viewBox="0 0 40 40" fill="none" stroke="#1B3B6F" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="w-8 h-8 sm:w-10 sm:h-10">
                         <path d="M19 14.5C17.5 12.5 14.5 12.5 13 14C11.5 15.5 11.5 18.5 13.5 20.5L19 26L24.5 20.5C26.5 18.5 26.5 15.5 25 14C23.5 12.5 20.5 12.5 19 14.5Z" />
-                        <ellipse cx="23" cy="20" rx="5.5" ry="7" transform="rotate(30 23 20)" stroke="#1B3B6F" strokeWidth="2" fill="none"/>
+                        <ellipse cx="23" cy="20" rx="5.5" ry="7" transform="rotate(30 23 20)" stroke="#1B3B6F" strokeWidth="2" fill="none" />
                       </svg>
                     )}
                     {item.iconType === 'science' && (
@@ -574,17 +574,17 @@ export default function HomePage() {
                     )}
                     {item.iconType === 'quran' && (
                       <svg viewBox="0 0 40 40" fill="currentColor" className="w-8 h-8 sm:w-10 sm:h-10 text-[#1B3B6F]">
-                        <rect x="8" y="8" width="24" height="24" rx="4" fill="#1B3B6F"/>
-                        <rect x="11" y="27" width="18" height="3" rx="1.5" fill="#DCE8FA"/>
-                        <path d="M21.5 14C19.5 14 18 15.5 18 17.5C18 19.5 19.5 21 21.5 21C22.2 21 22.8 20.8 23.3 20.5C22.5 21.2 21.5 21.7 20.3 21.7C17.9 21.7 16 19.8 16 17.4C16 15 17.9 13.1 20.3 13.1C20.7 13.1 21.1 13.2 21.5 13.3V14Z" fill="#FFFFFF"/>
-                        <polygon points="22.5,16.5 23.2,17.7 24.5,17.8 23.5,18.7 23.8,20 22.5,19.3 21.2,20 21.5,18.7 20.5,17.8 21.8,17.7" fill="#FFFFFF"/>
+                        <rect x="8" y="8" width="24" height="24" rx="4" fill="#1B3B6F" />
+                        <rect x="11" y="27" width="18" height="3" rx="1.5" fill="#DCE8FA" />
+                        <path d="M21.5 14C19.5 14 18 15.5 18 17.5C18 19.5 19.5 21 21.5 21C22.2 21 22.8 20.8 23.3 20.5C22.5 21.2 21.5 21.7 20.3 21.7C17.9 21.7 16 19.8 16 17.4C16 15 17.9 13.1 20.3 13.1C20.7 13.1 21.1 13.2 21.5 13.3V14Z" fill="#FFFFFF" />
+                        <polygon points="22.5,16.5 23.2,17.7 24.5,17.8 23.5,18.7 23.8,20 22.5,19.3 21.2,20 21.5,18.7 20.5,17.8 21.8,17.7" fill="#FFFFFF" />
                       </svg>
                     )}
                     {item.iconType === 'character' && (
                       <svg viewBox="0 0 40 40" fill="currentColor" className="w-8 h-8 sm:w-10 sm:h-10 text-[#1B3B6F]">
-                        <path d="M20 9C15.5 9 13 12.5 13 17C13 22 14.5 27 15.5 30H24.5C25.5 27 27 22 27 17C27 12.5 24.5 9 20 9Z" fill="#1B3B6F"/>
-                        <ellipse cx="20" cy="18" rx="4.5" ry="5.5" fill="#DCE8FA"/>
-                        <path d="M20 15L21 17.5H23.5L21.5 19L22.2 21.5L20 20L17.8 21.5L18.5 19L16.5 17.5H19L20 15Z" fill="#1B3B6F"/>
+                        <path d="M20 9C15.5 9 13 12.5 13 17C13 22 14.5 27 15.5 30H24.5C25.5 27 27 22 27 17C27 12.5 24.5 9 20 9Z" fill="#1B3B6F" />
+                        <ellipse cx="20" cy="18" rx="4.5" ry="5.5" fill="#DCE8FA" />
+                        <path d="M20 15L21 17.5H23.5L21.5 19L22.2 21.5L20 20L17.8 21.5L18.5 19L16.5 17.5H19L20 15Z" fill="#1B3B6F" />
                       </svg>
                     )}
                   </div>
@@ -652,11 +652,10 @@ export default function HomePage() {
                         type="button"
                         onClick={() => setActivePillar(idx)}
                         aria-label={`Pilar: ${pillar.title}`}
-                        className={`relative w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl p-2 sm:p-2.5 cursor-pointer transition-all duration-300 shadow-md ${
-                          isActive
-                            ? 'bg-white ring-4 ring-amber-300 scale-110 opacity-100 shadow-xl'
-                            : 'bg-white/90 hover:bg-white hover:scale-105 opacity-80 hover:opacity-100'
-                        }`}
+                        className={`relative w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-2xl p-2 sm:p-2.5 cursor-pointer transition-all duration-300 shadow-md ${isActive
+                          ? 'bg-white ring-4 ring-amber-300 scale-110 opacity-100 shadow-xl'
+                          : 'bg-white/90 hover:bg-white hover:scale-105 opacity-80 hover:opacity-100'
+                          }`}
                       >
                         <div className="relative w-full h-full">
                           <Image
@@ -771,11 +770,10 @@ export default function HomePage() {
                       }
                     }}
                     aria-label={`Program ${idx + 1}${isActive ? ' (Klik untuk ke program selanjutnya)' : ''}`}
-                    className={`transition-all duration-300 rounded-full cursor-pointer ${
-                      isActive
-                        ? 'w-6 sm:w-7 h-2 bg-[#1B3B6F] shadow-sm'
-                        : 'w-2 h-2 bg-[#1B3B6F]/30 hover:bg-[#1B3B6F]/70'
-                    }`}
+                    className={`transition-all duration-300 rounded-full cursor-pointer ${isActive
+                      ? 'w-6 sm:w-7 h-2 bg-[#1B3B6F] shadow-sm'
+                      : 'w-2 h-2 bg-[#1B3B6F]/30 hover:bg-[#1B3B6F]/70'
+                      }`}
                   />
                 )
               })}
@@ -886,11 +884,10 @@ export default function HomePage() {
                       type="button"
                       onClick={() => scrollToFacility(idx)}
                       aria-label={`Fasilitas ${idx + 1}`}
-                      className={`transition-all duration-300 rounded-full cursor-pointer ${
-                        isActive
-                          ? 'w-6 sm:w-7 h-2 bg-[#F5B744] shadow-sm'
-                          : 'w-2 h-2 bg-white/40 hover:bg-white/70'
-                      }`}
+                      className={`transition-all duration-300 rounded-full cursor-pointer ${isActive
+                        ? 'w-6 sm:w-7 h-2 bg-[#F5B744] shadow-sm'
+                        : 'w-2 h-2 bg-white/40 hover:bg-white/70'
+                        }`}
                     />
                   )
                 })}
@@ -1104,15 +1101,13 @@ export default function HomePage() {
                       </span>
                       <ChevronDown
                         size={18}
-                        className={`text-[#0B7347] transition-transform duration-300 flex-shrink-0 ml-2 ${
-                          isOpen ? 'rotate-180' : ''
-                        }`}
+                        className={`text-[#0B7347] transition-transform duration-300 flex-shrink-0 ml-2 ${isOpen ? 'rotate-180' : ''
+                          }`}
                       />
                     </button>
                     <div
-                      className={`grid transition-all duration-300 ease-in-out ${
-                        isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
-                      }`}
+                      className={`grid transition-all duration-300 ease-in-out ${isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+                        }`}
                     >
                       <div className="overflow-hidden">
                         <p className="px-3.5 pb-3.5 sm:px-4 sm:pb-4 text-xs sm:text-[13px] text-[#4A607A] leading-relaxed font-medium whitespace-pre-line">
