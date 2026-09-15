@@ -116,7 +116,7 @@ export default function GsapHeroBanner() {
 
       {/* ── BACKGROUND ROLLING HILLS ── */}
       <div ref={backHillRef} className="absolute pointer-events-none"
-        style={{ bottom: '-2%', width: '61%', aspectRatio: '844/317', zIndex: 10 }}>
+        style={{ bottom: '-2%', width: '61%', aspectRatio: '844/317', zIndex: 8 }}>
         <Image src="/images/hero_gsap_v2/rumput belakang.png" alt="Bukit Belakang" fill className="object-contain object-bottom-right" />
       </div>
 
@@ -134,11 +134,24 @@ export default function GsapHeroBanner() {
 
       {/* ── GROUND BACKDROP FILL ── */}
       <div className="absolute inset-x-0 bottom-0 pointer-events-none"
-        style={{ height: '16%', background: '#92bd64', zIndex: 9 }} />
+        style={{ height: '16%', background: '#92bd64', zIndex: 7 }} />
+
+      {/* ── SWING (DI ANTARA BUKIT: In front of back hill, behind main hill) ── */}
+      <div
+        ref={swingRef}
+        className="absolute pointer-events-none aspect-[248/174]
+          bottom-[14%] left-[23%] w-[14%]
+          sm:bottom-[16%] sm:left-[25%] sm:w-[13%]
+          md:bottom-[18.5%] md:left-[26%] md:w-[12%]
+          lg:bottom-[19.5%] lg:left-[26.5%] lg:w-[11.5%]"
+        style={{ zIndex: 10 }}
+      >
+        <Image src="/images/hero_gsap_v2/ayunan.png" alt="Ayunan" fill className="object-contain object-bottom" />
+      </div>
 
       {/* ── MAIN HILL (Group 68) ── */}
       <div ref={mainHillRef} className="absolute pointer-events-none"
-        style={{ bottom: 0, left: '4%', right: 0, height: '48%', zIndex: 10 }}>
+        style={{ bottom: 0, left: '4%', right: 0, height: '48%', zIndex: 12 }}>
         <Image src="/images/hero_gsap_v2/Group 68.png" alt="Lapangan" fill className="object-fill object-bottom" priority />
       </div>
 
@@ -146,17 +159,6 @@ export default function GsapHeroBanner() {
       <div ref={leftPlayRef} className="absolute pointer-events-none"
         style={{ bottom: '20%', left: '0%', width: '22%', aspectRatio: '412/251', zIndex: 15 }}>
         <Image src="/images/hero_gsap_v2/playgorund.png" alt="Playground" fill className="object-contain object-bottom" />
-      </div>
-
-      {/* ── SWING ── */}
-      <div
-        ref={swingRef}
-        className="absolute pointer-events-none z-9 aspect-[248/174]
-          bottom-[12%] left-[25%] w-[13%]
-          sm:bottom-[15%] sm:left-[26%] sm:w-[13%]
-          md:bottom-[22%] md:left-[27%] md:w-[13%]"
-      >
-        <Image src="/images/hero_gsap_v2/ayunan.png" alt="Ayunan" fill className="object-contain object-bottom" />
       </div>
 
       {/* ── RIGHT TOWER ── */}
