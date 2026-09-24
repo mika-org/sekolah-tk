@@ -62,100 +62,53 @@ export type PAUDSemester = 'Semester 1' | 'Semester 2'
 export interface LearningObjectiveTP {
   id: string // e.g. TP-01, TP-JD-01
   code: string
-  element: 'Capaian Pembelajaran' | 'Jati Diri'
+  element: 'Nilai Agama dan Budi Pekerti' | 'Jati Diri' | 'Dasar Literasi & STEAM' | 'Capaian Pembelajaran'
   category: string
   tp: string
   indicator: string
 }
 
-// 10 TP Capaian Pembelajaran & 8 TP Jati Diri (Point 15 & 16)
-export const PAUD_CP_GENERAL_10: LearningObjectiveTP[] = [
+// ─── ELEMEN 1: NILAI AGAMA DAN BUDI PEKERTI ───
+export const PAUD_CP_NABP_4: LearningObjectiveTP[] = [
   {
     id: 'TP-01',
-    code: 'TP 1',
-    element: 'Capaian Pembelajaran',
-    category: 'Nilai Agama dan Moral',
+    code: 'TP 1.1',
+    element: 'Nilai Agama dan Budi Pekerti',
+    category: 'Akidah & Ciptaan Allah',
     tp: 'Mengenal dan mengimani Allah SWT serta menyayangi ciptaan-Nya',
     indicator: 'Mampu melafalkan dua kalimat syahadat, kalimat thayyibah (Basmalah & Hamdalah), serta menyebutkan ciptaan Allah (alam, hewan, tanaman, manusia).',
   },
   {
     id: 'TP-02',
-    code: 'TP 2',
-    element: 'Capaian Pembelajaran',
-    category: 'Ibadah Praktis',
+    code: 'TP 1.2',
+    element: 'Nilai Agama dan Budi Pekerti',
+    category: 'Ibadah Praktis & Thaharah',
     tp: 'Mempraktikkan tata cara bersuci (wudhu) dan gerakan shalat harian',
     indicator: 'Mampu menirukan urutan gerakan wudhu secara berurutan dan tertib mengikuti shalat berjamaah.',
   },
   {
     id: 'TP-03',
-    code: 'TP 3',
-    element: 'Capaian Pembelajaran',
-    category: 'Al-Qur\'an & Doa',
+    code: 'TP 1.3',
+    element: 'Nilai Agama dan Budi Pekerti',
+    category: "Al-Qur'an & Doa Harian",
     tp: 'Mengenal huruf hijaiyah berharakat dan melafalkan doa praktis harian',
     indicator: 'Mampu melafalkan huruf hijaiyah metode Tilawati dasar dengan lagu Rost serta hafal minimal 5 doa harian pendek.',
   },
   {
     id: 'TP-04',
-    code: 'TP 4',
-    element: 'Capaian Pembelajaran',
+    code: 'TP 1.4',
+    element: 'Nilai Agama dan Budi Pekerti',
     category: 'Akhlak & Adab Islami',
     tp: 'Membiasakan adab dan perilaku mulia dalam kehidupan sehari-hari',
     indicator: 'Terbiasa mengucap salam saat datang, berdoa sebelum & sesudah makan, serta bertutur kata sopan kepada guru dan kawan.',
   },
-  {
-    id: 'TP-05',
-    code: 'TP 5',
-    element: 'Capaian Pembelajaran',
-    category: 'Fisik & Motorik Kasar',
-    tp: 'Menunjukkan kemampuan motorik kasar dan koordinasi keseimbangan tubuh',
-    indicator: 'Mampu melompat dengan tumpuan seimbang, berlari lincah, menendang serta melempar-menangkap bola dengan terarah.',
-  },
-  {
-    id: 'TP-06',
-    code: 'TP 6',
-    element: 'Capaian Pembelajaran',
-    category: 'Fisik & Motorik Halus',
-    tp: 'Menunjukkan kelenturan motorik halus dan koordinasi mata-tangan',
-    indicator: 'Mampu memegang alat tulis/krayon dengan benar (tripod grip), menggunting mengikuti garis, dan meronce manik-manik.',
-  },
-  {
-    id: 'TP-07',
-    code: 'TP 7',
-    element: 'Capaian Pembelajaran',
-    category: 'Bahasa & Literasi Dini',
-    tp: 'Mampu menyimak, memahami instruksi guru, dan mengekspresikan ide secara lisan',
-    indicator: 'Mampu menceritakan kembali kisah/dongeng pendek, menjawab pertanyaan sederhana, dan mengenali simbol abjad.',
-  },
-  {
-    id: 'TP-08',
-    code: 'TP 8',
-    element: 'Capaian Pembelajaran',
-    category: 'Kognitif & Logika Matematika',
-    tp: 'Mengenal konsep bilangan, perbandingan kuantitas, bentuk, dan pola logika',
-    indicator: 'Mampu membilang benda 1-20 secara koresponden, mengelompokkan bentuk geometri warna, serta membedakan ukuran besar-kecil.',
-  },
-  {
-    id: 'TP-09',
-    code: 'TP 9',
-    element: 'Capaian Pembelajaran',
-    category: 'Sains & Eksplorasi STEAM',
-    tp: 'Menunjukkan rasa ingin tahu ilmiah melalui observasi dan eksperimen sederhana',
-    indicator: 'Mampu mengamati fenomena sekitar (terapung-tenggelam, mencampur warna dasar, sifat air) dan aktif bertanya secara kritis.',
-  },
-  {
-    id: 'TP-10',
-    code: 'TP 10',
-    element: 'Capaian Pembelajaran',
-    category: 'Seni & Apresiasi Estetika',
-    tp: 'Mengekspresikan diri melalui ragam media seni visual, kriya, dan musikalitas',
-    indicator: 'Mampu menyanyikan lagu anak bernada teratur, menggambar ekspresi bebas warna-warni, serta menghargai karya teman.',
-  },
 ]
 
+// ─── ELEMEN 2: JATI DIRI ───
 export const PAUD_CP_JATI_DIRI_8: LearningObjectiveTP[] = [
   {
     id: 'TP-JD-01',
-    code: 'TP JD 1',
+    code: 'TP 2.1',
     element: 'Jati Diri',
     category: 'Pengelolaan Emosi Diri',
     tp: 'Mengenal, mengekspresikan, dan mengelola emosi diri secara wajar',
@@ -163,7 +116,7 @@ export const PAUD_CP_JATI_DIRI_8: LearningObjectiveTP[] = [
   },
   {
     id: 'TP-JD-02',
-    code: 'TP JD 2',
+    code: 'TP 2.2',
     element: 'Jati Diri',
     category: 'Kemandirian & Tanggung Jawab',
     tp: 'Menunjukkan sikap percaya diri dan kemandirian dalam merawat diri sendiri',
@@ -171,7 +124,7 @@ export const PAUD_CP_JATI_DIRI_8: LearningObjectiveTP[] = [
   },
   {
     id: 'TP-JD-03',
-    code: 'TP JD 3',
+    code: 'TP 2.3',
     element: 'Jati Diri',
     category: 'Konsep Diri Positif',
     tp: 'Mengenal identitas diri, anggota keluarga, dan memiliki citra diri positif',
@@ -179,7 +132,7 @@ export const PAUD_CP_JATI_DIRI_8: LearningObjectiveTP[] = [
   },
   {
     id: 'TP-JD-04',
-    code: 'TP JD 4',
+    code: 'TP 2.4',
     element: 'Jati Diri',
     category: 'Sosial & Empati Kawan',
     tp: 'Menunjukkan rasa empati, peduli, dan kesediaan berbagi dengan teman sebaya',
@@ -187,7 +140,7 @@ export const PAUD_CP_JATI_DIRI_8: LearningObjectiveTP[] = [
   },
   {
     id: 'TP-JD-05',
-    code: 'TP JD 5',
+    code: 'TP 2.5',
     element: 'Jati Diri',
     category: 'Disiplin & Kesepakatan Kelas',
     tp: 'Mematuhi aturan bersama, disiplin mengantre, dan menghargai hak orang lain',
@@ -195,31 +148,89 @@ export const PAUD_CP_JATI_DIRI_8: LearningObjectiveTP[] = [
   },
   {
     id: 'TP-JD-06',
-    code: 'TP JD 6',
+    code: 'TP 2.6',
     element: 'Jati Diri',
     category: 'Kesehatan & Kebersihan Diri (PHBS)',
     tp: 'Membiasakan perilaku hidup bersih, sehat, dan menjaga keselamatan diri',
     indicator: 'Mampu mencuci tangan pakai sabun dengan 6 langkah benar, menyukai makanan sehat, serta menjauhi benda berbahaya.',
   },
   {
-    id: 'TP-JD-07',
-    code: 'TP JD 7',
+    id: 'TP-05',
+    code: 'TP 2.7',
     element: 'Jati Diri',
-    category: 'Adaptasi & Kerjasama Kelompok',
-    tp: 'Mampu beradaptasi dengan lingkungan sekolah dan bekerjasama dalam tim',
-    indicator: 'Mudah bergaul dengan teman baru, aktif berpartisipasi dalam aktivitas kelompok, dan tidak bergantung penuh pada orang tua.',
+    category: 'Fisik & Motorik Kasar',
+    tp: 'Menunjukkan kemampuan motorik kasar dan koordinasi keseimbangan tubuh',
+    indicator: 'Mampu melompat dengan tumpuan seimbang, berlari lincah, menendang serta melempar-menangkap bola dengan terarah.',
   },
   {
-    id: 'TP-JD-08',
-    code: 'TP JD 8',
+    id: 'TP-06',
+    code: 'TP 2.8',
     element: 'Jati Diri',
-    category: 'Identitas Budaya & Kebangsaan',
-    tp: 'Mengenal simbol kebangsaan Indonesia dan menghormati keragaman budaya',
-    indicator: 'Mengenal warna bendera Merah Putih, menyanyikan lagu Indonesia Raya sederhana, dan menghormati perbedaan teman.',
+    category: 'Fisik & Motorik Halus',
+    tp: 'Menunjukkan kelenturan motorik halus dan koordinasi mata-tangan',
+    indicator: 'Mampu memegang alat tulis/krayon dengan benar (tripod grip), menggunting mengikuti garis, dan meronce manik-manik.',
   },
 ]
 
-export const ALL_PAUD_TPS = [...PAUD_CP_GENERAL_10, ...PAUD_CP_JATI_DIRI_8]
+// ─── ELEMEN 3: DASAR-DASAR LITERASI, MATEMATIKA, SAINS, TEKNOLOGI, REKAYASA, DAN SENI (STEAM) ───
+export const PAUD_CP_STEAM_6: LearningObjectiveTP[] = [
+  {
+    id: 'TP-07',
+    code: 'TP 3.1',
+    element: 'Dasar Literasi & STEAM',
+    category: 'Bahasa & Literasi Dini',
+    tp: 'Mampu menyimak, memahami instruksi guru, dan mengekspresikan ide secara lisan',
+    indicator: 'Mampu menceritakan kembali kisah/dongeng pendek, menjawab pertanyaan sederhana, dan mengenali simbol abjad.',
+  },
+  {
+    id: 'TP-08',
+    code: 'TP 3.2',
+    element: 'Dasar Literasi & STEAM',
+    category: 'Kognitif & Logika Matematika',
+    tp: 'Mengenal konsep bilangan, perbandingan kuantitas, bentuk, dan pola logika',
+    indicator: 'Mampu membilang benda 1-20 secara koresponden, mengelompokkan bentuk geometri warna, serta membedakan ukuran besar-kecil.',
+  },
+  {
+    id: 'TP-09',
+    code: 'TP 3.3',
+    element: 'Dasar Literasi & STEAM',
+    category: 'Sains & Eksplorasi Ilmiah',
+    tp: 'Menunjukkan rasa ingin tahu ilmiah melalui observasi dan eksperimen sederhana',
+    indicator: 'Mampu mengamati fenomena sekitar (terapung-tenggelam, mencampur warna dasar, sifat air) dan aktif bertanya secara kritis.',
+  },
+  {
+    id: 'TP-10',
+    code: 'TP 3.4',
+    element: 'Dasar Literasi & STEAM',
+    category: 'Seni & Apresiasi Estetika',
+    tp: 'Mengekspresikan diri melalui ragam media seni visual, kriya, dan musikalitas',
+    indicator: 'Mampu menyanyikan lagu anak bernada teratur, menggambar ekspresi bebas warna-warni, serta menghargai karya teman.',
+  },
+  {
+    id: 'TP-JD-07',
+    code: 'TP 3.5',
+    element: 'Dasar Literasi & STEAM',
+    category: 'Rekayasa Sederhana & Eksplorasi',
+    tp: 'Mampu menggunakan alat teknologi sederhana dan memecahkan masalah kontekstual',
+    indicator: 'Mampu menyusun balok rekayasa, memanfaatkan alat sederhana di sekitar dengan aman untuk bermain dan berkarya.',
+  },
+  {
+    id: 'TP-JD-08',
+    code: 'TP 3.6',
+    element: 'Dasar Literasi & STEAM',
+    category: 'Identitas Budaya & Kebangsaan',
+    tp: 'Mengenal simbol kebangsaan Indonesia dan menghormati keragaman budaya sekitar',
+    indicator: 'Mengenal warna bendera Merah Putih, menyanyikan lagu nasional sederhana, dan menghormati perbedaan karya teman.',
+  },
+]
+
+// Compatibility & combined list
+export const PAUD_CP_GENERAL_10: LearningObjectiveTP[] = [...PAUD_CP_NABP_4, ...PAUD_CP_STEAM_6]
+export const ALL_PAUD_TPS: LearningObjectiveTP[] = [
+  ...PAUD_CP_NABP_4,
+  ...PAUD_CP_JATI_DIRI_8,
+  ...PAUD_CP_STEAM_6,
+]
 
 // Fallback subjects for backward compatibility
 export const PAUD_SUBJECTS = [

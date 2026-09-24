@@ -38,6 +38,9 @@ export default function MasterGuruPage() {
   const [selectedTeacher, setSelectedTeacher] = useState<any>(null)
 
   const [form, setForm] = useState({ nama: '', nip: '', hp: '', alamat: '', user_id: '' })
+  const [autoCreateAccount, setAutoCreateAccount] = useState(true)
+  const [customUsername, setCustomUsername] = useState('')
+  const [customPassword, setCustomPassword] = useState('Istiqamah2026!')
 
   // Search & Pagination
   const [searchQuery, setSearchQuery] = useState('')
@@ -68,22 +71,75 @@ export default function MasterGuruPage() {
 
   useEffect(() => { loadData() }, [])
 
-  const resetForm = () => setForm({ nama: '', nip: '', hp: '', alamat: '', user_id: '' })
+  const resetForm = () => {
+    setForm({ nama: '', nip: '', hp: '', alamat: '', user_id: '' })
+    setAutoCreateAccount(true)
+    setCustomUsername('')
+    setCustomPassword('Istiqamah2026!')
+  }
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!form.nama) return
+    if (!form.nama.trim()) {
+      toast.error('Nama lengkap guru wajib diisi')
+      return
+    }
     setSaving(true)
     try {
-      const payload: any = { nama: form.nama, nip: form.nip || null, hp: form.hp || null, alamat: form.alamat || null }
-      if (form.user_id) payload.user_id = form.user_id
+      let createdUserId = form.user_id || null
+
+      if (autoCreateAccount && !createdUserId) {
+        // Generate clean username and email based on teacher's name
+        const rawBase = (customUsername.trim() || form.nama)
+          .toLowerCase()
+          .replace(/[^a-z0-9]/g, '')
+          .slice(0, 12) || 'guru'
+        const randomSuffix = Math.floor(100 + Math.random() * 900)
+        const finalUsername = customUsername.trim() || `guru_${rawBase}${randomSuffix}`
+        const finalEmail = `${rawBase}${randomSuffix}@guru.istiqamah.sch.id`
+        const passwordToUse = customPassword.trim() || 'Istiqamah2026!'
+
+        const userRes = await fetch('/api/admin/users/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: finalUsername,
+            email: finalEmail,
+            password: passwordToUse,
+            role: 'guru',
+          }),
+        })
+        const userJson = await userRes.json()
+        if (!userRes.ok || userJson.error) {
+          throw new Error(userJson.error || 'Gagal membuat akun guru otomatis')
+        }
+        createdUserId = userJson.id
+      }
+
+      const payload: any = {
+        nama: form.nama.trim(),
+        nip: form.nip?.trim() || null,
+        hp: form.hp?.trim() || null,
+        alamat: form.alamat?.trim() || null,
+      }
+      if (createdUserId) payload.user_id = createdUserId
+
       const { error } = await supabase.from('teachers_tk').insert(payload)
       if (error) throw error
+
+      toast.success(
+        autoCreateAccount && !form.user_id
+          ? 'Guru & akun portal berhasil dibuat! Password awal: Istiqamah2026!'
+          : 'Data guru berhasil ditambahkan!'
+      )
       setCreateOpen(false)
       resetForm()
       loadData()
-    } catch (err: any) { toast.error('Error: ' + err.message) }
-    setSaving(false)
+    } catch (err: any) {
+      toast.error('Error: ' + err.message)
+    } finally {
+      setSaving(false)
+    }
   }
 
   const openEdit = (t: any) => {
@@ -339,14 +395,50 @@ export default function MasterGuruPage() {
                   className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10" />
               </div>
             ))}
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-primary-blue">Hubungkan ke Akun Portal <span className="text-gray-400 font-medium">(opsional)</span></Label>
-              <select value={form.user_id} onChange={e => setForm(f => ({ ...f, user_id: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-[#F8F6F2] border-transparent focus:bg-white rounded-xl text-sm font-medium outline-none">
-                <option value="">— Tidak dihubungkan —</option>
-                {guruUsers.map(u => <option key={u.id} value={u.id}>{u.username} ({u.email})</option>)}
-              </select>
+            {/* Auto Create Account Section */}
+            <div className="p-3.5 bg-emerald-50/80 border border-emerald-200/80 rounded-2xl space-y-2.5">
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="autoCreateAccount"
+                  checked={autoCreateAccount}
+                  onChange={(e) => setAutoCreateAccount(e.target.checked)}
+                  className="w-4 h-4 accent-primary-green cursor-pointer"
+                />
+                <Label htmlFor="autoCreateAccount" className="text-xs font-bold text-primary-blue cursor-pointer">
+                  Otomatis Buatkan Akun Portal Guru
+                </Label>
+              </div>
+
+              {autoCreateAccount ? (
+                <div className="text-[11px] text-emerald-800 space-y-1 pl-6 pt-0.5">
+                  <p>• Password awal: <span className="font-mono font-bold text-primary-blue">Istiqamah2026!</span></p>
+                  <p>• Role: <span className="font-bold">Guru Pengajar</span></p>
+                  <p className="text-[10px] text-gray-500">
+                    Akun akan otomatis terhubung ke guru ini dan password dapat langsung disalin di tabel.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-1.5 pl-6 pt-1">
+                  <Label className="text-xs font-bold text-primary-blue">
+                    Pilih Akun Guru yang Sudah Ada <span className="text-gray-400 font-medium">(opsional)</span>
+                  </Label>
+                  <select
+                    value={form.user_id}
+                    onChange={(e) => setForm((f) => ({ ...f, user_id: e.target.value }))}
+                    className="w-full px-3 py-2 bg-white border border-gray-200 rounded-xl text-xs font-medium outline-none"
+                  >
+                    <option value="">— Tidak dihubungkan —</option>
+                    {guruUsers.map((u) => (
+                      <option key={u.id} value={u.id}>
+                        {u.username} ({u.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
             </div>
+
             <div className="pt-2 flex gap-3">
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)} className="flex-1 rounded-xl font-bold text-xs border-gray-200 cursor-pointer">Batal</Button>
               <Button type="submit" disabled={saving} className="flex-1 bg-primary-blue hover:bg-primary-blue/90 text-white rounded-xl font-bold text-xs cursor-pointer">

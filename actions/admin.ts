@@ -111,89 +111,160 @@ export async function syncPpdbToStudent(ppdbId: string) {
     const fatherDetails = (ppdb.father_details as Record<string, any>) || {}
     const motherDetails = (ppdb.mother_details as Record<string, any>) || {}
 
-    // 2. Generate Username & Password
-    const baseUsername = ppdb.student_name.toLowerCase().replace(/[^a-z0-9]/g, '')
-    let username = baseUsername || 'murid'
-    let counter = 1
-
-    // Check if parent account exists
-    const parentEmail = (fatherDetails.email_ayah || motherDetails.email_ibu || `${username}@gmail.com`).trim().toLowerCase()
+    const studentName = ppdb.student_name.trim()
+    const rawNik = (childDetails.nik || '').toString().trim()
+    const studentNik = rawNik ? rawNik.slice(0, 16) : null
+    const rawNisn = (childDetails.nisn || '').toString().trim()
+    const studentNisn = rawNisn ? rawNisn.slice(0, 10) : null
+    const rawEmail = (fatherDetails.email_ayah || motherDetails.email_ibu || '').trim().toLowerCase()
     const parentPhone = (fatherDetails.hp_ayah || motherDetails.hp_ibu || '').trim()
 
+    let studentId = ''
     let authId = ''
+    let username = ''
     let passwordStr = ''
 
-    // 1. Cek apakah user sudah ada berdasarkan email atau username
-    let existingUser: any = null
-    if (parentEmail) {
-      const { data: byEmail } = await supabase
-        .from('users_tk')
-        .select('id, username, email')
-        .eq('email', parentEmail)
+    // 2. Cek apakah murid ini SUDAH PERNAH memiliki akun orang tua khusus miliknya
+    let { data: existingStudent } = studentNik
+      ? await supabaseAdmin.from('students_tk').select('id, user_id').eq('nik', studentNik).maybeSingle()
+      : { data: null }
+
+    if (!existingStudent) {
+      const { data: byName } = await supabaseAdmin
+        .from('students_tk')
+        .select('id, user_id')
+        .eq('nama', studentName)
         .maybeSingle()
-      if (byEmail) existingUser = byEmail
+      existingStudent = byName
     }
 
-    if (!existingUser && username) {
-      const { data: byUsername } = await supabase
-        .from('users_tk')
-        .select('id, username, email')
-        .eq('username', username)
+    let existingUser: any = null
+    if (existingStudent?.id) {
+      studentId = existingStudent.id
+
+      const { data: existingParent } = await supabaseAdmin
+        .from('parents_tk')
+        .select('id, user_id')
+        .eq('student_id', existingStudent.id)
         .maybeSingle()
-      if (byUsername) existingUser = byUsername
+
+      const candidateUserId = existingParent?.user_id || existingStudent.user_id
+
+      if (candidateUserId) {
+        // Pastikan akun ini HANYA milik murid ini, tidak sedang dipakai murid lain (tidak tertukar / shared)
+        const { data: sharedParents } = await supabaseAdmin
+          .from('parents_tk')
+          .select('id')
+          .eq('user_id', candidateUserId)
+          .neq('student_id', existingStudent.id)
+
+        if (!sharedParents || sharedParents.length === 0) {
+          const { data: userRec } = await supabaseAdmin
+            .from('users_tk')
+            .select('id, username, email, initial_password, role')
+            .eq('id', candidateUserId)
+            .maybeSingle()
+
+          if (userRec && userRec.role === 'orang_tua') {
+            existingUser = userRec
+          }
+        }
+      }
     }
 
     if (existingUser) {
+      // Re-use akun milik murid ini sendiri jika memang sudah terdaftar
       authId = existingUser.id
       username = existingUser.username
-      await supabase
+      passwordStr = existingUser.initial_password || ''
+
+      if (!passwordStr) {
+        const dateObj = new Date(ppdb.birth_date)
+        if (!isNaN(dateObj.getTime())) {
+          const dd = String(dateObj.getDate()).padStart(2, '0')
+          const mm = String(dateObj.getMonth() + 1).padStart(2, '0')
+          const yyyy = dateObj.getFullYear()
+          passwordStr = `${dd}${mm}${yyyy}`
+        } else {
+          passwordStr = 'Istiqamah2026!'
+        }
+        await supabaseAdmin.from('users_tk').update({ initial_password: passwordStr }).eq('id', authId)
+      }
+
+      await supabaseAdmin
         .from('users_tk')
         .update({ status: 'active' })
         .eq('id', authId)
     } else {
-      // Pastikan username unik
+      // 3. Generate USERNAME BARU YANG PASTI UNIK
+      // Format: ortu_<nama> (contoh: ortu_rendy, ortu_aditia, ortu_karim)
+      const cleanRaw = studentName.toLowerCase().replace(/[^a-z0-9]/g, '')
+      const nameParts = studentName.trim().split(/\s+/).map((p: string) => p.toLowerCase().replace(/[^a-z0-9]/g, '')).filter(Boolean)
+      const firstName = nameParts[0] || 'murid'
+
+      let baseName = firstName
+      if (['m', 'muh', 'md', 'muhammad'].includes(firstName) && nameParts[1]) {
+        baseName = `${firstName}${nameParts[1]}`
+      } else if (firstName.length < 3 && cleanRaw.length >= 3) {
+        baseName = cleanRaw
+      }
+      baseName = baseName.slice(0, 15) || 'murid'
+
+      let candidateUsername = `ortu_${baseName}`
+      let counter = 1
+
+      // Pastikan username belum dipakai oleh user manapun di sistem
       while (true) {
-        const { data: exists } = await supabase
+        const { data: exists } = await supabaseAdmin
           .from('users_tk')
           .select('id')
-          .eq('username', username)
+          .eq('username', candidateUsername)
           .maybeSingle()
 
         if (!exists) break
-        username = `${baseUsername}${counter.toString().padStart(2, '0')}`
+        candidateUsername = `ortu_${baseName}${counter.toString().padStart(2, '0')}`
         counter++
       }
+      username = candidateUsername
 
-      // Pastikan email unik agar tidak melanggar unique constraint
-      let finalEmail = parentEmail
-      let emailCounter = 1
-      while (true) {
-        const { data: existsEmail } = await supabase
-          .from('users_tk')
-          .select('id')
-          .eq('email', finalEmail)
-          .maybeSingle()
+      // 4. Pastikan Email unik di users_tk
+      let finalEmail = ''
+      if (rawEmail && rawEmail.includes('@') && !rawEmail.includes(' ') && !rawEmail.includes(',')) {
+        finalEmail = rawEmail
+        let emailCounter = 1
+        while (true) {
+          const { data: existsEmail } = await supabaseAdmin
+            .from('users_tk')
+            .select('id')
+            .eq('email', finalEmail)
+            .maybeSingle()
 
-        if (!existsEmail) break
-        const atIdx = parentEmail.indexOf('@')
-        if (atIdx !== -1) {
-          finalEmail = `${parentEmail.slice(0, atIdx)}${emailCounter}${parentEmail.slice(atIdx)}`
-        } else {
-          finalEmail = `${parentEmail}${emailCounter}`
+          if (!existsEmail) break
+          const atIdx = rawEmail.indexOf('@')
+          finalEmail = `${rawEmail.slice(0, atIdx)}+${emailCounter}${rawEmail.slice(atIdx)}`
+          emailCounter++
         }
-        emailCounter++
+      } else {
+        // Jika tidak ada email valid, gunakan fallback email dengan username unik
+        finalEmail = `${username}@ortu.istiqamah.sch.id`
       }
 
+      // 5. Generate Password (DDMMYYYY dari tanggal lahir siswa)
       const dateObj = new Date(ppdb.birth_date)
-      const dd = String(dateObj.getDate()).padStart(2, '0')
-      const mm = String(dateObj.getMonth() + 1).padStart(2, '0')
-      const yyyy = dateObj.getFullYear()
-      passwordStr = `${dd}${mm}${yyyy}`
+      if (!isNaN(dateObj.getTime())) {
+        const dd = String(dateObj.getDate()).padStart(2, '0')
+        const mm = String(dateObj.getMonth() + 1).padStart(2, '0')
+        const yyyy = dateObj.getFullYear()
+        passwordStr = `${dd}${mm}${yyyy}`
+      } else {
+        passwordStr = 'Istiqamah2026!'
+      }
 
       const passwordHash = await bcrypt.hash(passwordStr, 10)
       authId = randomUUID()
 
-      const { data: newUser, error: insertUserError } = await supabase
+      // Buat user baru di users_tk
+      const { data: newUser, error: insertUserError } = await supabaseAdmin
         .from('users_tk')
         .insert({
           id: authId,
@@ -207,29 +278,16 @@ export async function syncPpdbToStudent(ppdbId: string) {
         .select('id')
         .single()
 
-      if (insertUserError) {
-        console.error('Local User Creation Error in users_tk:', insertUserError)
-        // Coba temukan fallback jika ternyata sudah tersimpan
-        const { data: fallbackUser } = await supabase
-          .from('users_tk')
-          .select('id, username')
-          .eq('email', finalEmail)
-          .maybeSingle()
-        if (fallbackUser) {
-          authId = fallbackUser.id
-          username = fallbackUser.username
-        } else {
-          authId = ''
-        }
-      } else if (newUser?.id) {
-        authId = newUser.id
+      if (insertUserError || !newUser) {
+        console.error('User Creation Error in users_tk:', insertUserError)
+        return { error: 'Gagal membuat akun orang tua: ' + (insertUserError?.message || 'Unknown error') }
       }
     }
 
-    // Verifikasi authId benar-benar ada di users_tk sebelum dijadikan foreign key
+    // 6. Verifikasi authId
     let verifiedUserId: string | null = null
     if (authId) {
-      const { data: checkUser } = await supabase
+      const { data: checkUser } = await supabaseAdmin
         .from('users_tk')
         .select('id')
         .eq('id', authId)
@@ -239,29 +297,7 @@ export async function syncPpdbToStudent(ppdbId: string) {
       }
     }
 
-    // 3. Upsert Student Record in students_tk
-    const studentName = ppdb.student_name.trim()
-    const rawNik = (childDetails.nik || '').toString().trim()
-    const studentNik = rawNik ? rawNik.slice(0, 16) : null
-    const rawNisn = (childDetails.nisn || '').toString().trim()
-    const studentNisn = rawNisn ? rawNisn.slice(0, 10) : null
-
-    let studentId = ''
-
-    // Try finding by NIK first if available, otherwise by name
-    let { data: existingStudent } = studentNik
-      ? await supabase.from('students_tk').select('id').eq('nik', studentNik).maybeSingle()
-      : { data: null }
-
-    if (!existingStudent) {
-      const { data: byName } = await supabase
-        .from('students_tk')
-        .select('id')
-        .eq('nama', studentName)
-        .maybeSingle()
-      existingStudent = byName
-    }
-
+    // 7. Upsert Data Siswa di students_tk
     const birthDate = childDetails.birth_date || ppdb.birth_date
     const gender = childDetails.jenis_kelamin === 'P' || childDetails.jenis_kelamin === 'Perempuan' ? 'P' : 'L'
     const studentPayload = {
@@ -279,12 +315,12 @@ export async function syncPpdbToStudent(ppdbId: string) {
 
     if (existingStudent) {
       studentId = existingStudent.id
-      await supabase
+      await supabaseAdmin
         .from('students_tk')
         .update(studentPayload)
         .eq('id', studentId)
     } else {
-      const { data: newStudent, error: createStudentError } = await supabase
+      const { data: newStudent, error: createStudentError } = await supabaseAdmin
         .from('students_tk')
         .insert(studentPayload)
         .select('id')
@@ -297,13 +333,13 @@ export async function syncPpdbToStudent(ppdbId: string) {
       studentId = newStudent?.id || ''
     }
 
-    // 4. Upsert Parent Record in parents_tk
+    // 8. Upsert Data Orang Tua di parents_tk
     const fatherName = (fatherDetails.nama_ayah || '').trim()
     const motherName = (motherDetails.nama_ibu || '').trim()
     const parentJob = `${fatherDetails.pekerjaan_ayah || ''} / ${motherDetails.pekerjaan_ibu || ''}`.replace(/^[\s/]+|[\s/]+$/g, '') || null
 
     if (studentId) {
-      const { data: existingParent } = await supabase
+      const { data: existingParent } = await supabaseAdmin
         .from('parents_tk')
         .select('id')
         .eq('student_id', studentId)
@@ -314,39 +350,40 @@ export async function syncPpdbToStudent(ppdbId: string) {
         nama_ayah: fatherName || null,
         nama_ibu: motherName || null,
         hp: parentPhone || null,
-        email: parentEmail || null,
+        email: rawEmail || (existingUser?.email || `${username}@ortu.istiqamah.sch.id`),
         alamat: fatherDetails.alamat_ayah || motherDetails.alamat_ibu || childDetails.alamat || null,
         pekerjaan: parentJob,
         user_id: verifiedUserId,
       }
 
       if (existingParent) {
-        await supabase
+        await supabaseAdmin
           .from('parents_tk')
           .update(parentPayload)
           .eq('id', existingParent.id)
       } else {
-        await supabase
+        await supabaseAdmin
           .from('parents_tk')
           .insert(parentPayload)
       }
     }
 
-    // 5. Update PPDB & Payment Status
-    await supabase
+    // 9. Update PPDB & Payment Status
+    await supabaseAdmin
       .from('ppdb_tk')
       .update({ status: 'Diterima', payment_status: 'Verified' })
       .eq('id', ppdbId)
 
-    await supabase
+    await supabaseAdmin
       .from('payments_tk')
       .update({ status: 'Verified' })
       .eq('ppdb_id', ppdbId)
 
-    // Send Credential Email if password was generated
-    if (passwordStr && parentEmail) {
+    // 10. Kirim email kredensial jika ada email dan password
+    const emailToSend = rawEmail || existingUser?.email
+    if (passwordStr && emailToSend && emailToSend.includes('@')) {
       try {
-        await sendCredentialEmail(parentEmail, ppdb.student_name, username, passwordStr)
+        await sendCredentialEmail(emailToSend, ppdb.student_name, username, passwordStr)
       } catch (emailErr) {
         console.warn('Email sending skipped/failed:', emailErr)
       }
@@ -354,7 +391,7 @@ export async function syncPpdbToStudent(ppdbId: string) {
 
     // Log activity
     try {
-      await supabase.from('activity_logs_tk').insert({
+      await supabaseAdmin.from('activity_logs_tk').insert({
         activity: `Verifikasi pendaftaran & pembayaran ${ppdb.student_name} selesai. Akun orang tua (${username}) dan data murid aktif telah dibuat.`,
       })
     } catch {}
@@ -369,7 +406,7 @@ export async function syncPpdbToStudent(ppdbId: string) {
       username,
       password: passwordStr,
       studentId,
-      parentEmail,
+      parentEmail: emailToSend || `${username}@ortu.istiqamah.sch.id`,
       parentPhone,
     }
   } catch (e: any) {
@@ -705,7 +742,7 @@ export async function resendCredentialsEmail(ppdbId: string) {
 
     const { data: userRecord } = await supabase
       .from('users_tk')
-      .select('username, email')
+      .select('username, email, initial_password')
       .eq('id', parent.user_id)
       .maybeSingle()
 
@@ -713,12 +750,12 @@ export async function resendCredentialsEmail(ppdbId: string) {
       return { success: false, error: 'Akun user tidak ditemukan.' }
     }
 
-    // 4. Reconstruct temporary password from birth date (DDMMYYYY)
+    // 4. Reconstruct temporary password from initial_password or birth date (DDMMYYYY)
     const dateObj = new Date(ppdb.birth_date)
     const dd = String(dateObj.getDate()).padStart(2, '0')
     const mm = String(dateObj.getMonth() + 1).padStart(2, '0')
     const yyyy = dateObj.getFullYear()
-    const passwordStr = `${dd}${mm}${yyyy}`
+    const passwordStr = userRecord.initial_password || `${dd}${mm}${yyyy}`
 
     const parentEmail = parent.email || userRecord.email
 

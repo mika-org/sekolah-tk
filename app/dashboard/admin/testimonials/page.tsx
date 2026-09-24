@@ -322,11 +322,11 @@ export default function AdminTestimonialsPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-xs font-bold text-primary-blue">Pekerjaan / Keterangan</Label>
+                  <Label className="text-xs font-bold text-primary-blue">Kelas</Label>
                   <Input
                     value={job}
                     onChange={(e) => setJob(e.target.value)}
-                    placeholder="Orang Tua Murid Kelas Mina Arafah"
+                    placeholder="Contoh: Kelas Mina Arafah"
                     required
                     className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10"
                   />
@@ -387,7 +387,7 @@ export default function AdminTestimonialsPage() {
                   setSearchQuery(val)
                   setCurrentPage(1)
                 }}
-                placeholder="Cari nama, pekerjaan..."
+                placeholder="Cari nama, kelas..."
               />
             </CardHeader>
             <CardContent className="p-0">
@@ -555,11 +555,11 @@ export default function AdminTestimonialsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-primary-blue">Pekerjaan / Keterangan</Label>
+              <Label className="text-xs font-bold text-primary-blue">Kelas</Label>
               <Input
                 value={editJob}
                 onChange={(e) => setEditJob(e.target.value)}
-                placeholder="Orang Tua Murid..."
+                placeholder="Contoh: Kelas Mina Arafah"
                 required
                 className="bg-[#F8F6F2] border-transparent focus:bg-white focus:border-primary-green rounded-xl text-sm font-medium h-10"
               />

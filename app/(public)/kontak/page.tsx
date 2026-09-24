@@ -1,13 +1,14 @@
 'use client'
 
 import React, { useState } from 'react'
-import { MapPin, Phone, Mail, Send } from 'lucide-react'
+import { MapPin, Phone, Mail, Send, Clock, MessageSquare } from 'lucide-react'
 import { toast } from 'sonner'
 
 export default function KontakPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
     subject: '',
     message: ''
   })
@@ -21,106 +22,145 @@ export default function KontakPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!formData.name || !formData.email || !formData.message) {
-      toast.error('Harap isi semua kolom wajib (*)')
+      toast.error('Harap lengkapi kolom yang bertanda bintang (*)')
       return
     }
 
     setLoading(true)
-    
-    // Simulate sending message
+
     setTimeout(() => {
       setLoading(false)
-      toast.success('Pesan Anda berhasil dikirim! Kami akan segera menghubungi Anda.')
+      toast.success('Pesan Anda berhasil terkirim! Tim kami akan segera merespons.')
       setFormData({
         name: '',
         email: '',
+        phone: '',
         subject: '',
         message: ''
       })
-    }, 1200)
+    }, 1000)
   }
 
   return (
-    <div className="w-full pt-24">
-      {/* ─── HEADER SECTION ─────────────────────── */}
-      <section className="relative py-16 bg-[#07265F] text-white rounded-[32px] max-w-7xl mx-auto px-6 sm:px-8 text-center overflow-hidden shadow-lg mb-12">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full pointer-events-none -translate-y-12 translate-x-12" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#07A363]/20 rounded-full pointer-events-none translate-y-12 -translate-x-12" />
-        <h1 className="text-3xl sm:text-4xl font-black mb-4 relative z-10">Hubungi Kami</h1>
-        <p className="text-sm sm:text-base font-medium max-w-2xl mx-auto opacity-95 relative z-10 leading-relaxed">
-          Punya pertanyaan mengenai program belajar kami, SPMB, atau hal lainnya? Jangan ragu untuk mengirimkan pesan atau berkunjung ke lokasi kami.
-        </p>
+    <div className="w-full pt-20 sm:pt-24 pb-16">
+      {/* ─── HEADER SECTION (Clean, tanpa awan atau bulatan dekoratif) ─── */}
+      <section className="max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 sm:mb-10">
+        <div className="bg-[#102A4E] rounded-[24px] sm:rounded-[32px] py-10 sm:py-14 px-6 sm:px-10 text-center text-white shadow-xl border border-white/10">
+          <span className="inline-block bg-white/15 text-blue-100 px-4 py-1 rounded-full text-xs font-bold tracking-wider uppercase mb-3">
+            Layanan Informasi &amp; Kontak
+          </span>
+          <h1 className="text-2xl sm:text-4xl lg:text-[38px] font-black tracking-tight">
+            Hubungi KB &amp; TK Istiqamah
+          </h1>
+          <p className="mt-2 text-xs sm:text-sm text-blue-100/85 font-medium max-w-2xl mx-auto leading-relaxed">
+            Kami siap menyambut dan melayani pertanyaan Ayah &amp; Bunda seputar program pendidikan, fasilitas, serta informasi pendaftaran siswa baru.
+          </p>
+        </div>
       </section>
 
-      {/* ─── CONTACT SECTION ────────────────────── */}
-      <section className="py-8 max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-          {/* Left Column: Info & Map */}
-          <div className="lg:col-span-5 flex flex-col gap-6">
-            <div className="bg-[#07A363] text-white rounded-[28px] p-8 shadow-md h-full flex flex-col justify-between">
+      {/* ─── CONTACT DETAILS & FORM ──────────────── */}
+      <section className="max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-stretch">
+          {/* Left Column: Info Cards & Map */}
+          <div className="lg:col-span-5 flex flex-col gap-5">
+            {/* Green Information Card */}
+            <div className="bg-[#0B7347] text-white rounded-[24px] sm:rounded-[28px] p-6 sm:p-7 shadow-lg flex flex-col justify-between">
               <div>
-                <h3 className="text-xl font-black mb-6">Informasi Kontak</h3>
-                <div className="space-y-5">
-                  <div className="flex items-start gap-4">
-                    <MapPin size={18} className="mt-0.5 flex-shrink-0 text-white" />
+                <h2 className="text-lg sm:text-xl font-black text-white mb-5 pb-3 border-b border-white/20">
+                  Informasi Sekolah
+                </h2>
+
+                <div className="space-y-4 text-xs sm:text-sm">
+                  {/* Alamat */}
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center shrink-0 mt-0.5">
+                      <MapPin size={17} className="text-emerald-200" />
+                    </div>
                     <div>
-                      <p className="font-extrabold text-xs uppercase tracking-wider text-white/70">Alamat</p>
-                      <p className="text-sm font-semibold leading-relaxed mt-0.5">Jl. Taman Citarum, Kec. Bandung Wetan, Kota Bandung</p>
+                      <p className="font-extrabold text-[11px] uppercase tracking-wider text-emerald-200">
+                        Alamat Kampus
+                      </p>
+                      <p className="font-medium text-white leading-snug mt-0.5">
+                        Jl. Taman Citarum No. 1, Kec. Bandung Wetan, Kota Bandung, Jawa Barat 40115
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-4">
-                    <Phone size={18} className="mt-0.5 flex-shrink-0 text-white" />
+
+                  {/* WhatsApp SPMB */}
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center shrink-0 mt-0.5">
+                      <Phone size={17} className="text-emerald-200" />
+                    </div>
                     <div>
-                      <p className="font-extrabold text-xs uppercase tracking-wider text-white/70">Narahubung SPMB &amp; WhatsApp</p>
+                      <p className="font-extrabold text-[11px] uppercase tracking-wider text-emerald-200">
+                        WhatsApp SPMB / Admin
+                      </p>
                       <a
                         href="https://wa.me/628112198853?text=Halo%20Admin%20SPMB%20TK%20Istiqamah,%20saya%20ingin%20bertanya%20informasi%20sekolah."
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-sm font-semibold mt-0.5 hover:underline block text-white"
+                        className="font-bold text-white hover:underline block text-sm mt-0.5"
                       >
-                        0811 2198 853 (Ustadzah Admin SPMB)
+                        0811 2198 853 (Ustadzah Admin SPMB) ↗
                       </a>
-                      <p className="text-xs text-white/80 mt-1">Telp Kantor: 022 - 4241799 (Tata Usaha)</p>
+                      <p className="text-[11px] text-emerald-100/80 mt-0.5">
+                        Telp Kantor: 022 - 4241799 (Tata Usaha)
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-start gap-4">
-                    <Mail size={18} className="mt-0.5 flex-shrink-0 text-white" />
+
+                  {/* Email */}
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center shrink-0 mt-0.5">
+                      <Mail size={17} className="text-emerald-200" />
+                    </div>
                     <div>
-                      <p className="font-extrabold text-xs uppercase tracking-wider text-white/70">Email Resmi</p>
-                      <a href="mailto:info@tkistiqamah.sch.id" className="text-sm font-semibold mt-0.5 hover:underline block text-white">
+                      <p className="font-extrabold text-[11px] uppercase tracking-wider text-emerald-200">
+                        Email Resmi
+                      </p>
+                      <a
+                        href="mailto:info@tkistiqamah.sch.id"
+                        className="font-medium text-white hover:underline block mt-0.5"
+                      >
                         info@tkistiqamah.sch.id
                       </a>
                     </div>
                   </div>
-                  <div className="flex items-start gap-4">
-                    <svg className="w-4.5 h-4.5 mt-0.5 flex-shrink-0 text-white" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
-                    </svg>
+
+                  {/* Jam Layanan */}
+                  <div className="flex items-start gap-3.5">
+                    <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center shrink-0 mt-0.5">
+                      <Clock size={17} className="text-emerald-200" />
+                    </div>
                     <div>
-                      <p className="font-extrabold text-xs uppercase tracking-wider text-white/70">Media Sosial Instagram</p>
-                      <a
-                        href="https://www.instagram.com/kbtkistiqamah"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sm font-semibold mt-0.5 hover:underline block text-white"
-                      >
-                        @kbtkistiqamah ↗
-                      </a>
+                      <p className="font-extrabold text-[11px] uppercase tracking-wider text-emerald-200">
+                        Jam Pelayanan Kantor
+                      </p>
+                      <p className="font-medium text-white leading-snug mt-0.5">
+                        Senin – Jumat: 07.30 – 13.00 WIB
+                      </p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              <div className="pt-6 border-t border-white/20 mt-8 text-xs font-semibold text-white/80">
-                Jam Operasional: Senin - Jumat (07.30 - 13.00)
+              {/* Quick WhatsApp Button */}
+              <div className="mt-6 pt-4 border-t border-white/20">
+                <a
+                  href="https://wa.me/628112198853?text=Halo%20KB%20TK%20Istiqamah%20Bandung,%20saya%20ingin%20konsultasi%20pendaftaran%20sekolah..."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full bg-white hover:bg-emerald-50 text-[#075E38] font-bold text-xs sm:text-sm py-2.5 px-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2"
+                >
+                  <MessageSquare size={16} /> Chat Langsung via WhatsApp
+                </a>
               </div>
             </div>
 
-            {/* Map Frame Card */}
-            <div className="bg-white rounded-[28px] overflow-hidden shadow-sm border border-gray-100 h-64 lg:h-80 relative">
-              {/* Google Maps mock placeholder or iframe if we can embed one */}
+            {/* Embedded Google Maps */}
+            <div className="bg-white rounded-[24px] sm:rounded-[28px] overflow-hidden shadow-sm border border-gray-100 h-64 lg:h-72 relative">
               <iframe
-                title="Peta Lokasi KB & TK Istiqamah Bandung"
+                title="Lokasi KB & TK Istiqamah Bandung"
                 src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3960.8227096645395!2d107.6189914!3d-6.9117621!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x2e68e6378e907d73%3A0xe13b194d80a373b5!2sYayasan%20Istiqamah%20Bandung!5e0!3m2!1sid!2sid!4v1700000000000!5m2!1sid!2sid"
                 className="w-full h-full border-none"
                 allowFullScreen
@@ -130,62 +170,89 @@ export default function KontakPage() {
             </div>
           </div>
 
-          {/* Right Column: Feedback Form */}
+          {/* Right Column: Contact Form */}
           <div className="lg:col-span-7">
-            <div className="bg-white rounded-[28px] p-8 shadow-sm border border-gray-100 h-full flex flex-col justify-between">
+            <div className="bg-white rounded-[24px] sm:rounded-[28px] p-6 sm:p-8 shadow-sm border border-gray-100 h-full flex flex-col justify-between">
               <div>
-                <h3 className="text-xl font-black text-[#07265F] mb-2">Formulir Pesan</h3>
-                <p className="text-xs text-gray-500 font-semibold mb-8">Kirim pertanyaan Anda langsung melalui form di bawah ini</p>
+                <h2 className="text-xl sm:text-2xl font-black text-[#1B3B6F] mb-1">
+                  Kirim Pesan
+                </h2>
+                <p className="text-xs sm:text-sm text-[#4A607A] font-medium mb-6">
+                  Silakan tuliskan pesan atau pertanyaan Anda. Tim kami akan segera menanggapi melalui WhatsApp atau Email.
+                </p>
 
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                <form onSubmit={handleSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="space-y-1.5 text-left">
-                      <label className="text-xs font-extrabold text-[#07265F]">Nama Lengkap <span className="text-red-500">*</span></label>
+                      <label className="text-xs font-extrabold text-[#1B3B6F]">
+                        Nama Lengkap <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="text"
                         name="name"
                         value={formData.name}
                         onChange={handleChange}
-                        placeholder="Masukkan nama lengkap"
-                        className="w-full px-4.5 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#07A363]/25 focus:border-[#07A363] text-xs font-semibold text-[#07265F]"
+                        placeholder="Nama Ayah / Bunda"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#0B7347]/25 focus:border-[#0B7347] text-xs sm:text-sm font-semibold text-[#1B3B6F]"
                         required
                       />
                     </div>
                     <div className="space-y-1.5 text-left">
-                      <label className="text-xs font-extrabold text-[#07265F]">Alamat Email <span className="text-red-500">*</span></label>
+                      <label className="text-xs font-extrabold text-[#1B3B6F]">
+                        Alamat Email <span className="text-red-500">*</span>
+                      </label>
                       <input
                         type="email"
                         name="email"
                         value={formData.email}
                         onChange={handleChange}
-                        placeholder="Masukkan email aktif"
-                        className="w-full px-4.5 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#07A363]/25 focus:border-[#07A363] text-xs font-semibold text-[#07265F]"
+                        placeholder="nama@email.com"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#0B7347]/25 focus:border-[#0B7347] text-xs sm:text-sm font-semibold text-[#1B3B6F]"
                         required
                       />
                     </div>
                   </div>
 
-                  <div className="space-y-1.5 text-left">
-                    <label className="text-xs font-extrabold text-[#07265F]">Subjek Pesan</label>
-                    <input
-                      type="text"
-                      name="subject"
-                      value={formData.subject}
-                      onChange={handleChange}
-                      placeholder="Subjek pertanyaan (opsional)"
-                      className="w-full px-4.5 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#07A363]/25 focus:border-[#07A363] text-xs font-semibold text-[#07265F]"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5 text-left">
+                      <label className="text-xs font-extrabold text-[#1B3B6F]">
+                        No. WhatsApp / HP
+                      </label>
+                      <input
+                        type="tel"
+                        name="phone"
+                        value={formData.phone}
+                        onChange={handleChange}
+                        placeholder="Contoh: 08123456789"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#0B7347]/25 focus:border-[#0B7347] text-xs sm:text-sm font-semibold text-[#1B3B6F]"
+                      />
+                    </div>
+                    <div className="space-y-1.5 text-left">
+                      <label className="text-xs font-extrabold text-[#1B3B6F]">
+                        Topik / Subjek
+                      </label>
+                      <input
+                        type="text"
+                        name="subject"
+                        value={formData.subject}
+                        onChange={handleChange}
+                        placeholder="Informasi SPMB / Program / Lainnya"
+                        className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#0B7347]/25 focus:border-[#0B7347] text-xs sm:text-sm font-semibold text-[#1B3B6F]"
+                      />
+                    </div>
                   </div>
 
                   <div className="space-y-1.5 text-left">
-                    <label className="text-xs font-extrabold text-[#07265F]">Isi Pesan <span className="text-red-500">*</span></label>
+                    <label className="text-xs font-extrabold text-[#1B3B6F]">
+                      Isi Pesan <span className="text-red-500">*</span>
+                    </label>
                     <textarea
                       name="message"
                       value={formData.message}
                       onChange={handleChange}
-                      placeholder="Tulis pesan lengkap Anda di sini..."
+                      placeholder="Tuliskan pertanyaan atau informasi yang ingin Ayah & Bunda ketahui..."
                       rows={5}
-                      className="w-full px-4.5 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#07A363]/25 focus:border-[#07A363] text-xs font-semibold text-[#07265F] resize-none"
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#0B7347]/25 focus:border-[#0B7347] text-xs sm:text-sm font-semibold text-[#1B3B6F] resize-none"
                       required
                     />
                   </div>
@@ -193,13 +260,13 @@ export default function KontakPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full bg-[#07A363] hover:bg-[#07A363]/90 text-white font-extrabold text-xs sm:text-sm uppercase tracking-wider py-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                    className="w-full bg-[#0B7347] hover:bg-[#075E38] text-white font-extrabold text-xs sm:text-sm uppercase tracking-wider py-3.5 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-60 transform hover:-translate-y-0.5 active:translate-y-0"
                   >
                     {loading ? (
                       <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent" />
                     ) : (
                       <>
-                        Kirim Pesan <Send size={14} />
+                        Kirim Pesan <Send size={15} />
                       </>
                     )}
                   </button>

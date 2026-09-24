@@ -654,7 +654,7 @@ export default function PPDBPage() {
   // ─── SUKSES FORMULIR LENGKAP PPDB (SESUAI TAMPILAN PPDB SAAT INI) ───
   if (fullSubmitState.success) {
     return (
-      <div className="min-h-screen bg-[#A5DCEB] bg-[url('/images/hero_bg_clean.png')] bg-cover bg-center bg-no-repeat flex flex-col justify-center items-center p-4">
+      <div className="min-h-screen bg-[#A5DCEB] bg-[url('/images/hero_bg_clean.png')] bg-cover bg-center bg-fixed bg-no-repeat flex flex-col justify-center items-center p-4">
         <motion.div
           initial={{ scale: 0.95, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
@@ -715,7 +715,7 @@ export default function PPDBPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[#A5DCEB] bg-[url('/images/hero_bg_clean.png')] bg-cover bg-center bg-no-repeat relative flex flex-col justify-between py-6 px-4 sm:px-6">
+    <div className="min-h-screen bg-[#A5DCEB] bg-[url('/images/hero_bg_clean.png')] bg-cover bg-center bg-fixed bg-no-repeat relative flex flex-col justify-between py-6 px-4 sm:px-6">
       {/* ─── FLOATING TOP NAVBAR ─── */}
       <header className="relative z-40 mx-auto w-full max-w-4xl">
         <nav className="flex items-center justify-between rounded-full bg-white/95 px-6 sm:px-8 py-2.5 shadow-md backdrop-blur-md border border-gray-100">
@@ -1320,9 +1320,9 @@ export default function PPDBPage() {
                     {/* Bank Account Box */}
                     <div className="rounded-xl border border-gray-200 bg-white p-4 flex items-center justify-between gap-3 shadow-xs">
                       <div className="flex items-center gap-3">
-                        <div className="relative h-10 w-10 shrink-0">
+                        <div className="relative h-11 w-16 shrink-0">
                           <Image
-                            src="/images/bank_muamalat.svg"
+                            src="/images/muamalat_logo.png"
                             alt="Bank Muamalat"
                             fill
                             className="object-contain"

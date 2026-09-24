@@ -1,6 +1,8 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { toast } from 'sonner'
 import { createClient } from '@/lib/database/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -19,11 +21,39 @@ import {
 } from 'lucide-react'
 
 export default function SuperAdminDashboard() {
+  const router = useRouter()
   const [teachersCount, setTeachersCount] = useState(0)
   const [studentsCount, setStudentsCount] = useState(0)
   const [classesCount, setClassesCount] = useState(0)
   const [logs, setLogs] = useState<any[]>([])
   const [loading, setLoading] = useState(false)
+  const [exportingBackup, setExportingBackup] = useState(false)
+
+  const handleExportBackup = async () => {
+    try {
+      setExportingBackup(true)
+      toast.info('Menyiapkan file ekspor database SQL...')
+      const res = await fetch('/api/admin/backup-db')
+      if (!res.ok) {
+        throw new Error('Gagal mengunduh backup database')
+      }
+      const blob = await res.blob()
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      const dateStr = new Date().toISOString().slice(0, 10)
+      a.download = `backup_tk_istiqamah_${dateStr}.sql`
+      document.body.appendChild(a)
+      a.click()
+      window.URL.revokeObjectURL(url)
+      document.body.removeChild(a)
+      toast.success('Backup database berhasil diunduh!')
+    } catch (err: any) {
+      toast.error(err.message || 'Gagal mengekspor backup')
+    } finally {
+      setExportingBackup(false)
+    }
+  }
 
   const supabase = createClient()
 
@@ -167,17 +197,27 @@ export default function SuperAdminDashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Button className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue border-none font-bold rounded-xl justify-start space-x-3 text-xs">
+              <Button
+                onClick={() => router.push('/dashboard/admin/users')}
+                className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue border-none font-bold rounded-xl justify-start space-x-3 text-xs cursor-pointer"
+              >
                 <Lock size={16} className="text-primary-green" />
-                <span>Pengaturan Role & Izin</span>
+                <span>Pengaturan Role &amp; Izin</span>
               </Button>
-              <Button className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue border-none font-bold rounded-xl justify-start space-x-3 text-xs">
+              <Button
+                onClick={() => router.push('/dashboard/super-admin/settings')}
+                className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue border-none font-bold rounded-xl justify-start space-x-3 text-xs cursor-pointer"
+              >
                 <Settings size={16} className="text-primary-green" />
                 <span>Pengaturan Website</span>
               </Button>
-              <Button className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue border-none font-bold rounded-xl justify-start space-x-3 text-xs">
+              <Button
+                onClick={handleExportBackup}
+                disabled={exportingBackup}
+                className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue border-none font-bold rounded-xl justify-start space-x-3 text-xs cursor-pointer"
+              >
                 <FileText size={16} className="text-primary-green" />
-                <span>Ekspor Backup DB (SQL)</span>
+                <span>{exportingBackup ? 'Mengekspor SQL...' : 'Ekspor Backup DB (SQL)'}</span>
               </Button>
             </CardContent>
           </Card>
