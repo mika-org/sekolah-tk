@@ -7,8 +7,46 @@ import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { XIcon } from "lucide-react"
 
-function Dialog({ ...props }: DialogPrimitive.Root.Props) {
-  return <DialogPrimitive.Root data-slot="dialog" {...props} />
+import { useModalBackHandler } from "@/lib/modal-history"
+
+function Dialog({
+  open: controlledOpen,
+  defaultOpen = false,
+  onOpenChange,
+  children,
+  ...props
+}: DialogPrimitive.Root.Props) {
+  const isControlled = controlledOpen !== undefined
+  const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen)
+  const isOpen = Boolean(isControlled ? controlledOpen : uncontrolledOpen)
+
+  const onOpenChangeRef = React.useRef(onOpenChange)
+  onOpenChangeRef.current = onOpenChange
+
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean, eventDetails?: any) => {
+      if (!isControlled) {
+        setUncontrolledOpen(nextOpen)
+      }
+      onOpenChangeRef.current?.(nextOpen, eventDetails)
+    },
+    [isControlled]
+  )
+
+  useModalBackHandler(isOpen, () => {
+    handleOpenChange(false)
+  })
+
+  return (
+    <DialogPrimitive.Root
+      data-slot="dialog"
+      open={isOpen}
+      onOpenChange={handleOpenChange}
+      {...props}
+    >
+      {children}
+    </DialogPrimitive.Root>
+  )
 }
 
 function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {

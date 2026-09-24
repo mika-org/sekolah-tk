@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
       query = supabase
         .from('payments_tk')
         .select('*, ppdb_tk(student_name)')
-        .order(requestedOrderBy || 'id', { ascending })
+        .order(requestedOrderBy || 'created_at', { ascending })
         .limit(limit)
     } else if (table === 'teachers_tk_with_users') {
       query = supabase

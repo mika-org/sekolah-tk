@@ -87,6 +87,7 @@ export async function getStudentFullDetail(studentId: string): Promise<StudentFu
         }),
         prisma.payment.findFirst({
           where: { ppdb_id: ppdb.id },
+          orderBy: { created_at: 'desc' },
         }),
       ])
 

@@ -654,12 +654,12 @@ export default function AdminPPDBPage() {
         .select('*')
         .eq('ppdb_id', app.id)
 
-      // 2. Fetch payment
+      // 2. Fetch payment (latest uploaded proof)
       const { data: payment } = await supabase
         .from('payments_tk')
         .select('*')
         .eq('ppdb_id', app.id)
-        .order('id', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle()
 

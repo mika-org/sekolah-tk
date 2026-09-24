@@ -98,7 +98,7 @@ export default function BillingPage() {
     const { data: pays } = await supabase
       .from('payments_tk')
       .select('*')
-      .order('id', { ascending: false })
+      .order('created_at', { ascending: false })
 
     if (pays) {
       setPayments(pays)

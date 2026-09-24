@@ -7,6 +7,7 @@ import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/database/client'
 import { logout } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
+import { useModalBackHandler } from '@/lib/modal-history'
 import {
   LayoutDashboard,
   Users,
@@ -48,6 +49,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  useModalBackHandler(mobileOpen, () => setMobileOpen(false))
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 

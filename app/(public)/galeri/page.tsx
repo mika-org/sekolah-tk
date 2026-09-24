@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react'
 import { createClient } from '@/lib/database/client'
 import { Star, Image as ImageIcon, X, Play } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useModalBackHandler } from '@/lib/modal-history'
 
 const CATEGORIES = ['Semua', 'Kegiatan Pembelajaran', 'Sarana', 'Prestasi']
 
@@ -25,6 +26,8 @@ export default function GaleriPage() {
   const [galleryItems, setGalleryItems] = useState<any[]>(FALLBACK_GALLERY)
   const [activePhoto, setActivePhoto] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
+
+  useModalBackHandler(Boolean(activePhoto), () => setActivePhoto(null))
 
   const supabase = createClient()
 

@@ -17,6 +17,44 @@ export default function LoginPage() {
   const [state, formAction, isPending] = useActionState(login, initialState)
   const [showPassword, setShowPassword] = useState(false)
 
+  React.useEffect(() => {
+    const checkSessionAndRedirect = () => {
+      const match = document.cookie.match(new RegExp('(^| )sekolah_tk_token=([^;]+)'))
+      if (match) {
+        try {
+          const token = match[2]
+          const parts = token.split('.')
+          const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')))
+          const role = payload.role
+          if (role === 'super_admin') {
+            window.location.replace('/dashboard/super-admin')
+          } else if (role === 'admin') {
+            window.location.replace('/dashboard/admin')
+          } else if (role === 'guru') {
+            window.location.replace('/dashboard/guru')
+          } else if (role === 'orang_tua') {
+            window.location.replace('/dashboard/orang-tua')
+          } else {
+            window.location.replace('/dashboard')
+          }
+        } catch {
+          window.location.replace('/dashboard')
+        }
+      }
+    }
+
+    checkSessionAndRedirect()
+
+    const handlePageShow = (e: PageTransitionEvent) => {
+      if (e.persisted) {
+        checkSessionAndRedirect()
+      }
+    }
+
+    window.addEventListener('pageshow', handlePageShow)
+    return () => window.removeEventListener('pageshow', handlePageShow)
+  }, [])
+
   return (
     <div className="flex flex-col lg:flex-row min-h-screen bg-[#F8F6F2]">
       

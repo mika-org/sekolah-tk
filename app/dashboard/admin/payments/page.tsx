@@ -37,7 +37,7 @@ export default function AdminPaymentsPage() {
     const { data, error } = await supabase
       .from('payments_tk')
       .select('*, ppdb_tk(student_name)')
-      .order('id', { ascending: false })
+      .order('created_at', { ascending: false })
 
     if (!error && data) {
       setPaymentsList(data)

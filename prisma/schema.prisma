@@ -162,9 +162,10 @@ model Payment {
   ppdb_id String? @db.Uuid
   method  String  @db.Text
   amount  Decimal @db.Decimal
-  proof   String? @db.Text
-  status  String  @default("Pending") @db.Text
-  ppdb_tk Ppdb?   @relation(fields: [ppdb_id], references: [id], onDelete: Cascade)
+  proof      String?   @db.Text
+  status     String    @default("Pending") @db.Text
+  created_at DateTime? @default(now()) @db.Timestamptz
+  ppdb_tk    Ppdb?     @relation(fields: [ppdb_id], references: [id], onDelete: Cascade)
 
   @@index([ppdb_id])
   @@map("payments_tk")

@@ -35,6 +35,7 @@ import {
   type PPDBFieldDefinition,
 } from '@/lib/ppdb/form-definition'
 import { cn, getCleanWhatsAppNumber } from '@/lib/utils'
+import { useModalBackHandler } from '@/lib/modal-history'
 
 interface FormState {
   success: boolean
@@ -169,6 +170,9 @@ export default function PPDBPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [savingInitial, setSavingInitial] = useState(false)
   const formRef = useRef<HTMLFormElement>(null)
+
+  useModalBackHandler(showTokenInput, () => setShowTokenInput(false))
+  useModalBackHandler(mobileMenuOpen, () => setMobileMenuOpen(false))
 
   // Restore draft formulir awal dari localStorage jika tersedia
   useEffect(() => {

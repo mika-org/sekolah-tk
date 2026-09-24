@@ -297,13 +297,33 @@ export async function purchasePPDBForm(
       Buffer.from(await proofFile.arrayBuffer())
     )
 
-    await database.from('payments_tk').insert({
-      ppdb_id: ppdbId,
-      method: 'Transfer',
-      amount: 500000,
-      proof: proofUrl,
-      status: 'Pending',
-    })
+    const { data: existingPayment } = await database
+      .from('payments_tk')
+      .select('id')
+      .eq('ppdb_id', ppdbId)
+      .maybeSingle()
+
+    if (existingPayment) {
+      await database
+        .from('payments_tk')
+        .update({
+          method: 'Transfer',
+          amount: 500000,
+          proof: proofUrl,
+          status: 'Pending',
+          created_at: new Date().toISOString(),
+        })
+        .eq('id', existingPayment.id)
+    } else {
+      await database.from('payments_tk').insert({
+        ppdb_id: ppdbId,
+        method: 'Transfer',
+        amount: 500000,
+        proof: proofUrl,
+        status: 'Pending',
+        created_at: new Date().toISOString(),
+      })
+    }
 
     revalidatePath('/dashboard/admin/ppdb')
     return {
@@ -647,13 +667,33 @@ export async function submitPPDB(
         Buffer.from(await proofFile.arrayBuffer())
       )
 
-      await database.from('payments_tk').insert({
-        ppdb_id: ppdbId,
-        method: 'Transfer',
-        amount: 500000,
-        proof: proofUrl,
-        status: 'Pending',
-      })
+      const { data: existingPayment } = await database
+        .from('payments_tk')
+        .select('id')
+        .eq('ppdb_id', ppdbId)
+        .maybeSingle()
+
+      if (existingPayment) {
+        await database
+          .from('payments_tk')
+          .update({
+            method: 'Transfer',
+            amount: 500000,
+            proof: proofUrl,
+            status: 'Pending',
+            created_at: new Date().toISOString(),
+          })
+          .eq('id', existingPayment.id)
+      } else {
+        await database.from('payments_tk').insert({
+          ppdb_id: ppdbId,
+          method: 'Transfer',
+          amount: 500000,
+          proof: proofUrl,
+          status: 'Pending',
+          created_at: new Date().toISOString(),
+        })
+      }
     }
 
     // Upload dokumen Akta & KTP

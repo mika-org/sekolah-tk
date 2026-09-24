@@ -61,7 +61,7 @@ const fieldsByTable: Record<TableName, ReadonlySet<string>> = {
   galleries_tk: new Set(['id', 'title', 'image', 'category', 'created_at']),
   testimonials_tk: new Set(['id', 'name', 'photo', 'job', 'content', 'published']),
   announcements_tk: new Set(['id', 'title', 'content', 'target', 'published']),
-  payments_tk: new Set(['id', 'ppdb_id', 'method', 'amount', 'proof', 'status']),
+  payments_tk: new Set(['id', 'ppdb_id', 'method', 'amount', 'proof', 'status', 'created_at']),
   attendance_tk: new Set(['id', 'student_id', 'date', 'status']),
   grades_tk: new Set(['id', 'student_id', 'teacher_id', 'subject', 'score', 'description']),
   activity_logs_tk: new Set(['id', 'user_id', 'activity', 'created_at']),
