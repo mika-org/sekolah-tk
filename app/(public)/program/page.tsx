@@ -75,27 +75,27 @@ const FLAGSHIP_PROGRAMS = [
   {
     title: "Al-Qur'an Metode Tilawati",
     desc: "Mengenalkan dan menumbuhkan kecintaan anak terhadap Al-Qur'an melalui pembelajaran bertahap dan berlagu Rost yang menyenangkan.",
-    image: '/images/fasilitas/7.webp',
+    image: "/images/program_unggulan/Al-Qur'an Metode Tilawati.webp",
   },
   {
     title: "Qur'an Camp",
     desc: "Pengalaman belajar Islami yang memadukan kegiatan Al-Qur'an, ibadah, kemandirian, kebersamaan, dan aktivitas menyenangkan.",
-    image: '/images/fasilitas/11.webp',
+    image: "/images/program_unggulan/Qur'an Camp.webp",
   },
   {
     title: "Outbound Ceria",
     desc: "Aktivitas luar ruang yang melatih keberanian, kemandirian, kerja sama, serta kemampuan motorik anak melalui berbagai tantangan aman.",
-    image: '/images/gallery/7.jpg',
+    image: "/images/program_unggulan/Outbound.webp",
   },
   {
     title: "Outing Class Edukatif",
     desc: "Menghadirkan pengalaman belajar langsung melalui eksplorasi lingkungan dan kunjungan edukatif yang sesuai dengan tema pembelajaran.",
-    image: '/images/activity_fieldtrip.png',
+    image: "/images/program_unggulan/Outing Class.webp",
   },
   {
     title: "Pentas Seni & Mini Assembly",
     desc: "Wadah bagi anak untuk mengekspresikan diri, mengembangkan kreativitas, kepercayaan diri, serta keberanian tampil di depan publik.",
-    image: '/images/activity_artshow.png',
+    image: "/images/program_unggulan/Pentas Seni & Mini Asembly.webp",
   },
   {
     title: "Family Day",
@@ -110,12 +110,12 @@ const FLAGSHIP_PROGRAMS = [
   {
     title: "Wisuda Tahfidz",
     desc: "Momen apresiasi atas perjalanan anak dalam menghafal Al-Qur'an sekaligus menumbuhkan rasa cinta dan bangga terhadap proses belajarnya.",
-    image: '/images/gallery/3.jpg',
+    image: "/images/program_unggulan/Wisuda Tahfidz.webp",
   },
   {
-    title: "PPMB (Minat & Bakat)",
-    desc: "Memberikan kesempatan kepada anak untuk mengenali, mengeksplorasi, dan mengembangkan minat serta potensi melalui pilihan kegiatan favorit.",
-    image: '/images/fasilitas/12.webp',
+    title: "Khotmul Qur'an",
+    desc: "Perayaan dan tasyakuran kelulusan khatam Al-Qur'an bagi santri cilik sebagai bentuk apresiasi atas ketekunan dalam belajar membaca Al-Qur'an.",
+    image: "/images/program_unggulan/khotmul quran.webp",
   },
 ]
 

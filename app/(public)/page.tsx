@@ -25,31 +25,31 @@ const FEATURED_PROGRAMS = [
   {
     title: "Al-Qur'an Metode Tilawati",
     desc: "Mengenalkan dan menumbuhkan kecintaan anak terhadap Al-Qur'an melalui pembelajaran yang menyenangkan dan sesuai tahap perkembangan.",
-    image: '/images/fasilitas/7.webp',
+    image: "/images/program_unggulan/Al-Qur'an Metode Tilawati.webp",
     layout: 'text-top' as const
   },
   {
     title: "Qur'an Camp",
     desc: "Pengalaman belajar Islami yang memadukan kegiatan Al-Qur'an, ibadah, kemandirian, kebersamaan, dan aktivitas menyenangkan.",
-    image: '/images/fasilitas/11.webp',
+    image: "/images/program_unggulan/Qur'an Camp.webp",
     layout: 'image-top' as const
   },
   {
     title: "Outbound",
     desc: "Aktivitas luar ruang yang melatih keberanian, kemandirian, kerja sama, serta kemampuan motorik anak melalui berbagai tantangan yang menyenangkan.",
-    image: '/images/gallery/7.jpg',
+    image: "/images/program_unggulan/Outbound.webp",
     layout: 'text-top' as const
   },
   {
     title: "Outing Class",
     desc: "Menghadirkan pengalaman belajar langsung melalui eksplorasi lingkungan dan kunjungan edukatif yang sesuai dengan tema pembelajaran.",
-    image: '/images/activity_fieldtrip.png',
+    image: "/images/program_unggulan/Outing Class.webp",
     layout: 'image-top' as const
   },
   {
     title: "Pentas Seni & Mini Asembly",
     desc: "Wadah bagi anak untuk mengekspresikan diri, mengembangkan kreativitas, kepercayaan diri, serta keberanian tampil di depan publik.",
-    image: '/images/activity_artshow.png',
+    image: "/images/program_unggulan/Pentas Seni & Mini Asembly.webp",
     layout: 'text-top' as const
   },
   {
@@ -67,13 +67,13 @@ const FEATURED_PROGRAMS = [
   {
     title: "Wisuda Tahfidz",
     desc: "Momen apresiasi atas perjalanan anak dalam menghafal Al-Qur'an sekaligus menumbuhkan rasa cinta dan bangga terhadap proses belajarnya.",
-    image: '/images/gallery/3.jpg',
+    image: "/images/program_unggulan/Wisuda Tahfidz.webp",
     layout: 'image-top' as const
   },
   {
-    title: "PPMB – Program Pengembangan Minat & Bakat",
-    desc: "Memberikan kesempatan kepada anak untuk mengenali, mengeksplorasi, dan mengembangkan minat serta potensi melalui berbagai pilihan kegiatan.",
-    image: '/images/fasilitas/12.webp',
+    title: "Khotmul Qur'an",
+    desc: "Perayaan dan tasyakuran kelulusan khatam Al-Qur'an bagi santri cilik sebagai bentuk rasa syukur dan apresiasi atas ketekunan belajar Al-Qur'an.",
+    image: "/images/program_unggulan/khotmul quran.webp",
     layout: 'text-top' as const
   }
 ]
@@ -206,16 +206,13 @@ const FACILITIES = [
 ]
 
 const GALLERY_SHOWCASE = [
-  { id: 'g3', src: '/images/gallery/3.jpg', alt: 'Prestasi Juara Lomba & Siswa Berprestasi', category: 'program' },
-  { id: 'g1', src: '/images/gallery/1.jpg', alt: 'Aktivitas Belajar Berhitung di Kelas', category: 'kegiatan' },
-  { id: 'g2', src: '/images/gallery/2.jpg', alt: 'Pentas Tari Tradisional Anak Istiqamah', category: 'program' },
-  { id: 'g4', src: '/images/gallery/4.jpg', alt: 'Pentas Seni Budaya & Teater Cilik', category: 'program' },
-  { id: 'g5', src: '/images/gallery/5.jpg', alt: 'Cooking Day & Kreasi Masak Ceria', category: 'kegiatan' },
-  { id: 'g6', src: '/images/gallery/6.jpg', alt: 'Bermain Ayunan & Keseimbangan Outdoor', category: 'kegiatan' },
-  { id: 'g7', src: '/images/gallery/7.jpg', alt: 'Ketangkasan Outbound Jaring Tali', category: 'kegiatan' },
-  { id: 'g8', src: '/images/gallery/8.jpg', alt: 'Lomba Adzan & Iqomah Pentas PAI', category: 'program' },
-  { id: 'g9', src: '/images/gallery/9.jpg', alt: 'Petualangan Air Naik Rakit Edukasi', category: 'kegiatan' },
-  { id: 'g10', src: '/images/gallery/10.jpg', alt: 'Mengenal & Menyayangi Satwa Kelinci', category: 'kegiatan' },
+  { id: 'g-wisuda', src: '/images/gallery/galeri/DSC00536.webp', alt: 'Wisudawan Cilik Tahfidz Al-Qur\'an', category: 'program' },
+  { id: 'g-quran-camp', src: '/images/gallery/galeri/IMG_8916_11.webp', alt: 'Kegiatan Qur\'an Camp Mandiri KB & TK Istiqamah', category: 'program' },
+  { id: 'g-outing', src: '/images/gallery/galeri/fa2093cb-7375-4119-86dc-21d904c2b663.webp', alt: 'Kunjungan Edukasi Alam di Jendela Alam', category: 'kegiatan' },
+  { id: 'g-tari-nusantara', src: '/images/gallery/galeri/WhatsApp Image 2026-09-09 at 14.26.03.webp', alt: 'Pentas Seni Tari Kreasi Nusantara Berbusana Adat', category: 'program' },
+  { id: 'g-api-unggun', src: '/images/gallery/galeri/IMG_1196_10.webp', alt: 'Malam Api Unggun & Tasyakuran Ceria Qur\'an Camp', category: 'kegiatan' },
+  { id: 'g-shalat', src: '/images/gallery/galeri/IMG_5191.webp', alt: 'Praktik Gerakan Shalat Berjamaah di Kelas Ceria', category: 'kegiatan' },
+  { id: 'g-pelepasan', src: '/images/gallery/galeri/IMG_3646.webp', alt: 'Pelepasan & Wisuda Tahfizh Siswa Berprestasi', category: 'program' },
 ]
 
 const TESTIMONIALS_DATA = [
