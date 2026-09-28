@@ -479,16 +479,18 @@ export async function uploadGalleryPhoto(formData: FormData) {
     await requireSessionRole(['super_admin', 'admin'])
     const file = formData.get('file') as File
     const title = formData.get('title') as string
-    const category = formData.get('category') as string
+    const category = (formData.get('category') as string) || 'Kegiatan'
+    const isShowcase = formData.get('is_showcase') === 'true'
+    const isPublished = formData.get('published') !== 'false'
 
-    if (!file || !title || !category) {
-      return { error: 'Semua field wajib diisi.' }
+    if (!file || !title) {
+      return { error: 'Judul dan file foto wajib diisi.' }
     }
 
     const bytes = await file.arrayBuffer()
     const buffer = Buffer.from(bytes)
 
-    const ext = file.name.split('.').pop()
+    const ext = file.name.split('.').pop() || 'webp'
     const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`
     const filePath = `gallery/${fileName}`
 
@@ -499,7 +501,13 @@ export async function uploadGalleryPhoto(formData: FormData) {
     const supabaseAdmin = createAdminClient()
     const { data, error: dbError } = await supabaseAdmin
       .from('galleries_tk')
-      .insert({ title, category, image: publicUrl })
+      .insert({
+        title,
+        category,
+        image: publicUrl,
+        is_showcase: isShowcase,
+        published: isPublished,
+      })
       .select()
       .single()
 
@@ -508,10 +516,58 @@ export async function uploadGalleryPhoto(formData: FormData) {
     }
 
     revalidatePath('/dashboard/admin/gallery')
+    revalidatePath('/')
+    revalidatePath('/galeri')
     return { success: true, data }
   } catch (err: any) {
     console.error('Upload error:', err)
     return { error: 'Gagal mengunggah foto: ' + err.message }
+  }
+}
+
+export async function toggleGalleryShowcase(id: string, is_showcase: boolean) {
+  try {
+    await requireSessionRole(['super_admin', 'admin'])
+    const supabaseAdmin = createAdminClient()
+    const { error } = await supabaseAdmin
+      .from('galleries_tk')
+      .update({ is_showcase })
+      .eq('id', id)
+
+    if (error) {
+      return { error: 'Gagal mengubah status showcase: ' + error.message }
+    }
+
+    revalidatePath('/dashboard/admin/gallery')
+    revalidatePath('/')
+    revalidatePath('/galeri')
+    return { success: true }
+  } catch (err: any) {
+    console.error('Toggle showcase error:', err)
+    return { error: 'Gagal mengubah status showcase: ' + err.message }
+  }
+}
+
+export async function toggleGalleryPublished(id: string, published: boolean) {
+  try {
+    await requireSessionRole(['super_admin', 'admin'])
+    const supabaseAdmin = createAdminClient()
+    const { error } = await supabaseAdmin
+      .from('galleries_tk')
+      .update({ published })
+      .eq('id', id)
+
+    if (error) {
+      return { error: 'Gagal mengubah status publikasi: ' + error.message }
+    }
+
+    revalidatePath('/dashboard/admin/gallery')
+    revalidatePath('/')
+    revalidatePath('/galeri')
+    return { success: true }
+  } catch (err: any) {
+    console.error('Toggle published error:', err)
+    return { error: 'Gagal mengubah status publikasi: ' + err.message }
   }
 }
 
@@ -534,6 +590,8 @@ export async function deleteGalleryPhoto(id: string, imageUrl: string) {
     }
 
     revalidatePath('/dashboard/admin/gallery')
+    revalidatePath('/')
+    revalidatePath('/galeri')
     return { success: true }
   } catch (err: any) {
     console.error('Delete error:', err)

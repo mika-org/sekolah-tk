@@ -95,7 +95,7 @@ const FLAGSHIP_PROGRAMS = [
   {
     title: "Pentas Seni & Mini Assembly",
     desc: "Wadah bagi anak untuk mengekspresikan diri, mengembangkan kreativitas, kepercayaan diri, serta keberanian tampil di depan publik.",
-    image: "/images/program_unggulan/Pentas Seni & Mini Asembly.webp",
+    image: "/images/program_unggulan/Pentas Seni dan Mini Asembly.webp",
   },
   {
     title: "Family Day",
@@ -116,6 +116,11 @@ const FLAGSHIP_PROGRAMS = [
     title: "Khotmul Qur'an",
     desc: "Perayaan dan tasyakuran kelulusan khatam Al-Qur'an bagi santri cilik sebagai bentuk apresiasi atas ketekunan dalam belajar membaca Al-Qur'an.",
     image: "/images/program_unggulan/khotmul quran.webp",
+  },
+  {
+    title: "PPMB - Program Pengembangan Minat & Bakat",
+    desc: "Wadah eksplorasi dan stimulasi potensi keunikan setiap anak di berbagai bidang minat dan bakat sejak usia dini secara menyenangkan dan terarah.",
+    image: "/images/program_unggulan/PPMB.webp",
   },
 ]
 

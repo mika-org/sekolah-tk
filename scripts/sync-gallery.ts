@@ -154,14 +154,10 @@ const GALLERY_ITEMS = [
     category: 'Kegiatan',
   },
   {
-    title: 'Pentas Seni Tari Kreasi Nusantara',
-    image: '/images/gallery/galeri/WhatsApp Image 2026-09-09 at 14.26.03.webp',
-    category: 'Kegiatan',
-  },
-  {
     title: 'Tari Saman Cilik Penuh Kekompakan',
     image: '/images/gallery/galeri/e7777a50-bd66-4a1f-8fcf-65186e447c02.webp',
     category: 'Kegiatan',
+    is_showcase: true,
   },
   {
     title: 'Tari Tradisional Merak Berbusana Batik',

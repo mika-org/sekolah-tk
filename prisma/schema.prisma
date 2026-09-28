@@ -127,11 +127,13 @@ model PpdbDocument {
 }
 
 model Gallery {
-  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title      String   @db.Text
-  image      String   @db.Text
-  category   String   @db.Text
-  created_at DateTime @default(now()) @db.Timestamptz(6)
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title       String   @db.Text
+  image       String   @db.Text
+  category    String   @db.Text
+  is_showcase Boolean  @default(false)
+  published   Boolean  @default(true)
+  created_at  DateTime @default(now()) @db.Timestamptz(6)
 
   @@map("galleries_tk")
 }

@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import { X, ZoomIn } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useModalBackHandler } from '@/lib/modal-history'
+import { createClient } from '@/lib/database/client'
 
 // Foto galeri autentik dokumentasi kegiatan KB & TK Istiqamah
 const GALLERY_ITEMS = [
@@ -182,12 +183,7 @@ const GALLERY_ITEMS = [
     title: 'Briefing Strategi Tim Futsal Bersama Pelatih',
     desc: 'Anak-anak mendengarkan arahan pelatih dengan penuh perhatian sebelum memulai pertandingan.'
   },
-  {
-    id: 'g-tari-merah-kuning',
-    src: '/images/gallery/galeri/WhatsApp Image 2026-09-09 at 14.26.03.webp',
-    title: 'Pentas Seni Tari Kreasi Nusantara',
-    desc: 'Kostum gemerlap dan mahkota anggun menghiasi penampilan panggung para penari cilik Istiqamah.'
-  },
+
   {
     id: 'g-tari-saman',
     src: '/images/gallery/galeri/e7777a50-bd66-4a1f-8fcf-65186e447c02.webp',
@@ -228,7 +224,36 @@ const GALLERY_ITEMS = [
 
 
 export default function GaleriPage() {
-  const [activePhoto, setActivePhoto] = useState<typeof GALLERY_ITEMS[0] | null>(null)
+  const [galleryList, setGalleryList] = useState<any[]>(GALLERY_ITEMS)
+  const [activePhoto, setActivePhoto] = useState<any | null>(null)
+
+  useEffect(() => {
+    async function fetchGallery() {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('galleries_tk')
+          .select('*')
+          .neq('category', 'Hero Banner')
+          .eq('published', true)
+          .order('created_at', { ascending: false })
+
+        if (!error && data && data.length > 0) {
+          setGalleryList(
+            data.map((item) => ({
+              id: item.id,
+              src: item.image,
+              title: item.title,
+              desc: item.category || 'Dokumentasi KB & TK Istiqamah',
+            }))
+          )
+        }
+      } catch (err) {
+        console.error('Error fetching gallery:', err)
+      }
+    }
+    fetchGallery()
+  }, [])
 
   useModalBackHandler(Boolean(activePhoto), () => setActivePhoto(null))
 
@@ -252,7 +277,7 @@ export default function GaleriPage() {
       {/* ─── GALLERY PHOTO GRID (No Category Tabs) ─── */}
       <section className="max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {GALLERY_ITEMS.map((item, idx) => (
+          {galleryList.map((item, idx) => (
             <motion.div
               key={item.id}
               initial={{ opacity: 0, y: 15 }}
@@ -276,7 +301,7 @@ export default function GaleriPage() {
                   </div>
                 </div>
                 <div className="absolute top-3 right-3 bg-black/45 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white tracking-wide">
-                  {idx + 1} / {GALLERY_ITEMS.length}
+                  {idx + 1} / {galleryList.length}
                 </div>
               </div>
 

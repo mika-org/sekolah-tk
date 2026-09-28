@@ -1,7 +1,18 @@
 import { mkdir, readFile, readdir, rm, stat, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-const storageRoot = path.resolve(process.env.STORAGE_PATH || path.join(process.cwd(), 'storage'))
+function getStorageRoot() {
+  const envPath = process.env.STORAGE_PATH
+  if (envPath) {
+    if (process.platform === 'win32' && envPath.startsWith('/')) {
+      return path.resolve(process.cwd(), 'storage')
+    }
+    return path.resolve(envPath)
+  }
+  return path.resolve(process.cwd(), 'storage')
+}
+
+const storageRoot = getStorageRoot()
 
 function safeSegment(segment: string) {
   if (!segment || segment === '.' || segment === '..') {
@@ -33,7 +44,11 @@ export async function listStorageBuckets() {
 }
 
 export function getStorageUrl(bucket: string, objectPath: string) {
-  const base = (process.env.NEXT_PUBLIC_STORAGE_URL || 'https://tkistiqamah.com/uploads').replace(/\/$/, '')
+  let base = process.env.NEXT_PUBLIC_STORAGE_URL || 'https://tkistiqamah.com/uploads'
+  if (process.platform === 'win32' && process.env.NODE_ENV !== 'production' && base.startsWith('http')) {
+    base = '/uploads'
+  }
+  base = base.replace(/\/$/, '')
   const encodedPath = objectPath.replace(/\\/g, '/').split('/').filter(Boolean).map(encodeURIComponent).join('/')
   return `${base}/${encodeURIComponent(bucket)}/${encodedPath}`
 }

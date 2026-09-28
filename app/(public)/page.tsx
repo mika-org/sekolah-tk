@@ -49,7 +49,7 @@ const FEATURED_PROGRAMS = [
   {
     title: "Pentas Seni & Mini Asembly",
     desc: "Wadah bagi anak untuk mengekspresikan diri, mengembangkan kreativitas, kepercayaan diri, serta keberanian tampil di depan publik.",
-    image: "/images/program_unggulan/Pentas Seni & Mini Asembly.webp",
+    image: "/images/program_unggulan/Pentas Seni dan Mini Asembly.webp",
     layout: 'text-top' as const
   },
   {
@@ -75,6 +75,12 @@ const FEATURED_PROGRAMS = [
     desc: "Perayaan dan tasyakuran kelulusan khatam Al-Qur'an bagi santri cilik sebagai bentuk rasa syukur dan apresiasi atas ketekunan belajar Al-Qur'an.",
     image: "/images/program_unggulan/khotmul quran.webp",
     layout: 'text-top' as const
+  },
+  {
+    title: "PPMB - Program Pengembangan Minat & Bakat",
+    desc: "Wadah eksplorasi dan stimulasi potensi keunikan setiap anak di berbagai bidang minat dan bakat sejak usia dini secara menyenangkan dan terarah.",
+    image: "/images/program_unggulan/PPMB.webp",
+    layout: 'image-top' as const
   }
 ]
 
@@ -206,13 +212,13 @@ const FACILITIES = [
 ]
 
 const GALLERY_SHOWCASE = [
-  { id: 'g-wisuda', src: '/images/gallery/galeri/DSC00536.webp', alt: 'Wisudawan Cilik Tahfidz Al-Qur\'an', category: 'program' },
-  { id: 'g-quran-camp', src: '/images/gallery/galeri/IMG_8916_11.webp', alt: 'Kegiatan Qur\'an Camp Mandiri KB & TK Istiqamah', category: 'program' },
-  { id: 'g-outing', src: '/images/gallery/galeri/fa2093cb-7375-4119-86dc-21d904c2b663.webp', alt: 'Kunjungan Edukasi Alam di Jendela Alam', category: 'kegiatan' },
-  { id: 'g-tari-nusantara', src: '/images/gallery/galeri/WhatsApp Image 2026-09-09 at 14.26.03.webp', alt: 'Pentas Seni Tari Kreasi Nusantara Berbusana Adat', category: 'program' },
-  { id: 'g-api-unggun', src: '/images/gallery/galeri/IMG_1196_10.webp', alt: 'Malam Api Unggun & Tasyakuran Ceria Qur\'an Camp', category: 'kegiatan' },
-  { id: 'g-shalat', src: '/images/gallery/galeri/IMG_5191.webp', alt: 'Praktik Gerakan Shalat Berjamaah di Kelas Ceria', category: 'kegiatan' },
-  { id: 'g-pelepasan', src: '/images/gallery/galeri/IMG_3646.webp', alt: 'Pelepasan & Wisuda Tahfizh Siswa Berprestasi', category: 'program' },
+  { id: 'g-wisuda', src: '/uploads/bucket_tk/gallery/DSC00536.webp', alt: 'Wisudawan Cilik Tahfidz Al-Qur\'an', category: 'program' },
+  { id: 'g-quran-camp', src: '/uploads/bucket_tk/gallery/IMG_8916_11.webp', alt: 'Kegiatan Qur\'an Camp Mandiri KB & TK Istiqamah', category: 'program' },
+  { id: 'g-outing', src: '/uploads/bucket_tk/gallery/fa2093cb-7375-4119-86dc-21d904c2b663.webp', alt: 'Kunjungan Edukasi Alam di Jendela Alam', category: 'kegiatan' },
+  { id: 'g-tari-saman', src: '/uploads/bucket_tk/gallery/e7777a50-bd66-4a1f-8fcf-65186e447c02.webp', alt: 'Tari Saman Cilik Penuh Kekompakan', category: 'program' },
+  { id: 'g-api-unggun', src: '/uploads/bucket_tk/gallery/IMG_1196_10.webp', alt: 'Malam Api Unggun & Tasyakuran Ceria Qur\'an Camp', category: 'kegiatan' },
+  { id: 'g-shalat', src: '/uploads/bucket_tk/gallery/IMG_5191.webp', alt: 'Praktik Gerakan Shalat Berjamaah di Kelas Ceria', category: 'kegiatan' },
+  { id: 'g-pelepasan', src: '/uploads/bucket_tk/gallery/IMG_3646.webp', alt: 'Pelepasan & Wisuda Tahfizh Siswa Berprestasi', category: 'program' },
 ]
 
 const TESTIMONIALS_DATA = [
@@ -308,7 +314,42 @@ export default function HomePage() {
       }
     }
     loadTestimonials()
+
+    async function loadShowcaseGallery() {
+      try {
+        const supabase = createClient()
+        const { data, error } = await supabase
+          .from('galleries_tk')
+          .select('*')
+          .neq('category', 'Hero Banner')
+          .eq('published', true)
+          .order('is_showcase', { ascending: false })
+          .order('created_at', { ascending: false })
+          .limit(7)
+
+        if (!error && data && data.length > 0) {
+          const mapped = data.map((item: any) => ({
+            id: item.id,
+            src: item.image,
+            alt: item.title,
+            category: (item.category || 'kegiatan').toLowerCase(),
+          }))
+          if (mapped.length < 7) {
+            const existingIds = new Set(mapped.map((m: any) => m.id))
+            const fallbacks = GALLERY_SHOWCASE.filter((f) => !existingIds.has(f.id))
+            setShowcaseGallery([...mapped, ...fallbacks].slice(0, 7))
+          } else {
+            setShowcaseGallery(mapped.slice(0, 7))
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching showcase gallery:', err)
+      }
+    }
+    loadShowcaseGallery()
   }, [])
+
+  const [showcaseGallery, setShowcaseGallery] = useState<any[]>(GALLERY_SHOWCASE)
 
   // Program Unggulan horizontal carousel state & ref
   const [activeProgramIndex, setActiveProgramIndex] = useState(0)
@@ -980,18 +1021,20 @@ export default function HomePage() {
             {/* Gallery Grid matching reference (Left portrait + Right 2x3 grid) */}
             <div className="grid grid-cols-1 md:grid-cols-12 gap-3 sm:gap-4 mt-6">
               {/* Left Tall Portrait Card */}
-              <div className="md:col-span-4 relative rounded-2xl overflow-hidden shadow-md aspect-[3/4] md:aspect-auto min-h-[250px] md:min-h-full border border-white/20 group">
-                <Image
-                  src={GALLERY_SHOWCASE[0].src}
-                  alt={GALLERY_SHOWCASE[0].alt}
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              </div>
+              {showcaseGallery[0] && (
+                <div className="md:col-span-4 relative rounded-2xl overflow-hidden shadow-md aspect-[3/4] md:aspect-auto min-h-[250px] md:min-h-full border border-white/20 group">
+                  <Image
+                    src={showcaseGallery[0].src}
+                    alt={showcaseGallery[0].alt}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
+              )}
 
               {/* Right 2x3 Grid */}
               <div className="md:col-span-8 grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
-                {GALLERY_SHOWCASE.slice(1).map((item) => (
+                {showcaseGallery.slice(1).map((item) => (
                   <div
                     key={item.id}
                     className="relative rounded-2xl overflow-hidden shadow-md aspect-[4/3] border border-white/20 group"

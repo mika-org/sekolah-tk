@@ -58,7 +58,7 @@ const fieldsByTable: Record<TableName, ReadonlySet<string>> = {
     'mother_details', 'development_health', 'status', 'payment_status', 'created_at',
   ]),
   ppdb_documents_tk: new Set(['id', 'ppdb_id', 'type', 'file_url']),
-  galleries_tk: new Set(['id', 'title', 'image', 'category', 'created_at']),
+  galleries_tk: new Set(['id', 'title', 'image', 'category', 'is_showcase', 'published', 'created_at']),
   testimonials_tk: new Set(['id', 'name', 'photo', 'job', 'content', 'published']),
   announcements_tk: new Set(['id', 'title', 'content', 'target', 'published']),
   payments_tk: new Set(['id', 'ppdb_id', 'method', 'amount', 'proof', 'status', 'created_at']),
