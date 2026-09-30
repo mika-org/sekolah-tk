@@ -252,11 +252,12 @@ export default function OrangTuaDashboard() {
               <span>Status:</span>
               <StatusBadge status={ppdbData?.status || 'Submitted'} size="sm" />
             </div>
-            <Link href="/dashboard/orang-tua/ppdb-status" className="w-full">
-              <Button variant="outline" className="w-full justify-between border-gray-100 hover:border-gray-200 text-primary-blue text-xs font-bold py-2 h-auto rounded-xl">
-                <span>Lihat Detail SPMB</span>
-                <ArrowRight size={14} />
-              </Button>
+            <Link
+              href="/dashboard/orang-tua/ppdb-status"
+              className="w-full flex items-center justify-between border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 text-primary-blue text-xs font-bold py-2 px-3.5 rounded-xl transition-colors cursor-pointer"
+            >
+              <span>Lihat Detail SPMB</span>
+              <ArrowRight size={14} />
             </Link>
           </CardContent>
         </Card>
@@ -275,11 +276,12 @@ export default function OrangTuaDashboard() {
               <span>Rasio Masuk:</span>
               <span className="text-primary-green font-extrabold">{presenceRate}%</span>
             </div>
-            <Link href="/dashboard/orang-tua/attendance" className="w-full">
-              <Button variant="outline" className="w-full justify-between border-gray-100 hover:border-gray-200 text-primary-blue text-xs font-bold py-2 h-auto rounded-xl">
-                <span>Histori Kehadiran</span>
-                <ArrowRight size={14} />
-              </Button>
+            <Link
+              href="/dashboard/orang-tua/attendance"
+              className="w-full flex items-center justify-between border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 text-primary-blue text-xs font-bold py-2 px-3.5 rounded-xl transition-colors cursor-pointer"
+            >
+              <span>Histori Kehadiran</span>
+              <ArrowRight size={14} />
             </Link>
           </CardContent>
         </Card>
@@ -298,11 +300,12 @@ export default function OrangTuaDashboard() {
               <span>Nilai Terakhir:</span>
               <span className="text-purple-600 font-extrabold">{latestGrade ? `${latestGrade.subject} (${latestGrade.score})` : '-'}</span>
             </div>
-            <Link href="/dashboard/orang-tua/grades" className="w-full">
-              <Button variant="outline" className="w-full justify-between border-gray-100 hover:border-gray-200 text-primary-blue text-xs font-bold py-2 h-auto rounded-xl">
-                <span>Rapor Lengkap</span>
-                <ArrowRight size={14} />
-              </Button>
+            <Link
+              href="/dashboard/orang-tua/grades"
+              className="w-full flex items-center justify-between border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 text-primary-blue text-xs font-bold py-2 px-3.5 rounded-xl transition-colors cursor-pointer"
+            >
+              <span>Rapor Lengkap</span>
+              <ArrowRight size={14} />
             </Link>
           </CardContent>
         </Card>
@@ -321,11 +324,12 @@ export default function OrangTuaDashboard() {
               <span>SPP Juli:</span>
               <span className="text-primary-green font-extrabold">LUNAS</span>
             </div>
-            <Link href="/dashboard/orang-tua/billing" className="w-full">
-              <Button variant="outline" className="w-full justify-between border-gray-100 hover:border-gray-200 text-primary-blue text-xs font-bold py-2 h-auto rounded-xl">
-                <span>Bayar & Upload</span>
-                <ArrowRight size={14} />
-              </Button>
+            <Link
+              href="/dashboard/orang-tua/billing"
+              className="w-full flex items-center justify-between border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 text-primary-blue text-xs font-bold py-2 px-3.5 rounded-xl transition-colors cursor-pointer"
+            >
+              <span>Bayar & Upload</span>
+              <ArrowRight size={14} />
             </Link>
           </CardContent>
         </Card>

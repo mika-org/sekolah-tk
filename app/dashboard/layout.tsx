@@ -7,7 +7,6 @@ import { useRouter, usePathname } from 'next/navigation'
 import { createClient } from '@/lib/database/client'
 import { logout } from '@/actions/auth'
 import { Button } from '@/components/ui/button'
-import { useModalBackHandler } from '@/lib/modal-history'
 import {
   LayoutDashboard,
   Users,
@@ -49,9 +48,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const router = useRouter()
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
-  useModalBackHandler(mobileOpen, () => setMobileOpen(false))
   const [user, setUser] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+
+  // Automatically close mobile menu when navigating to another page
+  useEffect(() => {
+    setMobileOpen(false)
+  }, [pathname])
 
   // State to track which group is expanded / collapsed
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({})
@@ -321,9 +324,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   <Link
                     key={item.name}
                     href={item.href}
-                    onClick={() => isMobile && setMobileOpen(false)}
+                    onClick={() => {
+                      if (isMobile) {
+                        setMobileOpen(false)
+                      }
+                    }}
                     className={cn(
-                      'flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all',
+                      'flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer',
                       active
                         ? 'bg-primary-green text-white shadow-md shadow-primary-green/20'
                         : 'text-gray-300 hover:bg-white/10 hover:text-white'
@@ -345,7 +352,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               type="button"
               onClick={() => toggleGroup(group.id)}
               className={cn(
-                'w-full flex items-center justify-between px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors select-none cursor-pointer',
+                'w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors select-none cursor-pointer',
                 hasActiveChild ? 'text-emerald-400' : 'text-gray-400 hover:text-gray-200'
               )}
             >
@@ -369,9 +376,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <Link
                       key={item.name}
                       href={item.href}
-                      onClick={() => isMobile && setMobileOpen(false)}
+                      onClick={() => {
+                        if (isMobile) {
+                          setMobileOpen(false)
+                        }
+                      }}
                       className={cn(
-                        'flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-bold transition-all',
+                        'flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer',
                         active
                           ? 'bg-primary-green text-white font-extrabold shadow-md shadow-primary-green/20'
                           : 'text-gray-300 hover:bg-white/10 hover:text-white'
@@ -478,9 +489,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <div className="flex-1 flex flex-col overflow-hidden">
         
         {/* MOBILE HEADER */}
-        <header className="lg:hidden bg-primary-blue text-white px-4 py-3.5 flex items-center justify-between shadow-md z-30">
+        <header className="lg:hidden bg-primary-blue text-white px-4 py-3 flex items-center justify-between shadow-md z-30 flex-shrink-0">
           <div className="flex items-center space-x-3">
-            <button onClick={() => setMobileOpen(!mobileOpen)} className="p-1 rounded-lg hover:bg-white/10 focus:outline-none cursor-pointer">
+            <button
+              type="button"
+              onClick={() => setMobileOpen(!mobileOpen)}
+              aria-label={mobileOpen ? 'Tutup menu' : 'Buka menu'}
+              className="p-2 -ml-1 rounded-xl hover:bg-white/10 active:bg-white/20 focus:outline-none transition-colors cursor-pointer flex items-center justify-center min-w-[40px] min-h-[40px]"
+            >
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
             <div className="relative w-7 h-7 bg-white rounded-lg p-0.5 flex-shrink-0">
@@ -491,20 +507,29 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span className="text-[9px] text-white/70 font-semibold leading-none">NPSN: 20255241</span>
             </div>
           </div>
-          <button onClick={handleLogout} className="text-red-300 hover:text-red-200 p-1.5 cursor-pointer">
+          <button
+            type="button"
+            onClick={handleLogout}
+            aria-label="Keluar Portal"
+            className="text-red-300 hover:text-red-200 p-2 cursor-pointer rounded-xl hover:bg-white/10 min-w-[36px] min-h-[36px] flex items-center justify-center"
+          >
             <LogOut size={18} />
           </button>
         </header>
 
         {/* MOBILE SIDEBAR DRAWER */}
         {mobileOpen && (
-          <div className="lg:hidden fixed inset-0 z-40 flex">
+          <div className="lg:hidden fixed inset-0 z-50">
             {/* Backdrop */}
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" onClick={() => setMobileOpen(false)} />
+            <div
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity cursor-pointer"
+              onClick={() => setMobileOpen(false)}
+              aria-hidden="true"
+            />
             
             {/* Drawer */}
-            <div className="relative flex-1 flex flex-col max-w-xs w-full bg-primary-blue text-white z-50 shadow-2xl">
-              <div className="p-5 border-b border-white/10 flex justify-between items-center bg-primary-blue">
+            <div className="fixed inset-y-0 left-0 w-full max-w-xs bg-primary-blue text-white shadow-2xl z-10 flex flex-col">
+              <div className="p-5 border-b border-white/10 flex justify-between items-center bg-primary-blue flex-shrink-0">
                 <div className="flex items-center space-x-3">
                   <div className="relative w-8 h-8 bg-white rounded-xl p-0.5 flex items-center justify-center shadow-sm flex-shrink-0">
                     <Image src="/images/hero_gsap/logo.png" alt="Logo KB & TK Istiqamah" fill className="object-contain p-0.5" />
@@ -515,17 +540,22 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     <span className="text-[9px] uppercase font-bold text-primary-green tracking-wider">{formatRoleName(role)}</span>
                   </div>
                 </div>
-                <button onClick={() => setMobileOpen(false)} className="text-gray-300 hover:text-white p-1 rounded-lg hover:bg-white/10 cursor-pointer">
+                <button
+                  type="button"
+                  onClick={() => setMobileOpen(false)}
+                  aria-label="Tutup menu"
+                  className="text-gray-300 hover:text-white p-2 rounded-xl hover:bg-white/10 active:bg-white/20 cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center"
+                >
                   <X size={20} />
                 </button>
               </div>
 
-              <nav className="flex-grow px-3.5 py-4 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10">
+              <nav className="flex-1 px-3.5 py-4 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10">
                 {renderNav(true)}
               </nav>
 
               {/* Mobile Social Media Redirect Footer */}
-              <div className="px-4 py-3 border-t border-white/10 bg-primary-blue space-y-1.5">
+              <div className="px-4 py-3 border-t border-white/10 bg-primary-blue space-y-1.5 flex-shrink-0">
                 <span className="text-[9px] font-extrabold uppercase tracking-wider text-white/50 block">Media Sosial &amp; Kontak Resmi</span>
                 <div className="flex items-center gap-2">
                   <a
@@ -567,7 +597,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
               </div>
 
-              <div className="p-3.5 border-t border-white/10 bg-primary-blue">
+              <div className="p-3.5 border-t border-white/10 bg-primary-blue flex-shrink-0">
                 <Button 
                   onClick={handleLogout}
                   variant="ghost" 

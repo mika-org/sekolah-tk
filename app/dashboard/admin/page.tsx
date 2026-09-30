@@ -275,23 +275,26 @@ export default function AdminDashboard() {
               <CardTitle className="text-sm font-black text-primary-blue">Shortcut Pengelola</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Link href="/dashboard/admin/hero" className="block w-full">
-                <Button className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue border-none font-bold rounded-xl justify-start space-x-3 text-xs cursor-pointer">
-                  <Layers size={16} className="text-primary-green" />
-                  <span>Kelola Banner Hero</span>
-                </Button>
+              <Link
+                href="/dashboard/admin/hero"
+                className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue font-bold rounded-xl flex items-center space-x-3 text-xs px-3.5 py-3 transition-colors cursor-pointer"
+              >
+                <Layers size={16} className="text-primary-green flex-shrink-0" />
+                <span>Kelola Banner Hero</span>
               </Link>
-              <Link href="/dashboard/admin/gallery" className="block w-full">
-                <Button className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue border-none font-bold rounded-xl justify-start space-x-3 text-xs cursor-pointer">
-                  <Camera size={16} className="text-primary-green" />
-                  <span>Upload Foto Galeri</span>
-                </Button>
+              <Link
+                href="/dashboard/admin/gallery"
+                className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue font-bold rounded-xl flex items-center space-x-3 text-xs px-3.5 py-3 transition-colors cursor-pointer"
+              >
+                <Camera size={16} className="text-primary-green flex-shrink-0" />
+                <span>Upload Foto Galeri</span>
               </Link>
-              <Link href="/dashboard/admin/announcements" className="block w-full">
-                <Button className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue border-none font-bold rounded-xl justify-start space-x-3 text-xs cursor-pointer">
-                  <Megaphone size={16} className="text-primary-green" />
-                  <span>Buat Pengumuman Baru</span>
-                </Button>
+              <Link
+                href="/dashboard/admin/announcements"
+                className="w-full bg-[#F8F6F2] hover:bg-[#F8F6F2]/80 text-primary-blue font-bold rounded-xl flex items-center space-x-3 text-xs px-3.5 py-3 transition-colors cursor-pointer"
+              >
+                <Megaphone size={16} className="text-primary-green flex-shrink-0" />
+                <span>Buat Pengumuman Baru</span>
               </Link>
             </CardContent>
           </Card>

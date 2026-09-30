@@ -115,10 +115,11 @@ export default function GuruStudentsPage() {
           >
             <RefreshCw size={14} /> Refresh
           </Button>
-          <Link href="/dashboard/guru/grades">
-            <Button className="bg-primary-blue hover:bg-blue-900 text-white font-extrabold rounded-xl text-xs cursor-pointer gap-1.5 shadow-md">
-              <BookOpen size={14} /> Penilaian Kelas
-            </Button>
+          <Link
+            href="/dashboard/guru/grades"
+            className="bg-primary-blue hover:bg-blue-900 text-white font-extrabold rounded-xl text-xs cursor-pointer gap-1.5 shadow-md inline-flex items-center px-3 py-2 transition-colors"
+          >
+            <BookOpen size={14} /> Penilaian Kelas
           </Link>
         </div>
       </div>
