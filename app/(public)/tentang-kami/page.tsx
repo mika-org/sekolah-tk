@@ -241,10 +241,10 @@ export default function TentangKamiPage() {
               </h2>
             </div>
             <Link
-              href="/program"
+              href="/fasilitas"
               className="inline-flex items-center gap-1.5 text-xs font-bold text-white bg-white/15 hover:bg-white/25 px-4 py-2 rounded-full transition-all w-fit"
             >
-              Lihat Program Belajar <ArrowRight size={14} />
+              Lihat Semua Fasilitas <ArrowRight size={14} />
             </Link>
           </div>
 
@@ -253,11 +253,16 @@ export default function TentangKamiPage() {
               { src: '/images/fasilitas/1.webp', title: 'Ruang Belajar Tematik' },
               { src: '/images/fasilitas/6.webp', title: 'Ruang Bermain Indoor' },
               { src: '/images/fasilitas/7.webp', title: 'Perpustakaan & Pojok Baca' },
-              { src: '/images/fasilitas/4.webp', title: 'Playground Semi-Outdoor' }
+              { src: '/images/fasilitas/4.webp', title: 'Playground Semi-Outdoor' },
+              { src: '/images/fasilitas/8.webp', title: 'Ruang Multimedia & Interaktif' },
+              { src: '/images/fasilitas/5.webp', title: 'Taman Bermain Outdoor' },
+              { src: '/images/fasilitas/2.webp', title: 'Area Wudhu Anak' },
+              { src: '/images/fasilitas/10.webp', title: 'Lingkungan Sekolah Asri' },
             ].map((f, idx) => (
-              <div
+              <Link
                 key={idx}
-                className="relative rounded-2xl overflow-hidden aspect-[4/3] border border-white/15 group"
+                href="/fasilitas"
+                className="relative rounded-2xl overflow-hidden aspect-[4/3] border border-white/15 group block"
               >
                 <Image
                   src={f.src}
@@ -271,7 +276,7 @@ export default function TentangKamiPage() {
                     {f.title}
                   </span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
         </div>

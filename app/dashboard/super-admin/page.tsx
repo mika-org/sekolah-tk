@@ -7,6 +7,7 @@ import { createClient } from '@/lib/database/client'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import Link from 'next/link'
 import {
   GraduationCap,
   Users,
@@ -17,7 +18,8 @@ import {
   TrendingUp,
   Activity,
   History,
-  Lock
+  Lock,
+  ArrowUpRight
 } from 'lucide-react'
 
 export default function SuperAdminDashboard() {
@@ -102,53 +104,73 @@ export default function SuperAdminDashboard() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center">
-              <GraduationCap size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Total Guru</div>
-              <div className="text-2xl font-black text-primary-blue">{teachersCount}</div>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/super-admin/teachers" className="block group" title="Buka Menu Master Guru">
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <GraduationCap size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Total Guru</div>
+                  <div className="text-2xl font-black text-primary-blue">{teachersCount}</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-green transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center">
-              <Users size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Total Murid</div>
-              <div className="text-2xl font-black text-primary-blue">{studentsCount}</div>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/super-admin/students" className="block group" title="Buka Menu Master Murid">
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Users size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Total Murid</div>
+                  <div className="text-2xl font-black text-primary-blue">{studentsCount}</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-blue transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center">
-              <Layers size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Jumlah Kelas</div>
-              <div className="text-2xl font-black text-primary-blue">{classesCount}</div>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/super-admin/classes" className="block group" title="Buka Menu Master Kelas">
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Layers size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Jumlah Kelas</div>
+                  <div className="text-2xl font-black text-primary-blue">{classesCount}</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-amber-600 transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-[#F8F6F2] text-gray-500 rounded-2xl flex items-center justify-center">
-              <Activity size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Tahun Ajaran</div>
-              <div className="text-sm font-black text-primary-blue mt-1">2026 / 2027</div>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/super-admin/settings" className="block group" title="Buka Menu Pengaturan Website">
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-[#F8F6F2] text-gray-500 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Activity size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Tahun Ajaran</div>
+                  <div className="text-sm font-black text-primary-blue mt-1">2026 / 2027</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-blue transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">

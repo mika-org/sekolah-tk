@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
-import { History, RefreshCw, Activity } from 'lucide-react'
+import { History, RefreshCw, Activity, ArrowUpRight } from 'lucide-react'
 
 export default function AuditLogsPage() {
   const [logs, setLogs] = useState<any[]>([])
@@ -76,28 +76,52 @@ export default function AuditLogsPage() {
 
       {/* Summary */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center"><History size={22} /></div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Total Log Tercatat</div>
-              <div className="text-2xl font-black text-primary-blue">{logs.length}</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center"><Activity size={22} /></div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Hasil Pencarian</div>
-              <div className="text-2xl font-black text-primary-blue">{filteredLogs.length}</div>
-            </div>
-          </CardContent>
-        </Card>
+        <div
+          onClick={() => {
+            setSearchQuery('')
+            document.getElementById('daftar-audit-logs')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="group block cursor-pointer"
+          title="Klik untuk melihat seluruh riwayat aktivitas"
+        >
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform"><History size={22} /></div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Total Log Tercatat</div>
+                  <div className="text-2xl font-black text-primary-blue">{logs.length}</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-blue transition-colors" />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div
+          onClick={() => {
+            document.getElementById('daftar-audit-logs')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="group block cursor-pointer"
+          title="Klik untuk melihat hasil pencarian"
+        >
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform"><Activity size={22} /></div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Hasil Pencarian</div>
+                  <div className="text-2xl font-black text-primary-blue">{filteredLogs.length}</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-green transition-colors" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Logs Card */}
-      <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
+      <Card id="daftar-audit-logs" className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden scroll-mt-6">
         <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">

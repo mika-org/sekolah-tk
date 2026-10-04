@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
 import { StatusBadge } from '@/components/ui/status-badge'
+import Link from 'next/link'
 import {
   GraduationCap,
   Plus,
@@ -21,7 +22,8 @@ import {
   MapPin,
   UserCheck,
   AlertTriangle,
-  Copy
+  Copy,
+  ArrowUpRight
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -211,43 +213,81 @@ export default function MasterGuruPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center">
-              <GraduationCap size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Total Guru</div>
-              <div className="text-2xl font-black text-primary-blue">{teachers.length}</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center">
-              <UserCheck size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Terhubung Portal</div>
-              <div className="text-2xl font-black text-primary-blue">{teachers.filter(t => t.user_id).length}</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center">
-              <GraduationCap size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Belum Terhubung</div>
-              <div className="text-2xl font-black text-amber-600">{teachers.filter(t => !t.user_id).length}</div>
-            </div>
-          </CardContent>
-        </Card>
+        <Link
+          href="/dashboard/super-admin/teachers"
+          onClick={() => {
+            setSearchQuery('')
+            setCurrentPage(1)
+            const el = document.getElementById('daftar-guru')
+            el?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="block group"
+          title="Lihat Seluruh Daftar Guru"
+        >
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <GraduationCap size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Total Guru</div>
+                  <div className="text-2xl font-black text-primary-blue">{teachers.length}</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-green transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link
+          href="/dashboard/admin/users"
+          className="block group"
+          title="Buka Menu Pengguna Portal (Kelola Akun Guru)"
+        >
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <UserCheck size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Terhubung Portal</div>
+                  <div className="text-2xl font-black text-primary-blue">{teachers.filter(t => t.user_id).length}</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-blue transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        <div
+          onClick={() => {
+            resetForm()
+            setCreateOpen(true)
+          }}
+          className="block group cursor-pointer"
+          title="Tambah Akun Guru Baru"
+        >
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <GraduationCap size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Belum Terhubung</div>
+                  <div className="text-2xl font-black text-amber-600">{teachers.filter(t => !t.user_id).length}</div>
+                </div>
+              </div>
+              <Plus size={18} className="text-amber-500 group-hover:text-amber-700 transition-colors" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Table */}
-      <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
+      <Card id="daftar-guru" className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
         <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-lg font-black text-primary-blue">Daftar Guru Pengajar</CardTitle>

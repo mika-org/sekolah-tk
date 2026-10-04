@@ -207,32 +207,71 @@ export default function OrangTuaGradesPage() {
 
       {/* Criteria Summary Card */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 no-print">
-        <Card className="bg-red-50/60 border-red-100 rounded-2xl p-4 text-center">
-          <div className="text-[10px] font-bold text-red-600 uppercase">1. Belum Berkembang</div>
-          <div className="text-2xl font-black text-red-700 mt-1">{summaryCounts.BB}</div>
-          <div className="text-[10px] text-red-500 font-semibold mt-0.5">BB (Perlu Bimbingan)</div>
-        </Card>
-        <Card className="bg-amber-50/60 border-amber-100 rounded-2xl p-4 text-center">
-          <div className="text-[10px] font-bold text-amber-600 uppercase">2. Mulai Berkembang</div>
-          <div className="text-2xl font-black text-amber-700 mt-1">{summaryCounts.MB}</div>
-          <div className="text-[10px] text-amber-500 font-semibold mt-0.5">MB (Perlu Diingatkan)</div>
-        </Card>
-        <Card className="bg-blue-50/60 border-blue-100 rounded-2xl p-4 text-center">
-          <div className="text-[10px] font-bold text-blue-600 uppercase">3. Sesuai Harapan</div>
-          <div className="text-2xl font-black text-blue-700 mt-1">{summaryCounts.BSH}</div>
-          <div className="text-[10px] text-blue-500 font-semibold mt-0.5">BSH (Mandiri)</div>
-        </Card>
-        <Card className="bg-emerald-50/60 border-emerald-100 rounded-2xl p-4 text-center">
-          <div className="text-[10px] font-bold text-emerald-600 uppercase">4. Sangat Baik</div>
-          <div className="text-2xl font-black text-emerald-700 mt-1">{summaryCounts.BSB}</div>
-          <div className="text-[10px] text-emerald-500 font-semibold mt-0.5">BSB (Mandiri &amp; Teladan)</div>
-        </Card>
+        <div
+          onClick={() => {
+            setSearchQuery('BB')
+            document.getElementById('daftar-capaian-pembelajaran')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="cursor-pointer group"
+          title="Klik untuk memfilter capaian Belum Berkembang (BB)"
+        >
+          <Card className="bg-red-50/60 border-red-100 rounded-2xl p-4 text-center hover:bg-red-100/60 hover:shadow-sm hover:-translate-y-0.5 transition-all">
+            <div className="text-[10px] font-bold text-red-600 uppercase group-hover:text-red-700">1. Belum Berkembang</div>
+            <div className="text-2xl font-black text-red-700 mt-1">{summaryCounts.BB}</div>
+            <div className="text-[10px] text-red-500 font-semibold mt-0.5">BB (Perlu Bimbingan)</div>
+          </Card>
+        </div>
+
+        <div
+          onClick={() => {
+            setSearchQuery('MB')
+            document.getElementById('daftar-capaian-pembelajaran')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="cursor-pointer group"
+          title="Klik untuk memfilter capaian Mulai Berkembang (MB)"
+        >
+          <Card className="bg-amber-50/60 border-amber-100 rounded-2xl p-4 text-center hover:bg-amber-100/60 hover:shadow-sm hover:-translate-y-0.5 transition-all">
+            <div className="text-[10px] font-bold text-amber-600 uppercase group-hover:text-amber-700">2. Mulai Berkembang</div>
+            <div className="text-2xl font-black text-amber-700 mt-1">{summaryCounts.MB}</div>
+            <div className="text-[10px] text-amber-500 font-semibold mt-0.5">MB (Perlu Diingatkan)</div>
+          </Card>
+        </div>
+
+        <div
+          onClick={() => {
+            setSearchQuery('BSH')
+            document.getElementById('daftar-capaian-pembelajaran')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="cursor-pointer group"
+          title="Klik untuk memfilter capaian Berkembang Sesuai Harapan (BSH)"
+        >
+          <Card className="bg-blue-50/60 border-blue-100 rounded-2xl p-4 text-center hover:bg-blue-100/60 hover:shadow-sm hover:-translate-y-0.5 transition-all">
+            <div className="text-[10px] font-bold text-blue-600 uppercase group-hover:text-blue-700">3. Sesuai Harapan</div>
+            <div className="text-2xl font-black text-blue-700 mt-1">{summaryCounts.BSH}</div>
+            <div className="text-[10px] text-blue-500 font-semibold mt-0.5">BSH (Mandiri)</div>
+          </Card>
+        </div>
+
+        <div
+          onClick={() => {
+            setSearchQuery('BSB')
+            document.getElementById('daftar-capaian-pembelajaran')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="cursor-pointer group"
+          title="Klik untuk memfilter capaian Berkembang Sangat Baik (BSB)"
+        >
+          <Card className="bg-emerald-50/60 border-emerald-100 rounded-2xl p-4 text-center hover:bg-emerald-100/60 hover:shadow-sm hover:-translate-y-0.5 transition-all">
+            <div className="text-[10px] font-bold text-emerald-600 uppercase group-hover:text-emerald-700">4. Sangat Baik</div>
+            <div className="text-2xl font-black text-emerald-700 mt-1">{summaryCounts.BSB}</div>
+            <div className="text-[10px] text-emerald-500 font-semibold mt-0.5">BSB (Mandiri &amp; Teladan)</div>
+          </Card>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 no-print">
         {/* Grades List Card */}
         <div className="lg:col-span-8 space-y-6">
-          <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
+          <Card id="daftar-capaian-pembelajaran" className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden scroll-mt-6">
             <CardHeader className="p-8 border-b border-gray-50 flex flex-row items-center justify-between flex-wrap gap-4">
               <div>
                 <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">

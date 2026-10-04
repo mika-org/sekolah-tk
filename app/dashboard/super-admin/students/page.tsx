@@ -37,8 +37,10 @@ import {
   Sparkles,
   CheckCircle2,
   KeyRound,
-  Copy
+  Copy,
+  ArrowUpRight
 } from 'lucide-react'
+import Link from 'next/link'
 import { toast } from 'sonner'
 
 const DOCUMENT_LABELS: Record<string, string> = {
@@ -394,39 +396,81 @@ export default function MasterMuridPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center"><Users size={24} /></div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Total Murid</div>
-              <div className="text-2xl font-black text-primary-blue">{students.length}</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center"><UserCheck size={24} /></div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Murid Aktif</div>
-              <div className="text-2xl font-black text-primary-blue">{students.filter(s => s.status === 'active').length}</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center"><Users size={24} /></div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Laki-laki / Perempuan</div>
-              <div className="text-xl font-black text-primary-blue">
-                {students.filter(s => s.jenis_kelamin === 'L').length} / {students.filter(s => s.jenis_kelamin === 'P').length}
+        <div
+          onClick={() => {
+            setSearch('')
+            setStatusFilter('all')
+            setGenderFilter('all')
+            setClassFilter('all')
+            setCurrentPage(1)
+            const el = document.getElementById('daftar-murid')
+            el?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="block group cursor-pointer"
+          title="Tampilkan Semua Murid"
+        >
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform"><Users size={24} /></div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Total Murid</div>
+                  <div className="text-2xl font-black text-primary-blue">{students.length}</div>
+                </div>
               </div>
-            </div>
-          </CardContent>
-        </Card>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-blue transition-colors" />
+            </CardContent>
+          </Card>
+        </div>
+
+        <div
+          onClick={() => {
+            setStatusFilter('active')
+            setCurrentPage(1)
+            const el = document.getElementById('daftar-murid')
+            el?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="block group cursor-pointer"
+          title="Filter Hanya Murid Aktif"
+        >
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform"><UserCheck size={24} /></div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Murid Aktif</div>
+                  <div className="text-2xl font-black text-primary-blue">{students.filter(s => s.status === 'active').length}</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-green transition-colors" />
+            </CardContent>
+          </Card>
+        </div>
+
+        <Link
+          href="/dashboard/super-admin/reports"
+          className="block group"
+          title="Buka Laporan Demografi & Statistik"
+        >
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform"><Users size={24} /></div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Laki-laki / Perempuan</div>
+                  <div className="text-xl font-black text-primary-blue">
+                    {students.filter(s => s.jenis_kelamin === 'L').length} / {students.filter(s => s.jenis_kelamin === 'P').length}
+                  </div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-amber-600 transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Search + Table */}
-      <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
+      <Card id="daftar-murid" className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
         <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-lg font-black text-primary-blue">Daftar Murid</CardTitle>

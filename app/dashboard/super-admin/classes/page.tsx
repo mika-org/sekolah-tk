@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { TablePagination, TableSearchFilter } from '@/components/ui/table-pagination'
 import { StatusBadge } from '@/components/ui/status-badge'
+import Link from 'next/link'
 import {
   Layers,
   Plus,
@@ -18,7 +19,8 @@ import {
   Trash2,
   RefreshCw,
   GraduationCap,
-  Calendar
+  Calendar,
+  ArrowUpRight
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -155,37 +157,78 @@ export default function MasterKelasPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-5">
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center"><Layers size={24} /></div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Total Kelas</div>
-              <div className="text-2xl font-black text-primary-blue">{classes.length}</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="w-12 h-12 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center"><GraduationCap size={24} /></div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Ada Wali Kelas</div>
-              <div className="text-2xl font-black text-primary-blue">{classes.filter(c => c.guru_id).length}</div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center gap-4">
-            <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center"><Calendar size={24} /></div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Tahun Ajaran Aktif</div>
-              <div className="text-sm font-black text-primary-blue mt-1">2026/2027</div>
-            </div>
-          </CardContent>
-        </Card>
+        <Link
+          href="/dashboard/super-admin/classes"
+          onClick={() => {
+            setSearchQuery('')
+            setCurrentPage(1)
+            const el = document.getElementById('daftar-kelas')
+            el?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="block group"
+          title="Lihat Seluruh Daftar Kelas"
+        >
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Layers size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Total Kelas</div>
+                  <div className="text-2xl font-black text-primary-blue">{classes.length}</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-blue transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link
+          href="/dashboard/super-admin/teachers"
+          className="block group"
+          title="Buka Menu Master Guru"
+        >
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <GraduationCap size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Ada Wali Kelas</div>
+                  <div className="text-2xl font-black text-primary-blue">{classes.filter(c => c.guru_id).length}</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-green transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link
+          href="/dashboard/super-admin/settings"
+          className="block group"
+          title="Buka Menu Pengaturan Tahun Ajaran"
+        >
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Calendar size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Tahun Ajaran Aktif</div>
+                  <div className="text-sm font-black text-primary-blue mt-1">2026/2027</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-amber-600 transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Table */}
-      <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
+      <Card id="daftar-kelas" className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
         <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-lg font-black text-primary-blue">Daftar Kelas</CardTitle>

@@ -111,53 +111,73 @@ export default function AdminDashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center">
-              <Users size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Total Pendaftar</div>
-              <div className="text-2xl font-black text-primary-blue">{total}</div>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/admin/ppdb" className="block group" title="Buka Menu Pendaftar SPMB">
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Users size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Total Pendaftar</div>
+                  <div className="text-2xl font-black text-primary-blue">{total}</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-blue transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center">
-              <Clock size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Menunggu Review</div>
-              <div className="text-2xl font-black text-amber-600">{pending}</div>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/admin/payments" className="block group" title="Buka Menu Verifikasi Pembayaran">
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Clock size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Menunggu Review</div>
+                  <div className="text-2xl font-black text-amber-600">{pending}</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-amber-600 transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center">
-              <CheckCircle size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Siswa Diterima</div>
-              <div className="text-2xl font-black text-emerald-600">{accepted}</div>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/super-admin/students" className="block group" title="Buka Menu Master Murid">
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <CheckCircle size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Siswa Diterima</div>
+                  <div className="text-2xl font-black text-emerald-600">{accepted}</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-emerald-600 transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-rose-100 text-rose-700 rounded-2xl flex items-center justify-center">
-              <XCircle size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Pendaftaran Ditolak</div>
-              <div className="text-2xl font-black text-rose-600">{rejected}</div>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/admin/ppdb" className="block group" title="Buka Menu Pendaftar SPMB">
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-rose-100 text-rose-700 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <XCircle size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Pendaftaran Ditolak</div>
+                  <div className="text-2xl font-black text-rose-600">{rejected}</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-rose-600 transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Main Grid */}

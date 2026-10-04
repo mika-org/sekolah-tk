@@ -239,100 +239,108 @@ export default function OrangTuaDashboard() {
       {/* Menu Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Card 1: SPMB Status */}
-        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:-translate-y-1 transition-all duration-300">
-          <CardHeader className="pb-4">
-            <div className="w-10 h-10 bg-blue-50 text-primary-blue rounded-2xl flex items-center justify-center mb-2">
-              <FileText size={20} />
-            </div>
-            <CardTitle className="text-sm font-black text-primary-blue">Status SPMB</CardTitle>
-            <CardDescription className="text-[10px] font-semibold text-gray-400">Pendaftaran & registrasi berkas.</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0 space-y-4">
-            <div className="py-2.5 px-3 bg-cream rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
-              <span>Status:</span>
-              <StatusBadge status={ppdbData?.status || 'Submitted'} size="sm" />
-            </div>
-            <Link
-              href="/dashboard/orang-tua/ppdb-status"
-              className="w-full flex items-center justify-between border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 text-primary-blue text-xs font-bold py-2 px-3.5 rounded-xl transition-colors cursor-pointer"
-            >
-              <span>Lihat Detail SPMB</span>
-              <ArrowRight size={14} />
-            </Link>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/orang-tua/ppdb-status" className="block group">
+          <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 bg-blue-50 text-primary-blue rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                  <FileText size={20} />
+                </div>
+                <ArrowRight size={16} className="text-gray-300 group-hover:text-primary-blue group-hover:translate-x-0.5 transition-all" />
+              </div>
+              <CardTitle className="text-sm font-black text-primary-blue group-hover:text-blue-700 transition-colors">Status SPMB</CardTitle>
+              <CardDescription className="text-[10px] font-semibold text-gray-400">Pendaftaran & registrasi berkas.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-4">
+              <div className="py-2.5 px-3 bg-cream rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
+                <span>Status:</span>
+                <StatusBadge status={ppdbData?.status || 'Submitted'} size="sm" />
+              </div>
+              <div className="w-full flex items-center justify-between border border-gray-100 group-hover:border-blue-200 group-hover:bg-blue-50/50 text-primary-blue text-xs font-bold py-2 px-3.5 rounded-xl transition-all">
+                <span>Lihat Detail SPMB</span>
+                <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Card 2: Attendance */}
-        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:-translate-y-1 transition-all duration-300">
-          <CardHeader className="pb-4">
-            <div className="w-10 h-10 bg-emerald-50 text-primary-green rounded-2xl flex items-center justify-center mb-2">
-              <CalendarDays size={20} />
-            </div>
-            <CardTitle className="text-sm font-black text-primary-blue">Absensi Anak</CardTitle>
-            <CardDescription className="text-[10px] font-semibold text-gray-400">Rasio kehadiran harian kelas.</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0 space-y-4">
-            <div className="py-2.5 px-3 bg-cream rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
-              <span>Rasio Masuk:</span>
-              <span className="text-primary-green font-extrabold">{presenceRate}%</span>
-            </div>
-            <Link
-              href="/dashboard/orang-tua/attendance"
-              className="w-full flex items-center justify-between border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 text-primary-blue text-xs font-bold py-2 px-3.5 rounded-xl transition-colors cursor-pointer"
-            >
-              <span>Histori Kehadiran</span>
-              <ArrowRight size={14} />
-            </Link>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/orang-tua/attendance" className="block group">
+          <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 bg-emerald-50 text-primary-green rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                  <CalendarDays size={20} />
+                </div>
+                <ArrowRight size={16} className="text-gray-300 group-hover:text-primary-green group-hover:translate-x-0.5 transition-all" />
+              </div>
+              <CardTitle className="text-sm font-black text-primary-blue group-hover:text-emerald-700 transition-colors">Absensi Anak</CardTitle>
+              <CardDescription className="text-[10px] font-semibold text-gray-400">Rasio kehadiran harian kelas.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-4">
+              <div className="py-2.5 px-3 bg-cream rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
+                <span>Rasio Masuk:</span>
+                <span className="text-primary-green font-extrabold">{presenceRate}%</span>
+              </div>
+              <div className="w-full flex items-center justify-between border border-gray-100 group-hover:border-emerald-200 group-hover:bg-emerald-50/50 text-primary-blue text-xs font-bold py-2 px-3.5 rounded-xl transition-all">
+                <span>Histori Kehadiran</span>
+                <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Card 3: Grades */}
-        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:-translate-y-1 transition-all duration-300">
-          <CardHeader className="pb-4">
-            <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-2">
-              <GraduationCap size={20} />
-            </div>
-            <CardTitle className="text-sm font-black text-primary-blue">Nilai & Rapor</CardTitle>
-            <CardDescription className="text-[10px] font-semibold text-gray-400">Update hasil belajar teranyar.</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0 space-y-4">
-            <div className="py-2.5 px-3 bg-cream rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
-              <span>Nilai Terakhir:</span>
-              <span className="text-purple-600 font-extrabold">{latestGrade ? `${latestGrade.subject} (${latestGrade.score})` : '-'}</span>
-            </div>
-            <Link
-              href="/dashboard/orang-tua/grades"
-              className="w-full flex items-center justify-between border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 text-primary-blue text-xs font-bold py-2 px-3.5 rounded-xl transition-colors cursor-pointer"
-            >
-              <span>Rapor Lengkap</span>
-              <ArrowRight size={14} />
-            </Link>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/orang-tua/grades" className="block group">
+          <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 bg-purple-50 text-purple-600 rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                  <GraduationCap size={20} />
+                </div>
+                <ArrowRight size={16} className="text-gray-300 group-hover:text-purple-600 group-hover:translate-x-0.5 transition-all" />
+              </div>
+              <CardTitle className="text-sm font-black text-primary-blue group-hover:text-purple-700 transition-colors">Nilai & Rapor</CardTitle>
+              <CardDescription className="text-[10px] font-semibold text-gray-400">Update hasil belajar teranyar.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-4">
+              <div className="py-2.5 px-3 bg-cream rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
+                <span>Nilai Terakhir:</span>
+                <span className="text-purple-600 font-extrabold">{latestGrade ? `${latestGrade.subject} (${latestGrade.score})` : '-'}</span>
+              </div>
+              <div className="w-full flex items-center justify-between border border-gray-100 group-hover:border-purple-200 group-hover:bg-purple-50/50 text-primary-blue text-xs font-bold py-2 px-3.5 rounded-xl transition-all">
+                <span>Rapor Lengkap</span>
+                <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
 
         {/* Card 4: Billing */}
-        <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:-translate-y-1 transition-all duration-300">
-          <CardHeader className="pb-4">
-            <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-2">
-              <CreditCard size={20} />
-            </div>
-            <CardTitle className="text-sm font-black text-primary-blue">Tagihan & SPP</CardTitle>
-            <CardDescription className="text-[10px] font-semibold text-gray-400">Status keuangan & pembayaran.</CardDescription>
-          </CardHeader>
-          <CardContent className="pt-0 space-y-4">
-            <div className="py-2.5 px-3 bg-cream rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
-              <span>SPP Juli:</span>
-              <span className="text-primary-green font-extrabold">LUNAS</span>
-            </div>
-            <Link
-              href="/dashboard/orang-tua/billing"
-              className="w-full flex items-center justify-between border border-gray-100 hover:border-gray-200 hover:bg-gray-50/50 text-primary-blue text-xs font-bold py-2 px-3.5 rounded-xl transition-colors cursor-pointer"
-            >
-              <span>Bayar & Upload</span>
-              <ArrowRight size={14} />
-            </Link>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/orang-tua/billing" className="block group">
+          <Card className="bg-white rounded-3xl shadow-sm border-none flex flex-col justify-between hover:shadow-md hover:-translate-y-1 transition-all duration-300 cursor-pointer h-full">
+            <CardHeader className="pb-4">
+              <div className="flex items-center justify-between">
+                <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                  <CreditCard size={20} />
+                </div>
+                <ArrowRight size={16} className="text-gray-300 group-hover:text-amber-600 group-hover:translate-x-0.5 transition-all" />
+              </div>
+              <CardTitle className="text-sm font-black text-primary-blue group-hover:text-amber-700 transition-colors">Tagihan & SPP</CardTitle>
+              <CardDescription className="text-[10px] font-semibold text-gray-400">Status keuangan & pembayaran.</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-0 space-y-4">
+              <div className="py-2.5 px-3 bg-cream rounded-xl flex justify-between items-center text-[11px] font-bold text-gray-600">
+                <span>SPP Juli:</span>
+                <span className="text-primary-green font-extrabold">LUNAS</span>
+              </div>
+              <div className="w-full flex items-center justify-between border border-gray-100 group-hover:border-amber-200 group-hover:bg-amber-50/50 text-primary-blue text-xs font-bold py-2 px-3.5 rounded-xl transition-all">
+                <span>Bayar & Upload</span>
+                <ArrowRight size={14} className="group-hover:translate-x-0.5 transition-transform" />
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* Announcements Full-Width Card */}

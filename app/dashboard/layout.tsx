@@ -326,14 +326,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     href={item.href}
                     onClick={() => {
                       if (isMobile) {
-                        setMobileOpen(false)
+                        setTimeout(() => setMobileOpen(false), 150)
                       }
                     }}
                     className={cn(
-                      'flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer',
+                      'flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-xs font-extrabold transition-all cursor-pointer min-h-[42px] touch-manipulation',
                       active
                         ? 'bg-primary-green text-white shadow-md shadow-primary-green/20'
-                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                        : 'text-gray-300 hover:bg-white/10 hover:text-white active:bg-white/20'
                     )}
                   >
                     <Icon size={17} className={active ? 'text-white' : 'text-emerald-400'} />
@@ -350,9 +350,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             {/* Group Header with toggle */}
             <button
               type="button"
-              onClick={() => toggleGroup(group.id)}
+              onClick={(e) => {
+                e.stopPropagation()
+                toggleGroup(group.id)
+              }}
               className={cn(
-                'w-full flex items-center justify-between px-3 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors select-none cursor-pointer',
+                'w-full flex items-center justify-between px-3 py-2.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-colors select-none cursor-pointer min-h-[38px] touch-manipulation active:bg-white/5',
                 hasActiveChild ? 'text-emerald-400' : 'text-gray-400 hover:text-gray-200'
               )}
             >
@@ -378,14 +381,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       href={item.href}
                       onClick={() => {
                         if (isMobile) {
-                          setMobileOpen(false)
+                          setTimeout(() => setMobileOpen(false), 150)
                         }
                       }}
                       className={cn(
-                        'flex items-center space-x-3 px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer',
+                        'flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer min-h-[40px] touch-manipulation',
                         active
                           ? 'bg-primary-green text-white font-extrabold shadow-md shadow-primary-green/20'
-                          : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                          : 'text-gray-300 hover:bg-white/10 hover:text-white active:bg-white/20'
                       )}
                     >
                       <Icon size={16} className={active ? 'text-white' : 'text-gray-400'} />
@@ -402,8 +405,105 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   )
 
   return (
-    <div className="flex h-screen bg-[#F8F6F2] overflow-hidden font-sans">
+    <div className="flex h-screen bg-[#F8F6F2] overflow-hidden font-sans relative">
       
+      {/* MOBILE SIDEBAR DRAWER (Placed at root layout to avoid container overflow trap) */}
+      {mobileOpen && (
+        <div className="lg:hidden fixed inset-0 z-[100] flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40 transition-opacity cursor-pointer touch-manipulation"
+            onClick={() => setMobileOpen(false)}
+            aria-hidden="true"
+          />
+          
+          {/* Drawer Panel */}
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="relative z-50 w-full max-w-xs bg-primary-blue text-white shadow-2xl flex flex-col h-full pointer-events-auto"
+          >
+            <div className="p-5 border-b border-white/10 flex justify-between items-center bg-primary-blue flex-shrink-0">
+              <div className="flex items-center space-x-3">
+                <div className="relative w-8 h-8 bg-white rounded-xl p-0.5 flex items-center justify-center shadow-sm flex-shrink-0">
+                  <Image src="/images/hero_gsap/logo.png" alt="Logo KB & TK Istiqamah" fill className="object-contain p-0.5" />
+                </div>
+                <div>
+                  <span className="font-extrabold text-sm block leading-none">Menu Portal</span>
+                  <span className="text-[9px] text-white/70 font-semibold block mt-0.5">NPSN: 20255241</span>
+                  <span className="text-[9px] uppercase font-bold text-primary-green tracking-wider">{formatRoleName(role)}</span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setMobileOpen(false)}
+                aria-label="Tutup menu"
+                className="text-gray-300 hover:text-white p-2 rounded-xl hover:bg-white/10 active:bg-white/20 cursor-pointer min-w-[40px] min-h-[40px] flex items-center justify-center touch-manipulation"
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            <nav className="flex-1 px-3.5 py-4 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10">
+              {renderNav(true)}
+            </nav>
+
+            {/* Mobile Social Media Redirect Footer */}
+            <div className="px-4 py-3 border-t border-white/10 bg-primary-blue space-y-1.5 flex-shrink-0">
+              <span className="text-[9px] font-extrabold uppercase tracking-wider text-white/50 block">Media Sosial &amp; Kontak Resmi</span>
+              <div className="flex items-center gap-2">
+                <a
+                  href="https://www.instagram.com/kbtkistiqamah"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-lg bg-white/10 hover:bg-pink-600 flex items-center justify-center text-white transition-colors cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
+                  </svg>
+                </a>
+                <a
+                  href="https://www.facebook.com/TK-Istiqamah-Bandung"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-lg bg-white/10 hover:bg-blue-600 flex items-center justify-center text-white transition-colors cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M9 8H6v4h3v12h5V12h3.642L18 8h-4V6.333C14 5.374 14.5 5 15.5 5H18V0h-3.808C10.592 0 9 1.583 9 4.615V8z" />
+                  </svg>
+                </a>
+                <a
+                  href="https://wa.me/628112198853"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-7 h-7 rounded-lg bg-white/10 hover:bg-emerald-600 flex items-center justify-center text-white transition-colors cursor-pointer"
+                >
+                  <MessageSquare size={13} />
+                </a>
+                <a
+                  href="https://www.instagram.com/kbtkistiqamah"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[10px] text-white/70 hover:text-white font-semibold ml-1 hover:underline"
+                >
+                  @kbtkistiqamah ↗
+                </a>
+              </div>
+            </div>
+
+            <div className="p-3.5 border-t border-white/10 bg-primary-blue flex-shrink-0">
+              <Button 
+                onClick={handleLogout}
+                variant="ghost" 
+                className="w-full justify-start space-x-3 text-red-300 hover:text-red-200 hover:bg-white/10 rounded-xl font-bold text-xs py-2.5 h-auto cursor-pointer"
+              >
+                <LogOut size={16} />
+                <span>Keluar Portal</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* DESKTOP SIDEBAR */}
       <aside className="hidden lg:flex lg:flex-col lg:w-64 bg-primary-blue text-white flex-shrink-0 relative select-none">
         {/* Brand Header */}
@@ -495,7 +595,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               type="button"
               onClick={() => setMobileOpen(!mobileOpen)}
               aria-label={mobileOpen ? 'Tutup menu' : 'Buka menu'}
-              className="p-2 -ml-1 rounded-xl hover:bg-white/10 active:bg-white/20 focus:outline-none transition-colors cursor-pointer flex items-center justify-center min-w-[40px] min-h-[40px]"
+              className="p-2 -ml-1 rounded-xl hover:bg-white/10 active:bg-white/20 focus:outline-none transition-colors cursor-pointer flex items-center justify-center min-w-[44px] min-h-[44px] touch-manipulation"
             >
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
@@ -511,105 +611,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             type="button"
             onClick={handleLogout}
             aria-label="Keluar Portal"
-            className="text-red-300 hover:text-red-200 p-2 cursor-pointer rounded-xl hover:bg-white/10 min-w-[36px] min-h-[36px] flex items-center justify-center"
+            className="text-red-300 hover:text-red-200 p-2 cursor-pointer rounded-xl hover:bg-white/10 min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
           >
             <LogOut size={18} />
           </button>
         </header>
-
-        {/* MOBILE SIDEBAR DRAWER */}
-        {mobileOpen && (
-          <div className="lg:hidden fixed inset-0 z-50">
-            {/* Backdrop */}
-            <div
-              className="fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity cursor-pointer"
-              onClick={() => setMobileOpen(false)}
-              aria-hidden="true"
-            />
-            
-            {/* Drawer */}
-            <div className="fixed inset-y-0 left-0 w-full max-w-xs bg-primary-blue text-white shadow-2xl z-10 flex flex-col">
-              <div className="p-5 border-b border-white/10 flex justify-between items-center bg-primary-blue flex-shrink-0">
-                <div className="flex items-center space-x-3">
-                  <div className="relative w-8 h-8 bg-white rounded-xl p-0.5 flex items-center justify-center shadow-sm flex-shrink-0">
-                    <Image src="/images/hero_gsap/logo.png" alt="Logo KB & TK Istiqamah" fill className="object-contain p-0.5" />
-                  </div>
-                  <div>
-                    <span className="font-extrabold text-sm block leading-none">Menu Portal</span>
-                    <span className="text-[9px] text-white/70 font-semibold block mt-0.5">NPSN: 20255241</span>
-                    <span className="text-[9px] uppercase font-bold text-primary-green tracking-wider">{formatRoleName(role)}</span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setMobileOpen(false)}
-                  aria-label="Tutup menu"
-                  className="text-gray-300 hover:text-white p-2 rounded-xl hover:bg-white/10 active:bg-white/20 cursor-pointer min-w-[36px] min-h-[36px] flex items-center justify-center"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-
-              <nav className="flex-1 px-3.5 py-4 overflow-y-auto [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-white/10">
-                {renderNav(true)}
-              </nav>
-
-              {/* Mobile Social Media Redirect Footer */}
-              <div className="px-4 py-3 border-t border-white/10 bg-primary-blue space-y-1.5 flex-shrink-0">
-                <span className="text-[9px] font-extrabold uppercase tracking-wider text-white/50 block">Media Sosial &amp; Kontak Resmi</span>
-                <div className="flex items-center gap-2">
-                  <a
-                    href="https://www.instagram.com/kbtkistiqamah"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-7 h-7 rounded-lg bg-white/10 hover:bg-pink-600 flex items-center justify-center text-white transition-colors cursor-pointer"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.051.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z" />
-                    </svg>
-                  </a>
-                  <a
-                    href="https://www.facebook.com/TK-Istiqamah-Bandung"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-7 h-7 rounded-lg bg-white/10 hover:bg-blue-600 flex items-center justify-center text-white transition-colors cursor-pointer"
-                  >
-                    <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M9 8H6v4h3v12h5V12h3.642L18 8h-4V6.333C14 5.374 14.5 5 15.5 5H18V0h-3.808C10.592 0 9 1.583 9 4.615V8z" />
-                    </svg>
-                  </a>
-                  <a
-                    href="https://wa.me/628112198853"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-7 h-7 rounded-lg bg-white/10 hover:bg-emerald-600 flex items-center justify-center text-white transition-colors cursor-pointer"
-                  >
-                    <MessageSquare size={13} />
-                  </a>
-                  <a
-                    href="https://www.instagram.com/kbtkistiqamah"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-[10px] text-white/70 hover:text-white font-semibold ml-1 hover:underline"
-                  >
-                    @kbtkistiqamah ↗
-                  </a>
-                </div>
-              </div>
-
-              <div className="p-3.5 border-t border-white/10 bg-primary-blue flex-shrink-0">
-                <Button 
-                  onClick={handleLogout}
-                  variant="ghost" 
-                  className="w-full justify-start space-x-3 text-red-300 hover:text-red-200 hover:bg-white/10 rounded-xl font-bold text-xs py-2.5 h-auto cursor-pointer"
-                >
-                  <LogOut size={16} />
-                  <span>Keluar Portal</span>
-                </Button>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* MAIN CONTENT AREA */}
         <main className="flex-1 overflow-y-auto p-4 sm:p-8 relative">

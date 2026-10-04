@@ -15,8 +15,10 @@ import {
   Clock,
   DollarSign,
   TrendingUp,
-  BarChart3
+  BarChart3,
+  ArrowUpRight
 } from 'lucide-react'
+import Link from 'next/link'
 
 export default function ReportsPage() {
   const [ppdbList, setPpdbList] = useState<any[]>([])
@@ -93,65 +95,85 @@ export default function ReportsPage() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
         {[
-          { icon: Users, color: 'bg-primary-blue/10 text-primary-blue', label: 'Total Pendaftar', value: totalPPDB },
-          { icon: Clock, color: 'bg-amber-100 text-amber-700', label: 'Menunggu Review', value: pending },
-          { icon: CheckCircle, color: 'bg-emerald-100 text-emerald-700', label: 'Diterima', value: accepted },
-          { icon: XCircle, color: 'bg-rose-100 text-rose-700', label: 'Ditolak', value: rejected },
+          { icon: Users, color: 'bg-primary-blue/10 text-primary-blue', label: 'Total Pendaftar', value: totalPPDB, href: '/dashboard/admin/ppdb' },
+          { icon: Clock, color: 'bg-amber-100 text-amber-700', label: 'Menunggu Review', value: pending, href: '/dashboard/admin/ppdb' },
+          { icon: CheckCircle, color: 'bg-emerald-100 text-emerald-700', label: 'Diterima', value: accepted, href: '/dashboard/super-admin/students' },
+          { icon: XCircle, color: 'bg-rose-100 text-rose-700', label: 'Ditolak', value: rejected, href: '/dashboard/admin/ppdb' },
         ].map((stat, i) => (
-          <Card key={i} className="bg-white rounded-3xl shadow-sm border-none">
-            <CardContent className="p-6 flex items-center gap-4">
-              <div className={`w-12 h-12 ${stat.color} rounded-2xl flex items-center justify-center flex-shrink-0`}>
-                <stat.icon size={22} />
-              </div>
-              <div>
-                <div className="text-[10px] uppercase font-bold text-gray-400">{stat.label}</div>
-                <div className="text-2xl font-black text-primary-blue">{stat.value}</div>
-              </div>
-            </CardContent>
-          </Card>
+          <Link key={i} href={stat.href} className="block group" title={`Buka menu terkait ${stat.label}`}>
+            <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+              <CardContent className="p-6 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className={`w-12 h-12 ${stat.color} rounded-2xl flex items-center justify-center flex-shrink-0 group-hover:scale-105 transition-transform`}>
+                    <stat.icon size={22} />
+                  </div>
+                  <div>
+                    <div className="text-[10px] uppercase font-bold text-gray-400">{stat.label}</div>
+                    <div className="text-2xl font-black text-primary-blue">{stat.value}</div>
+                  </div>
+                </div>
+                <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-blue transition-colors" />
+              </CardContent>
+            </Card>
+          </Link>
         ))}
       </div>
 
       {/* Financial + Progress */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center"><DollarSign size={20} /></div>
-              <div>
-                <div className="text-[10px] uppercase font-bold text-gray-400">Total Pendapatan PPDB</div>
-                <div className="text-xl font-black text-primary-green">Rp {totalRevenue.toLocaleString('id-ID')}</div>
+        <Link href="/dashboard/admin/payments" className="block group" title="Buka Menu Verifikasi Pembayaran">
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform"><DollarSign size={20} /></div>
+                  <div>
+                    <div className="text-[10px] uppercase font-bold text-gray-400">Total Pendapatan PPDB</div>
+                    <div className="text-xl font-black text-primary-green">Rp {totalRevenue.toLocaleString('id-ID')}</div>
+                  </div>
+                </div>
+                <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-green transition-colors" />
               </div>
-            </div>
-            <p className="text-[10px] text-gray-400 font-semibold">{verifiedPayments.length} pembayaran diverifikasi</p>
-          </CardContent>
-        </Card>
+              <p className="text-[10px] text-gray-400 font-semibold">{verifiedPayments.length} pembayaran diverifikasi</p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center"><Clock size={20} /></div>
-              <div>
-                <div className="text-[10px] uppercase font-bold text-gray-400">Pembayaran Menunggu</div>
-                <div className="text-xl font-black text-amber-600">{pendingPayments} Transaksi</div>
+        <Link href="/dashboard/admin/payments" className="block group" title="Buka Menu Verifikasi Pembayaran">
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform"><Clock size={20} /></div>
+                  <div>
+                    <div className="text-[10px] uppercase font-bold text-gray-400">Pembayaran Menunggu</div>
+                    <div className="text-xl font-black text-amber-600">{pendingPayments} Transaksi</div>
+                  </div>
+                </div>
+                <ArrowUpRight size={18} className="text-gray-300 group-hover:text-amber-600 transition-colors" />
               </div>
-            </div>
-            <p className="text-[10px] text-gray-400 font-semibold">Perlu verifikasi bukti transfer</p>
-          </CardContent>
-        </Card>
+              <p className="text-[10px] text-gray-400 font-semibold">Perlu verifikasi bukti transfer</p>
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center"><TrendingUp size={20} /></div>
-              <div>
-                <div className="text-[10px] uppercase font-bold text-gray-400">Tingkat Penerimaan</div>
-                <div className="text-xl font-black text-primary-blue">{acceptanceRate}%</div>
+        <Link href="/dashboard/admin/ppdb" className="block group" title="Buka Menu Pendaftar SPMB">
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform"><TrendingUp size={20} /></div>
+                  <div>
+                    <div className="text-[10px] uppercase font-bold text-gray-400">Tingkat Penerimaan</div>
+                    <div className="text-xl font-black text-primary-blue">{acceptanceRate}%</div>
+                  </div>
+                </div>
+                <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-blue transition-colors" />
               </div>
-            </div>
-            <p className="text-[10px] text-gray-400 font-semibold">{accepted} dari {totalPPDB} pendaftar diterima</p>
-          </CardContent>
-        </Card>
+              <p className="text-[10px] text-gray-400 font-semibold">{accepted} dari {totalPPDB} pendaftar diterima</p>
+            </CardContent>
+          </Card>
+        </Link>
       </div>
 
       {/* SPMB Table */}

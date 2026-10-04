@@ -14,7 +14,8 @@ import {
   Users,
   CalendarDays,
   ArrowRight,
-  Megaphone
+  Megaphone,
+  ArrowUpRight
 } from 'lucide-react'
 
 import { getTeacherPlottedClassAndStudents } from '@/actions/students'
@@ -152,41 +153,63 @@ export default function GuruDashboardLanding() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center">
-              <Users size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Murid Kelas Binaan</div>
-              <div className="text-2xl font-black text-primary-blue">{studentCount} Anak</div>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/guru/students" className="block group" title="Buka Data Murid Kelas Binaan">
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Users size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Murid Kelas Binaan</div>
+                  <div className="text-2xl font-black text-primary-blue">{studentCount} Anak</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-blue transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center">
-              <CalendarDays size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Tahun Ajaran</div>
-              <div className="text-base font-black text-primary-blue mt-1">2026/2027</div>
-            </div>
-          </CardContent>
-        </Card>
+        <Link href="/dashboard/guru/attendance" className="block group" title="Buka Presensi Kelas Harian">
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-primary-green/10 text-primary-green rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <CalendarDays size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Tahun Ajaran</div>
+                  <div className="text-base font-black text-primary-blue mt-1">2026/2027</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-green transition-colors" />
+            </CardContent>
+          </Card>
+        </Link>
 
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center">
-              <Megaphone size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Pengumuman Aktif</div>
-              <div className="text-2xl font-black text-primary-blue">{announcements.length} Berita</div>
-            </div>
-          </CardContent>
-        </Card>
+        <div
+          onClick={() => {
+            const el = document.getElementById('pengumuman-guru')
+            el?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="block group cursor-pointer"
+          title="Lihat Pengumuman Sekolah"
+        >
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-amber-100 text-amber-700 rounded-2xl flex items-center justify-center group-hover:scale-105 transition-transform">
+                  <Megaphone size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Pengumuman Aktif</div>
+                  <div className="text-2xl font-black text-primary-blue">{announcements.length} Berita</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-amber-600 transition-colors" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Shortcuts & Announcements Grid */}

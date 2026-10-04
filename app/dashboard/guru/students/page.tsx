@@ -20,6 +20,7 @@ import {
   Layers,
   Sparkles,
   Search,
+  ArrowUpRight,
 } from 'lucide-react'
 
 export default function GuruStudentsPage() {
@@ -126,45 +127,82 @@ export default function GuruStudentsPage() {
 
       {/* Summary Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center font-black">
-              <Users size={24} />
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Total Murid Kelas</div>
-              <div className="text-2xl font-black text-primary-blue">{students.length} Siswa</div>
-            </div>
-          </CardContent>
-        </Card>
+        <div
+          onClick={() => {
+            setGenderFilter('all')
+            setSearchQuery('')
+            document.getElementById('daftar-murid-binaan')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="group block cursor-pointer"
+          title="Klik untuk melihat seluruh murid"
+        >
+          <Card className="bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all">
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-primary-blue/10 text-primary-blue rounded-2xl flex items-center justify-center font-black group-hover:scale-105 transition-transform">
+                  <Users size={24} />
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Total Murid Kelas</div>
+                  <div className="text-2xl font-black text-primary-blue">{students.length} Siswa</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-blue transition-colors" />
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-black">
-              👦
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Laki-Laki</div>
-              <div className="text-2xl font-black text-blue-600">{maleCount} Anak</div>
-            </div>
-          </CardContent>
-        </Card>
+        <div
+          onClick={() => {
+            setGenderFilter('L')
+            document.getElementById('daftar-murid-binaan')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="group block cursor-pointer"
+          title="Klik untuk memfilter murid laki-laki"
+        >
+          <Card className={`bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all ${genderFilter === 'L' ? 'ring-2 ring-blue-400' : ''}`}>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-black text-xl group-hover:scale-105 transition-transform">
+                  👦
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Laki-Laki</div>
+                  <div className="text-2xl font-black text-blue-600">{maleCount} Anak</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-blue-600 transition-colors" />
+            </CardContent>
+          </Card>
+        </div>
 
-        <Card className="bg-white rounded-3xl shadow-sm border-none">
-          <CardContent className="p-6 flex items-center space-x-4">
-            <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center font-black">
-              👧
-            </div>
-            <div>
-              <div className="text-[10px] uppercase font-bold text-gray-400">Perempuan</div>
-              <div className="text-2xl font-black text-rose-600">{femaleCount} Anak</div>
-            </div>
-          </CardContent>
-        </Card>
+        <div
+          onClick={() => {
+            setGenderFilter('P')
+            document.getElementById('daftar-murid-binaan')?.scrollIntoView({ behavior: 'smooth' })
+          }}
+          className="group block cursor-pointer"
+          title="Klik untuk memfilter murid perempuan"
+        >
+          <Card className={`bg-white rounded-3xl shadow-sm border-none hover:shadow-md hover:-translate-y-0.5 transition-all ${genderFilter === 'P' ? 'ring-2 ring-rose-400' : ''}`}>
+            <CardContent className="p-6 flex items-center justify-between">
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center font-black text-xl group-hover:scale-105 transition-transform">
+                  👧
+                </div>
+                <div>
+                  <div className="text-[10px] uppercase font-bold text-gray-400">Perempuan</div>
+                  <div className="text-2xl font-black text-rose-600">{femaleCount} Anak</div>
+                </div>
+              </div>
+              <ArrowUpRight size={18} className="text-gray-300 group-hover:text-rose-600 transition-colors" />
+            </CardContent>
+          </Card>
+        </div>
       </div>
 
       {/* Table Card */}
-      <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
+      <Card id="daftar-murid-binaan" className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden scroll-mt-6">
         <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <CardTitle className="text-lg font-black text-primary-blue">

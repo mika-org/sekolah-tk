@@ -944,6 +944,16 @@ export default function HomePage() {
             <p className="text-emerald-100/90 text-xs sm:text-sm text-center font-medium mt-3 sm:mt-4 max-w-2xl mx-auto leading-relaxed">
               Lingkungan belajar yang aman, nyaman dan menyenangkan untuk mendukung anak belajar, bermain, bergerak serta mengeksplorasi berbagai pengalaman baru!
             </p>
+
+            <div className="mt-4 sm:mt-5 flex justify-center">
+              <Link
+                href="/fasilitas"
+                className="inline-flex items-center gap-2 bg-white/20 hover:bg-white text-white hover:text-[#0B7347] font-extrabold text-xs px-5 py-2.5 rounded-full shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer hover:scale-105 active:scale-95"
+              >
+                <span>Lihat Seluruh Fasilitas Lengkap</span>
+                <ArrowRight size={14} />
+              </Link>
+            </div>
           </div>
         </section>
 
