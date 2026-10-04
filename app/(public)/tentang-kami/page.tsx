@@ -39,7 +39,7 @@ export default function TentangKamiPage() {
           {/* School Image Column */}
           <div className="lg:col-span-5 relative w-full h-[280px] sm:h-[380px] rounded-[22px] overflow-hidden shadow-md border border-emerald-50">
             <Image
-              src="/images/Cover.png"
+              src="/images/fasilitas/10.webp"
               alt="Gedung KB & TK Istiqamah Bandung"
               fill
               className="object-cover"

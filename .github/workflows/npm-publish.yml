@@ -48,6 +48,9 @@ jobs:
 
             npx prisma migrate deploy
 
+            # Clean stale .next build cache to prevent ENOENT manifest errors and stale chunks
+            rm -rf .next
+
             npm run build
 
             if pm2 describe istiqamah > /dev/null 2>&1; then
