@@ -133,7 +133,7 @@ export async function getTeacherPlottedClassAndStudents(): Promise<TeacherPlotte
     if (['super_admin', 'admin'].includes(user.role)) {
       const [allClasses, allStudents] = await Promise.all([
         prisma.class.findMany({
-          include: { teachers_tk: true },
+          include: { teachers_tk: true, teachers2_tk: true },
           orderBy: { nama: 'asc' },
         }),
         prisma.student.findMany({
@@ -155,6 +155,7 @@ export async function getTeacherPlottedClassAndStudents(): Promise<TeacherPlotte
       where: { user_id: user.id },
       include: {
         classes_tk: true,
+        classes2_tk: true,
       },
     })
 
@@ -169,6 +170,7 @@ export async function getTeacherPlottedClassAndStudents(): Promise<TeacherPlotte
         },
         include: {
           classes_tk: true,
+          classes2_tk: true,
         },
       })
     }
@@ -182,7 +184,7 @@ export async function getTeacherPlottedClassAndStudents(): Promise<TeacherPlotte
       }
     }
 
-    const classes = teacher.classes_tk || []
+    const classes = [...(teacher.classes_tk || []), ...(teacher.classes2_tk || [])]
     if (classes.length === 0) {
       return {
         success: true,
@@ -202,7 +204,12 @@ export async function getTeacherPlottedClassAndStudents(): Promise<TeacherPlotte
         status: 'active',
       },
       include: {
-        classes_tk: true,
+        classes_tk: {
+          include: {
+            teachers_tk: true,
+            teachers2_tk: true,
+          },
+        },
         parents_tk: true,
       },
       orderBy: { nama: 'asc' },

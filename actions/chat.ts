@@ -79,7 +79,12 @@ export async function getChatPartners() {
       let studentIds: string[] = []
       if (teacher) {
         const classes = await prisma.class.findMany({
-          where: { guru_id: teacher.id },
+          where: {
+            OR: [
+              { guru_id: teacher.id },
+              { guru_id_2: teacher.id },
+            ],
+          },
           select: { id: true },
         })
         const classIds = classes.map((c) => c.id)
@@ -195,6 +200,11 @@ export async function getChatPartners() {
                       users_tk: true,
                     },
                   },
+                  teachers2_tk: {
+                    include: {
+                      users_tk: true,
+                    },
+                  },
                 },
               },
             },
@@ -215,16 +225,29 @@ export async function getChatPartners() {
 
       const partnersMap = new Map<string, { id: string; name: string; role: string; email: string; className?: string }>()
 
-      // Prioritize direct wali kelas
-      const waliKelas = parent?.students_tk?.classes_tk?.teachers_tk
-      if (waliKelas && (waliKelas.user_id || waliKelas.users_tk?.id)) {
-        const id = waliKelas.user_id || waliKelas.users_tk!.id
+      // Prioritize direct wali kelas (Wali 1 & Wali 2)
+      const childClass = parent?.students_tk?.classes_tk
+      const waliKelas1 = childClass?.teachers_tk
+      if (waliKelas1 && (waliKelas1.user_id || waliKelas1.users_tk?.id)) {
+        const id = waliKelas1.user_id || waliKelas1.users_tk!.id
         partnersMap.set(id, {
           id,
-          name: `Ustadz/Ustadzah ${waliKelas.nama} (Wali Kelas ${parent?.students_tk?.classes_tk?.nama || ''})`,
+          name: `Ustadz/Ustadzah ${waliKelas1.nama} (Wali Kelas 1 - ${childClass?.nama || ''})`,
           role: 'guru',
-          email: waliKelas.users_tk?.email || waliKelas.hp || '',
-          className: parent?.students_tk?.classes_tk?.nama || '',
+          email: waliKelas1.users_tk?.email || waliKelas1.hp || '',
+          className: childClass?.nama || '',
+        })
+      }
+
+      const waliKelas2 = childClass?.teachers2_tk
+      if (waliKelas2 && (waliKelas2.user_id || waliKelas2.users_tk?.id)) {
+        const id = waliKelas2.user_id || waliKelas2.users_tk!.id
+        partnersMap.set(id, {
+          id,
+          name: `Ustadz/Ustadzah ${waliKelas2.nama} (Wali Kelas 2 - ${childClass?.nama || ''})`,
+          role: 'guru',
+          email: waliKelas2.users_tk?.email || waliKelas2.hp || '',
+          className: childClass?.nama || '',
         })
       }
 

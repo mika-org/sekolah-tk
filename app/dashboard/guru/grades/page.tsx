@@ -22,6 +22,7 @@ import {
   Award,
   CheckCircle2,
   Printer,
+  FileDown,
   Filter,
   User,
   HeartHandshake,
@@ -29,6 +30,7 @@ import {
   ChevronRight,
   Info,
 } from 'lucide-react'
+import { generateRaporDocxBlob, downloadBlobAsFile } from '@/lib/export-rapor-docx'
 import {
   saveMonthlyGrade,
   deleteGrade,
@@ -79,8 +81,41 @@ export default function GuruGradesPage() {
   const [recapMonth, setRecapMonth] = useState<string>('all')
   const [recapPage, setRecapPage] = useState<number>(1)
   const [recapPageSize, setRecapPageSize] = useState<number>(10)
+  const [downloadingDocx, setDownloadingDocx] = useState(false)
 
   const supabase = createClient()
+
+  const currentStudentObj = useMemo(() => {
+    return students.find((s) => s.id === selectedStudent)
+  }, [students, selectedStudent])
+
+  const currentStudentGrades = useMemo(() => {
+    return grades.filter((g) => g.student_id === selectedStudent)
+  }, [grades, selectedStudent])
+
+  const handleDownloadStudentDocx = async () => {
+    if (!currentStudentObj) {
+      toast.error('Pilih murid terlebih dahulu.')
+      return
+    }
+    setDownloadingDocx(true)
+    try {
+      const blob = await generateRaporDocxBlob(currentStudentObj, currentStudentGrades, {
+        semester,
+        academicYear,
+      })
+      downloadBlobAsFile(blob, `Rapor_TK_Istiqamah_${currentStudentObj.nama?.replace(/\s+/g, '_') || 'Murid'}.docx`)
+      toast.success('Rapor format Word (.docx) berhasil diunduh!')
+    } catch (e: any) {
+      toast.error('Gagal mengunduh docx: ' + e.message)
+    } finally {
+      setDownloadingDocx(false)
+    }
+  }
+
+  const handlePrintStudentRapor = () => {
+    window.print()
+  }
 
   // Available months depending on selected semester
   const availableMonths = useMemo(() => {
@@ -411,6 +446,36 @@ export default function GuruGradesPage() {
                 </div>
               </div>
             </div>
+
+            {/* Quick Export Action Bar for Selected Student */}
+            {currentStudentObj && (
+              <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                <div className="text-xs font-semibold text-gray-500 flex items-center gap-2">
+                  <span>Rapor Murid:</span>
+                  <strong className="text-primary-blue">{currentStudentObj.nama}</strong>
+                  <span className="text-gray-300">•</span>
+                  <span className="text-emerald-700 font-bold">{currentStudentGrades.length} TP dinilai</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    onClick={handlePrintStudentRapor}
+                    size="sm"
+                    className="bg-primary-green hover:bg-emerald-600 text-white font-bold rounded-xl text-xs gap-1.5 cursor-pointer shadow-sm"
+                  >
+                    <Printer size={13} /> Cetak Rapor Siswa (PDF)
+                  </Button>
+                  <Button
+                    onClick={handleDownloadStudentDocx}
+                    disabled={downloadingDocx}
+                    size="sm"
+                    variant="outline"
+                    className="border-gray-300 font-bold rounded-xl text-xs gap-1.5 cursor-pointer text-primary-blue hover:bg-gray-50 shadow-sm"
+                  >
+                    <FileDown size={13} /> {downloadingDocx ? 'Membuat Word...' : 'Unduh Word (.docx)'}
+                  </Button>
+                </div>
+              </div>
+            )}
           </Card>
 
           {/* Element Selection Tabs: 3 Elemen Capaian Pembelajaran Kurikulum Merdeka */}
@@ -845,6 +910,192 @@ export default function GuruGradesPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* ─── PRINT-ONLY RAPOR LAYOUT UNTUK GURU ─── */}
+      {currentStudentObj && (
+        <div id="print-rapor" className="bg-white text-black font-sans text-xs leading-normal hidden print:block">
+          {/* School Letterhead */}
+          <div className="border-b-[3px] border-double border-black pb-3 mb-4">
+            <div className="flex items-center justify-between gap-4">
+              <div className="w-16 h-16 relative shrink-0">
+                <img
+                  src="/images/hero_gsap/logo.png"
+                  alt="Logo KB &amp; TK Istiqamah"
+                  className="w-16 h-16 object-contain"
+                />
+              </div>
+              <div className="text-center flex-1">
+                <div className="text-[11px] font-bold uppercase tracking-wider text-gray-800">
+                  YAYASAN KARYA PEMBINA DAKWAH / PENDIDIKAN ISLAM ISTIQAMAH
+                </div>
+                <h2 className="text-xl font-black uppercase tracking-tight text-[#07265F]">
+                  KB &amp; TK ISTIQAMAH BANDUNG
+                </h2>
+                <div className="text-[10px] font-bold text-emerald-800">
+                  NPSN: 20255241 • Terakreditasi &quot;A&quot; (BAN PDM) • Kurikulum Merdeka PAUD
+                </div>
+                <p className="text-[9.5px] text-gray-600 mt-0.5">
+                  Jl. Taman Citarum No. 1, Kec. Bandung Wetan, Kota Bandung, Jawa Barat 40115
+                </p>
+                <p className="text-[9px] text-gray-500">
+                  Telp: (022) 4241799 / 0811 2198 853 • Email: info@tkistiqamah.sch.id • Website: https://tkistiqamah.com
+                </p>
+              </div>
+              <div className="w-16 shrink-0" />
+            </div>
+          </div>
+
+          {/* Title */}
+          <div className="text-center my-4 space-y-0.5">
+            <h3 className="text-sm font-black underline uppercase tracking-wide text-black">
+              LAPORAN CAPAIAN PEMBELAJARAN PESERTA DIDIK (RAPOR PAUD)
+            </h3>
+            <p className="text-[10.5px] font-bold uppercase text-gray-700">
+              KURIKULUM MERDEKA • TAHUN PELAJARAN {academicYear} • {semester.toUpperCase()}
+            </p>
+          </div>
+
+          {/* Data Diri Murid */}
+          <div className="mb-4 border border-black/80 rounded-lg p-3 bg-gray-50/40 text-[11px]">
+            <div className="font-bold uppercase text-[10px] border-b border-gray-300 pb-1 mb-2 tracking-wider text-[#07265F]">
+              Identitas Data Diri Murid
+            </div>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-1">
+              <div className="flex">
+                <span className="w-36 font-semibold">Nama Lengkap Murid</span>
+                <span className="font-bold">: {currentStudentObj.nama || '-'}</span>
+              </div>
+              <div className="flex">
+                <span className="w-36 font-semibold">Kelompok / Rombel</span>
+                <span className="font-bold">: {currentStudentObj.classes_tk?.nama || 'TK A'}</span>
+              </div>
+
+              <div className="flex">
+                <span className="w-36 font-semibold">NISN / NIK</span>
+                <span>: {currentStudentObj.nisn || '-'} / {currentStudentObj.nik || '-'}</span>
+              </div>
+              <div className="flex">
+                <span className="w-36 font-semibold">Tahun Pelajaran</span>
+                <span>: {academicYear}</span>
+              </div>
+
+              <div className="flex">
+                <span className="w-36 font-semibold">Tempat, Tanggal Lahir</span>
+                <span>: {currentStudentObj.tempat_lahir || 'Bandung'}, {currentStudentObj.tanggal_lahir ? new Date(currentStudentObj.tanggal_lahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) : '-'}</span>
+              </div>
+              <div className="flex">
+                <span className="w-36 font-semibold">Nama Orang Tua/Wali</span>
+                <span>: {[currentStudentObj.parents_tk?.[0]?.nama_ayah ? `Bpk. ${currentStudentObj.parents_tk[0].nama_ayah}` : '', currentStudentObj.parents_tk?.[0]?.nama_ibu ? `Ibu ${currentStudentObj.parents_tk[0].nama_ibu}` : ''].filter(Boolean).join(' / ') || '-'}</span>
+              </div>
+
+              <div className="flex">
+                <span className="w-36 font-semibold">Jenis Kelamin / Agama</span>
+                <span>: {currentStudentObj.jenis_kelamin || 'Laki-laki'} / {currentStudentObj.agama || 'Islam'}</span>
+              </div>
+              <div className="flex">
+                <span className="w-36 font-semibold">Kontak Orang Tua / HP</span>
+                <span>: {currentStudentObj.parents_tk?.[0]?.hp || '-'}</span>
+              </div>
+
+              <div className="flex col-span-2">
+                <span className="w-36 font-semibold">Alamat Tempat Tinggal</span>
+                <span>: {currentStudentObj.alamat || currentStudentObj.parents_tk?.[0]?.alamat || 'Kota Bandung'}</span>
+              </div>
+
+              <div className="flex col-span-2">
+                <span className="w-36 font-semibold">Dewan Wali Kelas</span>
+                <span className="font-bold text-[#07265F]">
+                  : Wali 1: {currentStudentObj.classes_tk?.teachers_tk?.nama || 'Ustadzah Khadijah'} {currentStudentObj.classes_tk?.teachers2_tk?.nama ? `• Wali 2: ${currentStudentObj.classes_tk.teachers2_tk.nama}` : ''}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Grades Table */}
+          <div className="mb-4">
+            <div className="font-bold uppercase text-[10px] mb-1 tracking-wider text-[#07265F]">
+              Hasil Evaluasi Capaian Pembelajaran &amp; Observasi Perkembangan
+            </div>
+            <table className="w-full border-collapse border border-black text-[10px]">
+              <thead>
+                <tr className="bg-gray-100 font-bold">
+                  <th className="border border-black p-1.5 text-center w-8">No</th>
+                  <th className="border border-black p-1.5 text-left w-64">Tujuan Pembelajaran (TP) &amp; Elemen</th>
+                  <th className="border border-black p-1.5 text-center w-16">Bulan</th>
+                  <th className="border border-black p-1.5 text-center w-24">Capaian</th>
+                  <th className="border border-black p-1.5 text-left">Deskripsi Perkembangan &amp; Narasi Catatan Guru</th>
+                </tr>
+              </thead>
+              <tbody>
+                {currentStudentGrades.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="border border-black p-4 text-center italic text-gray-500">
+                      Belum ada data evaluasi capaian pembelajaran yang tercatat untuk murid ini.
+                    </td>
+                  </tr>
+                ) : (
+                  currentStudentGrades.map((grade, idx) => {
+                    const parsed = parseGradeDescription(grade.description)
+                    const item = CRITERIA_MAP[parsed.criteria] || { label: 'BSH' }
+                    return (
+                      <tr key={grade.id} className="align-top">
+                        <td className="border border-black p-1.5 text-center font-bold">{idx + 1}</td>
+                        <td className="border border-black p-1.5">
+                          <div className="font-bold text-black">{grade.subject}</div>
+                          {parsed.tpObj?.category && (
+                            <div className="text-[9px] text-gray-600 italic">Elemen: {parsed.tpObj.category}</div>
+                          )}
+                        </td>
+                        <td className="border border-black p-1.5 text-center font-semibold">
+                          {parsed.month || '-'}
+                        </td>
+                        <td className="border border-black p-1.5 text-center font-bold">
+                          {parsed.criteria} ({item.label})
+                        </td>
+                        <td className="border border-black p-1.5 leading-relaxed">
+                          {parsed.notes || 'Ananda menunjukkan capaian perkembangan yang sesuai dengan tahapan usianya.'}
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Signatures */}
+          <div className="grid grid-cols-3 gap-2 text-center text-[10px] pt-4">
+            <div className="flex flex-col justify-between h-28">
+              <div>Orang Tua / Wali Murid,</div>
+              <div className="font-bold underline">( ___________________________ )</div>
+            </div>
+
+            <div className="flex flex-col justify-between h-28">
+              <div>
+                <div>Mengetahui,</div>
+                <div className="font-bold">Kepala KB &amp; TK Istiqamah Bandung</div>
+              </div>
+              <div>
+                <div className="font-bold underline">Ustadzah Hj. Nurul Hidayah, S.Pd.I</div>
+                <div className="text-[9px] text-gray-600">NIP. 19780512 200501 2 003</div>
+              </div>
+            </div>
+
+            <div className="flex flex-col justify-between h-28">
+              <div>
+                <div>Bandung, {new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</div>
+                <div className="font-bold">Dewan Wali Kelas,</div>
+              </div>
+              <div>
+                <div className="font-bold underline">{currentStudentObj.classes_tk?.teachers_tk?.nama || 'Ustadzah Khadijah'}</div>
+                {currentStudentObj.classes_tk?.teachers2_tk?.nama && (
+                  <div className="text-[9px] font-semibold text-gray-700">&amp; {currentStudentObj.classes_tk.teachers2_tk.nama}</div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -20,6 +20,7 @@ import {
   ArrowRight,
   Clock
 } from 'lucide-react'
+import { getFacilitiesData, getProgramsData } from '@/actions/content'
 
 const FEATURED_PROGRAMS = [
   {
@@ -55,7 +56,7 @@ const FEATURED_PROGRAMS = [
   {
     title: "Family Day",
     desc: "Membangun kebersamaan dan kolaborasi sekolah dengan keluarga melalui pengalaman bermain dan belajar yang melibatkan anak bersama orang tua.",
-    image: '/images/fasilitas/1.webp',
+    image: '/images/program_unggulan/family-day.jpg',
     layout: 'image-top' as const
   },
   {
@@ -288,6 +289,39 @@ export default function HomePage() {
   const [activePillar, setActivePillar] = useState(0)
   const [openFaq, setOpenFaq] = useState<number | null>(0)
   const [testimonials, setTestimonials] = useState(TESTIMONIALS_DATA)
+  const [featuredPrograms, setFeaturedPrograms] = useState<any[]>(FEATURED_PROGRAMS)
+  const [facilitiesList, setFacilitiesList] = useState<any[]>(FACILITIES)
+
+  useEffect(() => {
+    async function loadDynamicContent() {
+      try {
+        const [progRes, facRes] = await Promise.all([
+          getProgramsData(),
+          getFacilitiesData(),
+        ])
+        if (progRes.success && progRes.data?.length) {
+          setFeaturedPrograms(progRes.data)
+        }
+        if (facRes.success && facRes.data?.length) {
+          setFacilitiesList(facRes.data)
+        }
+      } catch (e) {
+        console.warn('Failed to load dynamic programs or facilities:', e)
+      }
+    }
+    loadDynamicContent()
+
+    // Smooth scroll to section if hash is present (misal kembali dari /fasilitas atau /galeri)
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hashId = window.location.hash.replace('#', '')
+      const el = document.getElementById(hashId)
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth' })
+        }, 150)
+      }
+    }
+  }, [])
 
   useEffect(() => {
     async function loadTestimonials() {
@@ -517,7 +551,7 @@ export default function HomePage() {
       <GsapHeroBanner />
 
       {/* ─── SECTION 1: TEMPAT TUMBUHNYA GENERASI SMART ─── */}
-      <section className="gsap-reveal relative w-full bg-[#0A7043] pt-6 sm:pt-10 pb-10 sm:pb-14 px-4 sm:px-6 lg:px-8 overflow-hidden z-20">
+      <section id="tentang-kami" className="gsap-reveal relative w-full bg-[#0A7043] pt-6 sm:pt-10 pb-10 sm:pb-14 px-4 sm:px-6 lg:px-8 overflow-hidden z-20">
         {/* Floating Decorative Stars matching reference */}
         <div className="absolute left-6 sm:left-12 top-6 text-white/80 pointer-events-none animate-pulse">
           <svg viewBox="0 0 24 24" fill="currentColor" className="w-6 h-6 sm:w-8 sm:h-8">
@@ -714,7 +748,7 @@ export default function HomePage() {
         </section>
 
         {/* ─── SECTION 4: PROGRAM UNGGULAN (HORIZONTAL SCROLL + CLICKABLE DOTS) ─── */}
-        <section id="program-unggulan" className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto">
+        <section id="program" className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center max-w-2xl mx-auto mb-5 sm:mb-7">
             <h2 className="text-2xl sm:text-3xl lg:text-[34px] font-black text-[#1B3B6F] tracking-tight">
@@ -732,7 +766,7 @@ export default function HomePage() {
               onScroll={handleProgramScroll}
               className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden gap-4 sm:gap-6 pb-3 pt-1 px-2"
             >
-              {FEATURED_PROGRAMS.map((prog, idx) => (
+              {featuredPrograms.map((prog, idx) => (
                 <div
                   key={idx}
                   className="program-card w-[270px] sm:w-[310px] md:w-[340px] lg:w-[360px] flex-shrink-0 snap-start flex flex-col justify-between group bg-white/50 hover:bg-white rounded-2xl p-2 transition-all duration-300 shadow-[0_2px_12px_rgba(0,0,0,0.04)] hover:shadow-lg border border-transparent hover:border-gray-100"
@@ -794,7 +828,7 @@ export default function HomePage() {
 
             {/* Clickable Indicator Dots */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {FEATURED_PROGRAMS.map((_, idx) => {
+              {featuredPrograms.map((_, idx) => {
                 const isActive = activeProgramIndex === idx
                 return (
                   <button
@@ -802,7 +836,7 @@ export default function HomePage() {
                     type="button"
                     onClick={() => {
                       if (isActive) {
-                        scrollToProgram((idx + 1) % FEATURED_PROGRAMS.length)
+                        scrollToProgram((idx + 1) % featuredPrograms.length)
                       } else {
                         scrollToProgram(idx)
                       }
@@ -819,7 +853,7 @@ export default function HomePage() {
 
             <button
               type="button"
-              onClick={() => scrollToProgram((activeProgramIndex + 1) % FEATURED_PROGRAMS.length)}
+              onClick={() => scrollToProgram((activeProgramIndex + 1) % featuredPrograms.length)}
               aria-label="Program Selanjutnya"
               className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-white shadow-sm border border-gray-200 flex items-center justify-center text-[#1B3B6F] hover:bg-[#1B3B6F] hover:text-white transition-all cursor-pointer hover:scale-105 active:scale-95"
             >
@@ -829,7 +863,7 @@ export default function HomePage() {
         </section>
 
         {/* ─── SECTION 5: FASILITAS KB TK ISTIQAMAH ─── */}
-        <section className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mt-8 sm:mt-10">
+        <section id="fasilitas" className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mt-8 sm:mt-10">
           <div className="text-center max-w-2xl mx-auto mb-4 sm:mb-5">
             <h2 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-[#1B3B6F] tracking-tight">
               Fasilitas KB TK Istiqamah
@@ -858,7 +892,7 @@ export default function HomePage() {
                 onScroll={handleFacilityScroll}
                 className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden gap-3.5 sm:gap-4.5 py-2 px-1"
               >
-                {FACILITIES.map((facility, idx) => (
+                {facilitiesList.map((facility, idx) => (
                   <div
                     key={idx}
                     onClick={() => scrollToFacility(idx)}
@@ -873,7 +907,7 @@ export default function HomePage() {
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute top-2.5 right-2.5 bg-black/45 backdrop-blur-md px-2.5 py-0.5 rounded-full text-[10px] font-bold text-white tracking-wide">
-                        {idx + 1} / {FACILITIES.length}
+                        {idx + 1} / {facilitiesList.length}
                       </div>
                     </div>
                     <div className="p-3.5 sm:p-4 flex flex-col flex-1 justify-between text-left">
@@ -914,7 +948,7 @@ export default function HomePage() {
 
               {/* Clickable Indicator Dots */}
               <div className="flex items-center gap-1.5 sm:gap-2">
-                {FACILITIES.map((_, idx) => {
+                {facilitiesList.map((_, idx) => {
                   const isActive = activeFacilityIndex === idx
                   return (
                     <button
@@ -948,17 +982,18 @@ export default function HomePage() {
             <div className="mt-4 sm:mt-5 flex justify-center">
               <Link
                 href="/fasilitas"
-                className="inline-flex items-center gap-2 bg-white/20 hover:bg-white text-white hover:text-[#0B7347] font-extrabold text-xs px-5 py-2.5 rounded-full shadow-sm transition-all duration-200 backdrop-blur-sm cursor-pointer hover:scale-105 active:scale-95"
+                scroll={true}
+                className="inline-flex items-center gap-2 bg-white hover:bg-emerald-50 text-[#075E38] font-extrabold text-xs sm:text-sm px-6 sm:px-7 py-2.5 rounded-full shadow-lg transition-all duration-200 cursor-pointer hover:scale-105 active:scale-95"
               >
                 <span>Lihat Seluruh Fasilitas Lengkap</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={15} />
               </Link>
             </div>
           </div>
         </section>
 
         {/* ─── SECTION 6: CERITA DARI ORANG TUA ─── */}
-        <section className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mt-8 sm:mt-10">
+        <section id="testimoni" className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mt-8 sm:mt-10">
           <div className="bg-[#102A4E] rounded-[26px] sm:rounded-[34px] p-5 sm:p-8 shadow-2xl border border-white/10">
             <div className="text-center max-w-2xl mx-auto mb-5 sm:mb-6">
               <h2 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-white tracking-tight">
@@ -1016,7 +1051,7 @@ export default function HomePage() {
         </section>
 
         {/* ─── SECTION 7: JEJAK KECIL, CERITA BERMAKNA (GALERI) ─── */}
-        <section className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mt-8 sm:mt-10">
+        <section id="galeri" className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mt-8 sm:mt-10">
           <div className="bg-[#0B7347] rounded-[26px] sm:rounded-[34px] p-5 sm:p-8 shadow-2xl border border-white/10">
             <div className="text-center max-w-2xl mx-auto mb-5 sm:mb-6">
               <h2 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-white tracking-tight">
@@ -1064,7 +1099,8 @@ export default function HomePage() {
             <div className="flex justify-center mt-6 sm:mt-8">
               <Link
                 href="/galeri"
-                className="bg-white hover:bg-emerald-50 text-[#075E38] font-bold text-xs sm:text-sm px-7 py-2.5 rounded-full shadow-lg transition-all inline-flex items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0"
+                scroll={true}
+                className="bg-white hover:bg-emerald-50 text-[#075E38] font-bold text-xs sm:text-sm px-7 py-2.5 rounded-full shadow-lg transition-all inline-flex items-center gap-2 transform hover:-translate-y-0.5 active:translate-y-0 cursor-pointer hover:scale-105"
               >
                 Lihat Semua Galeri <ArrowRight size={15} />
               </Link>
@@ -1119,7 +1155,7 @@ export default function HomePage() {
         </section>
 
         {/* ─── SECTION 9: PERTANYAAN YANG SERING DIAJUKAN (FAQ) ─── */}
-        <section className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mt-8 sm:mt-12">
+        <section id="faq" className="gsap-reveal max-w-6xl xl:max-w-7xl mx-auto mt-8 sm:mt-12">
           {/* Header */}
           <div className="text-center max-w-2xl mx-auto mb-6 sm:mb-8">
             <h2 className="text-2xl sm:text-3xl lg:text-[32px] font-black text-[#1B3B6F] tracking-tight">
@@ -1171,7 +1207,7 @@ export default function HomePage() {
             </div>
 
             {/* Right Column: Contact Card & Map Location Aligned Flush at Bottom */}
-            <div className="lg:col-span-5 flex flex-col justify-between gap-3.5 sm:gap-4 h-full">
+            <div id="kontak" className="lg:col-span-5 flex flex-col justify-between gap-3.5 sm:gap-4 h-full scroll-mt-24">
               {/* Card 1: Masih ada Pertanyaan? */}
               <div className="border border-[#48A97A]/40 rounded-2xl bg-[#F5FBF8] p-4 sm:p-5 shadow-sm flex items-center gap-4 flex-shrink-0">
                 <div className="relative w-20 h-28 sm:w-24 sm:h-32 flex-shrink-0">

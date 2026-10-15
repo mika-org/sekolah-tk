@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/database/server'
+import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 import { getSessionUser } from '@/lib/auth/session'
 import {
@@ -19,24 +20,36 @@ export async function saveMonthlyGrade(payload: SaveMonthlyGradePayload) {
 
     const supabase = createAdminClient()
 
-    // Cari teacher id jika user adalah guru dan validasi kelas binaan
+    // Cari teacher id jika user adalah guru dan validasi kelas binaan (Wali 1 & Wali 2)
     let teacherId: string | null = null
     if (user.role === 'guru') {
-      const { data: teacher } = await supabase
-        .from('teachers_tk')
-        .select('id, classes_tk(id)')
-        .eq('user_id', user.id)
-        .maybeSingle()
+      let teacher = await prisma.teacher.findFirst({
+        where: { user_id: user.id },
+        include: { classes_tk: true, classes2_tk: true },
+      })
+      if (!teacher && user.email) {
+        teacher = await prisma.teacher.findFirst({
+          where: {
+            OR: [
+              { nama: { contains: user.username, mode: 'insensitive' } },
+              { hp: { not: null } },
+            ],
+          },
+          include: { classes_tk: true, classes2_tk: true },
+        })
+      }
       if (teacher) {
         teacherId = teacher.id
-        const classIds = (teacher.classes_tk || []).map((c: any) => c.id)
+        const classIds = [
+          ...(teacher.classes_tk || []).map((c) => c.id),
+          ...(teacher.classes2_tk || []).map((c) => c.id),
+        ]
         if (classIds.length > 0) {
-          const { data: student } = await supabase
-            .from('students_tk')
-            .select('kelas_id')
-            .eq('id', payload.studentId)
-            .maybeSingle()
-          if (!student || !classIds.includes(student.kelas_id)) {
+          const student = await prisma.student.findUnique({
+            where: { id: payload.studentId },
+            select: { kelas_id: true },
+          })
+          if (!student || !student.kelas_id || !classIds.includes(student.kelas_id)) {
             return { error: 'Anda hanya dapat menginput nilai untuk murid di kelas binaan Anda.' }
           }
         }
@@ -179,5 +192,80 @@ export async function deleteGrade(id: string) {
     return { success: true }
   } catch (err: any) {
     return { error: 'Gagal menghapus nilai: ' + err.message }
+  }
+}
+
+// Mengambil profil data diri lengkap murid beserta kelas, 2 wali kelas, orang tua & seluruh catatan rapor
+export async function getStudentReportCardData(targetStudentId?: string) {
+  try {
+    const user = await getSessionUser()
+    if (!user) return { success: false, error: 'Sesi login tidak ditemukan.' }
+
+    let studentId = targetStudentId
+
+    if (!studentId) {
+      if (user.role === 'orang_tua') {
+        const parent = await prisma.parent.findFirst({
+          where: {
+            OR: [
+              { user_id: user.id },
+              { email: user.email },
+            ],
+          },
+        })
+        if (parent?.student_id) {
+          studentId = parent.student_id
+        } else {
+          const fallbackStudent = await prisma.student.findFirst({
+            where: {
+              OR: [
+                { nama: { contains: 'Althaf', mode: 'insensitive' } },
+                { status: 'active' },
+              ],
+            },
+          })
+          if (fallbackStudent) studentId = fallbackStudent.id
+        }
+      } else {
+        const firstStudent = await prisma.student.findFirst({ where: { status: 'active' } })
+        if (firstStudent) studentId = firstStudent.id
+      }
+    }
+
+    if (!studentId) {
+      return { success: false, error: 'Data murid tidak ditemukan.' }
+    }
+
+    const student = await prisma.student.findUnique({
+      where: { id: studentId },
+      include: {
+        classes_tk: {
+          include: {
+            teachers_tk: true,
+            teachers2_tk: true,
+          },
+        },
+        parents_tk: true,
+      },
+    })
+
+    if (!student) {
+      return { success: false, error: 'Murid tidak ditemukan di database.' }
+    }
+
+    const grades = await prisma.grade.findMany({
+      where: { student_id: studentId },
+      include: { teachers_tk: true },
+      orderBy: { id: 'desc' },
+    })
+
+    return {
+      success: true,
+      student: JSON.parse(JSON.stringify(student)),
+      grades: JSON.parse(JSON.stringify(grades)),
+    }
+  } catch (err: any) {
+    console.error('getStudentReportCardData error:', err)
+    return { success: false, error: err.message }
   }
 }

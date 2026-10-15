@@ -7,12 +7,12 @@ import { usePathname } from 'next/navigation'
 import { Menu, X } from 'lucide-react'
 
 const NAV_ITEMS = [
-  { name: 'Beranda', href: '/' },
-  { name: 'Tentang Kami', href: '/tentang-kami' },
-  { name: 'Fasilitas', href: '/fasilitas' },
-  { name: 'Program', href: '/program' },
-  { name: 'Galeri', href: '/galeri' },
-  { name: 'Kontak', href: '/kontak' },
+  { name: 'Beranda', href: '/#' },
+  { name: 'Tentang Kami', href: '/#tentang-kami' },
+  { name: 'Program', href: '/#program' },
+  { name: 'Fasilitas', href: '/#fasilitas' },
+  { name: 'Galeri', href: '/#galeri' },
+  { name: 'Kontak', href: '/#kontak' },
 ]
 
 export default function Navbar() {
@@ -31,8 +31,27 @@ export default function Navbar() {
     setMobileMenuOpen(false)
   }, [pathname])
 
-  const handleMobileNavClick = () => {
-    // Delay slightly to let Next.js client router navigate smoothly
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+    if (href.startsWith('/#') && pathname === '/') {
+      const id = href.replace('/#', '')
+      if (!id) {
+        window.scrollTo({ top: 0, behavior: 'smooth' })
+      } else {
+        const el = document.getElementById(id)
+        if (el) {
+          e.preventDefault()
+          el.scrollIntoView({ behavior: 'smooth' })
+          window.history.pushState(null, '', href)
+        }
+      }
+    }
+    setMobileMenuOpen(false)
+  }
+
+  const handleMobileNavClick = (e?: React.MouseEvent<HTMLAnchorElement>, href?: string) => {
+    if (e && href) {
+      handleNavClick(e, href)
+    }
     setTimeout(() => {
       setMobileMenuOpen(false)
     }, 120)
@@ -49,22 +68,24 @@ export default function Navbar() {
         />
       )}
 
-      <header className="fixed top-2.5 sm:top-5 left-0 w-full z-[100] px-2.5 sm:px-6 pointer-events-none transition-all duration-300">
+      <header className="fixed top-2 sm:top-3.5 left-0 w-full z-[100] px-2.5 sm:px-6 pointer-events-none transition-all duration-300">
         <div className="w-full max-w-6xl xl:max-w-7xl mx-auto flex items-center justify-center pointer-events-auto">
           
           {/* Floating Pill Container */}
           <nav
-            className={`w-full max-w-5xl xl:max-w-6xl bg-white/95 backdrop-blur-md rounded-full shadow-[0_4px_25px_rgba(0,0,0,0.06)] border border-white/80 py-2 sm:py-2.5 px-3.5 sm:px-6 lg:px-8 flex items-center justify-between transition-all duration-300 pointer-events-auto ${
-              scrolled ? 'shadow-[0_8px_30px_rgba(0,0,0,0.12)] bg-white/98 py-2' : ''
+            className={`transition-all duration-300 pointer-events-auto flex items-center rounded-full border border-white/80 ${
+              scrolled
+                ? 'w-full max-w-5xl xl:max-w-6xl bg-white/98 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.12)] py-1.5 sm:py-2 px-3.5 sm:px-6 lg:px-8 justify-between'
+                : 'w-full md:w-auto md:max-w-fit bg-white/92 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.06)] py-1.5 px-3 sm:px-4 md:px-5 justify-between md:justify-center md:gap-3 lg:gap-5'
             }`}
           >
-            {/* Logo (shown on non-home pages, or when scrolled on home) */}
-            {(!isHome || scrolled) && (
+            {/* Logo (shown on scroll) */}
+            {scrolled && (
               <Link
                 href="/"
                 className="hidden md:flex items-center gap-2 lg:gap-2.5 transition-all duration-300 flex-shrink-0 mr-2 lg:mr-4 outline-none focus:outline-none"
               >
-                <div className="relative w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0">
+                <div className="relative w-8 h-8 sm:w-8.5 sm:h-8.5 flex-shrink-0">
                   <Image src="/images/hero_gsap/logo.png" alt="Logo KB & TK Istiqamah" fill className="object-contain" />
                 </div>
                 <div className="flex flex-col text-left">
@@ -79,18 +100,20 @@ export default function Navbar() {
             )}
 
             {/* Desktop Nav Items */}
-            <div className="hidden md:flex items-center gap-2 lg:gap-4 xl:gap-6 flex-1 justify-center">
+            <div
+              className={`hidden md:flex items-center ${
+                scrolled
+                  ? 'gap-2 lg:gap-4 xl:gap-6 flex-1 justify-center'
+                  : 'gap-1 lg:gap-2.5 xl:gap-3.5 justify-center'
+              }`}
+            >
               {NAV_ITEMS.map((item) => {
-                const active = pathname === item.href && !isHome
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`text-xs lg:text-[13px] xl:text-sm font-semibold transition-all py-1.5 px-2.5 lg:px-3 rounded-full whitespace-nowrap outline-none focus:outline-none ${
-                      active
-                        ? 'text-[#07A363] font-bold bg-[#07A363]/10'
-                        : 'text-[#1B3B6F] hover:text-[#07A363] hover:bg-gray-100/60'
-                    }`}
+                    onClick={(e) => handleNavClick(e, item.href)}
+                    className="text-xs lg:text-[13px] font-semibold transition-all py-1 px-2.5 lg:px-3 rounded-full whitespace-nowrap outline-none focus:outline-none text-[#1B3B6F] hover:text-[#07A363] hover:bg-gray-100/60"
                   >
                     {item.name}
                   </Link>
@@ -99,10 +122,14 @@ export default function Navbar() {
             </div>
 
             {/* Right Action Button: Amber Yellow 'Daftar Sekarang' */}
-            <div className="hidden md:flex items-center gap-3 flex-shrink-0 ml-2 lg:ml-4 pointer-events-auto">
+            <div className="hidden md:flex items-center flex-shrink-0 ml-1 lg:ml-2 pointer-events-auto">
               <Link
                 href="/ppdb"
-                className="relative z-10 pointer-events-auto cursor-pointer bg-[#F5B744] hover:bg-[#F59E0B] text-white font-bold text-xs lg:text-sm px-4 lg:px-6 py-2 lg:py-2.5 rounded-full shadow-sm hover:shadow-md transition-all transform hover:scale-[1.02] active:scale-95 whitespace-nowrap outline-none focus:outline-none"
+                className={`relative z-10 pointer-events-auto cursor-pointer bg-[#F5B744] hover:bg-[#F59E0B] text-white font-bold rounded-full shadow-xs hover:shadow-md transition-all transform hover:scale-[1.02] active:scale-95 whitespace-nowrap outline-none focus:outline-none ${
+                  scrolled
+                    ? 'text-xs lg:text-sm px-4 lg:px-5 py-1.5 sm:py-2'
+                    : 'text-xs px-3.5 lg:px-4 py-1.5'
+                }`}
               >
                 Daftar Sekarang
               </Link>
@@ -144,17 +171,12 @@ export default function Navbar() {
         {mobileMenuOpen && (
           <div className="pointer-events-auto max-w-sm mx-auto mt-2 bg-white/98 backdrop-blur-md rounded-2xl shadow-xl border border-gray-100 p-4 space-y-2 transition-all">
             {NAV_ITEMS.map((item) => {
-              const active = pathname === item.href
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  onClick={handleMobileNavClick}
-                  className={`block py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all touch-manipulation cursor-pointer ${
-                    active
-                      ? 'bg-[#07A363]/10 text-[#07A363]'
-                      : 'text-[#16325C] hover:bg-gray-50'
-                  }`}
+                  onClick={(e) => handleMobileNavClick(e, item.href)}
+                  className="block py-2.5 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all touch-manipulation cursor-pointer text-[#16325C] hover:bg-gray-50"
                 >
                   {item.name}
                 </Link>

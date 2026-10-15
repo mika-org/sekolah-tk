@@ -28,8 +28,11 @@ import {
   ChevronDown,
   ChevronRight,
   ShieldCheck,
+  Building2,
+  Sparkles,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 
 interface NavItem {
   name: string
@@ -143,6 +146,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             collapsible: true,
             items: [
               { name: 'Kelola Banner Hero', href: '/dashboard/admin/hero', icon: Layers },
+              { name: 'Kelola Fasilitas', href: '/dashboard/admin/facilities', icon: Building2 },
+              { name: 'Kelola Program Unggulan', href: '/dashboard/admin/programs', icon: Sparkles },
               { name: 'Kelola Galeri', href: '/dashboard/admin/gallery', icon: BookOpen },
               { name: 'Pengumuman', href: '/dashboard/admin/announcements', icon: Megaphone },
               { name: 'Testimoni', href: '/dashboard/admin/testimonials', icon: MessageSquare },
@@ -184,6 +189,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             collapsible: true,
             items: [
               { name: 'Kelola Banner Hero', href: '/dashboard/admin/hero', icon: Layers },
+              { name: 'Kelola Fasilitas', href: '/dashboard/admin/facilities', icon: Building2 },
+              { name: 'Kelola Program Unggulan', href: '/dashboard/admin/programs', icon: Sparkles },
               { name: 'Kelola Galeri', href: '/dashboard/admin/gallery', icon: BookOpen },
               { name: 'Pengumuman', href: '/dashboard/admin/announcements', icon: Megaphone },
               { name: 'Testimoni', href: '/dashboard/admin/testimonials', icon: MessageSquare },
@@ -607,14 +614,53 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <span className="text-[9px] text-white/70 font-semibold leading-none">NPSN: 20255241</span>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={handleLogout}
-            aria-label="Keluar Portal"
-            className="text-red-300 hover:text-red-200 p-2 cursor-pointer rounded-xl hover:bg-white/10 min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
-          >
-            <LogOut size={18} />
-          </button>
+          <div className="flex items-center space-x-1.5">
+            <NotificationBell role={role} variant="dark" />
+            <button
+              type="button"
+              onClick={handleLogout}
+              aria-label="Keluar Portal"
+              className="text-red-300 hover:text-red-200 p-2 cursor-pointer rounded-xl hover:bg-white/10 min-w-[36px] min-h-[36px] flex items-center justify-center touch-manipulation"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
+        </header>
+
+        {/* DESKTOP TOP HEADER */}
+        <header className="hidden lg:flex items-center justify-between px-8 py-3 bg-white border-b border-gray-100 shadow-2xs z-20 flex-shrink-0">
+          <div className="flex items-center space-x-3">
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-black text-primary-blue uppercase tracking-wider">
+                Portal Akademik &amp; SPMB
+              </span>
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            </div>
+            <span className="text-gray-300 text-xs">|</span>
+            <span className="text-[11px] font-semibold text-gray-400">
+              KB &amp; TK Istiqamah Bandung
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-3">
+            {/* Notification Bell (Realtime SSE) */}
+            <NotificationBell role={role} variant="light" />
+
+            {/* User Profile Badge */}
+            <div className="flex items-center space-x-2.5 pl-3 border-l border-gray-100">
+              <div className="w-8 h-8 rounded-xl bg-primary-blue/10 text-primary-blue flex items-center justify-center font-black text-xs">
+                {(user?.email?.[0] || 'A').toUpperCase()}
+              </div>
+              <div className="flex flex-col text-left">
+                <span className="text-xs font-bold text-gray-800 leading-tight">
+                  {user?.user_metadata?.username || user?.email?.split('@')[0] || 'Pengguna'}
+                </span>
+                <span className="text-[10px] font-semibold text-primary-green uppercase tracking-wider leading-tight">
+                  {formatRoleName(role)}
+                </span>
+              </div>
+            </div>
+          </div>
         </header>
 
         {/* MAIN CONTENT AREA */}

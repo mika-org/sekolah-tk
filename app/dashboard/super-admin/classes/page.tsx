@@ -35,7 +35,7 @@ export default function MasterKelasPage() {
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [selected, setSelected] = useState<any>(null)
 
-  const [form, setForm] = useState({ nama: '', guru_id: '', tahun_ajaran: '2026/2027' })
+  const [form, setForm] = useState({ nama: '', guru_id: '', guru_id_2: '', tahun_ajaran: '2026/2027' })
 
   // Search & Pagination
   const [searchQuery, setSearchQuery] = useState('')
@@ -62,7 +62,7 @@ export default function MasterKelasPage() {
 
   useEffect(() => { loadData() }, [])
 
-  const resetForm = () => setForm({ nama: '', guru_id: '', tahun_ajaran: '2026/2027' })
+  const resetForm = () => setForm({ nama: '', guru_id: '', guru_id_2: '', tahun_ajaran: '2026/2027' })
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -71,6 +71,7 @@ export default function MasterKelasPage() {
     try {
       const payload: any = { nama: form.nama, tahun_ajaran: form.tahun_ajaran }
       if (form.guru_id) payload.guru_id = form.guru_id
+      if (form.guru_id_2) payload.guru_id_2 = form.guru_id_2
       const { error } = await supabase.from('classes_tk').insert(payload)
       if (error) throw error
       setCreateOpen(false)
@@ -82,7 +83,7 @@ export default function MasterKelasPage() {
 
   const openEdit = (c: any) => {
     setSelected(c)
-    setForm({ nama: c.nama, guru_id: c.guru_id || '', tahun_ajaran: c.tahun_ajaran })
+    setForm({ nama: c.nama, guru_id: c.guru_id || '', guru_id_2: c.guru_id_2 || '', tahun_ajaran: c.tahun_ajaran })
     setEditOpen(true)
   }
 
@@ -91,7 +92,12 @@ export default function MasterKelasPage() {
     if (!selected) return
     setSaving(true)
     try {
-      const payload: any = { nama: form.nama, tahun_ajaran: form.tahun_ajaran, guru_id: form.guru_id || null }
+      const payload: any = {
+        nama: form.nama,
+        tahun_ajaran: form.tahun_ajaran,
+        guru_id: form.guru_id || null,
+        guru_id_2: form.guru_id_2 || null,
+      }
       const { error } = await supabase.from('classes_tk').update(payload).eq('id', selected.id)
       if (error) throw error
       setEditOpen(false)
@@ -125,6 +131,7 @@ export default function MasterKelasPage() {
         !searchQuery ||
         (c.nama || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (c.teachers_tk?.nama || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (c.teachers2_tk?.nama || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
         (c.tahun_ajaran || '').toLowerCase().includes(searchQuery.toLowerCase())
       return matchSearch
     })
@@ -197,7 +204,7 @@ export default function MasterKelasPage() {
                 </div>
                 <div>
                   <div className="text-[10px] uppercase font-bold text-gray-400">Ada Wali Kelas</div>
-                  <div className="text-2xl font-black text-primary-blue">{classes.filter(c => c.guru_id).length}</div>
+                  <div className="text-2xl font-black text-primary-blue">{classes.filter(c => c.guru_id || c.guru_id_2).length}</div>
                 </div>
               </div>
               <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-green transition-colors" />
@@ -272,11 +279,23 @@ export default function MasterKelasPage() {
                         </div>
                       </td>
                       <td className="p-4">
-                        {c.teachers_tk ? (
-                          <StatusBadge status="guru" customLabel={c.teachers_tk.nama} size="sm" />
-                        ) : (
-                          <StatusBadge status="neutral" customLabel="Belum ada wali kelas" size="sm" />
-                        )}
+                        <div className="flex flex-col gap-1.5">
+                          {c.teachers_tk ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[9px] font-black uppercase tracking-wider text-blue-700 bg-blue-50 border border-blue-200/60 px-1.5 py-0.5 rounded-md">Wali 1</span>
+                              <span className="text-xs font-bold text-primary-blue">{c.teachers_tk.nama}</span>
+                            </div>
+                          ) : null}
+                          {c.teachers2_tk ? (
+                            <div className="flex items-center gap-1.5">
+                              <span className="text-[9px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200/60 px-1.5 py-0.5 rounded-md">Wali 2</span>
+                              <span className="text-xs font-bold text-emerald-800">{c.teachers2_tk.nama}</span>
+                            </div>
+                          ) : null}
+                          {!c.teachers_tk && !c.teachers2_tk && (
+                            <StatusBadge status="neutral" customLabel="Belum ada wali kelas" size="sm" />
+                          )}
+                        </div>
                       </td>
                       <td className="p-4 font-mono text-xs font-bold text-gray-600">
                         {c.tahun_ajaran}
@@ -338,13 +357,23 @@ export default function MasterKelasPage() {
                 {TAHUN_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-primary-blue">Wali Kelas <span className="text-gray-400 font-medium">(opsional)</span></Label>
-              <select value={form.guru_id} onChange={e => setForm(f => ({ ...f, guru_id: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-[#F8F6F2] border-transparent focus:bg-white rounded-xl text-sm font-medium outline-none">
-                <option value="">— Pilih wali kelas —</option>
-                {teachers.map(t => <option key={t.id} value={t.id}>{t.nama}</option>)}
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-primary-blue">Wali Kelas 1 <span className="text-gray-400 font-medium">(Utama)</span></Label>
+                <select value={form.guru_id} onChange={e => setForm(f => ({ ...f, guru_id: e.target.value }))}
+                  className="w-full px-3.5 py-2.5 bg-[#F8F6F2] border-transparent focus:bg-white rounded-xl text-xs font-medium outline-none">
+                  <option value="">— Pilih Wali 1 —</option>
+                  {teachers.map(t => <option key={t.id} value={t.id}>{t.nama}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-primary-blue">Wali Kelas 2 <span className="text-gray-400 font-medium">(Pendamping)</span></Label>
+                <select value={form.guru_id_2} onChange={e => setForm(f => ({ ...f, guru_id_2: e.target.value }))}
+                  className="w-full px-3.5 py-2.5 bg-[#F8F6F2] border-transparent focus:bg-white rounded-xl text-xs font-medium outline-none">
+                  <option value="">— Pilih Wali 2 —</option>
+                  {teachers.map(t => <option key={t.id} value={t.id}>{t.nama}</option>)}
+                </select>
+              </div>
             </div>
             <div className="pt-2 flex gap-3">
               <Button type="button" variant="outline" onClick={() => setCreateOpen(false)} className="flex-1 rounded-xl font-bold text-xs border-gray-200 cursor-pointer">Batal</Button>
@@ -377,13 +406,23 @@ export default function MasterKelasPage() {
                 {TAHUN_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
               </select>
             </div>
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-primary-blue">Wali Kelas</Label>
-              <select value={form.guru_id} onChange={e => setForm(f => ({ ...f, guru_id: e.target.value }))}
-                className="w-full px-3.5 py-2.5 bg-[#F8F6F2] border-transparent focus:bg-white rounded-xl text-sm font-medium outline-none">
-                <option value="">— Tidak ada wali kelas —</option>
-                {teachers.map(t => <option key={t.id} value={t.id}>{t.nama}</option>)}
-              </select>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-primary-blue">Wali Kelas 1 <span className="text-gray-400 font-medium">(Utama)</span></Label>
+                <select value={form.guru_id} onChange={e => setForm(f => ({ ...f, guru_id: e.target.value }))}
+                  className="w-full px-3.5 py-2.5 bg-[#F8F6F2] border-transparent focus:bg-white rounded-xl text-xs font-medium outline-none">
+                  <option value="">— Tidak ada —</option>
+                  {teachers.map(t => <option key={t.id} value={t.id}>{t.nama}</option>)}
+                </select>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs font-bold text-primary-blue">Wali Kelas 2 <span className="text-gray-400 font-medium">(Pendamping)</span></Label>
+                <select value={form.guru_id_2} onChange={e => setForm(f => ({ ...f, guru_id_2: e.target.value }))}
+                  className="w-full px-3.5 py-2.5 bg-[#F8F6F2] border-transparent focus:bg-white rounded-xl text-xs font-medium outline-none">
+                  <option value="">— Tidak ada —</option>
+                  {teachers.map(t => <option key={t.id} value={t.id}>{t.nama}</option>)}
+                </select>
+              </div>
             </div>
             <div className="pt-2 flex gap-3">
               <Button type="button" variant="outline" onClick={() => setEditOpen(false)} className="flex-1 rounded-xl font-bold text-xs border-gray-200 cursor-pointer">Batal</Button>

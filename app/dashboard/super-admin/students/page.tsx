@@ -400,7 +400,6 @@ export default function MasterMuridPage() {
           onClick={() => {
             setSearch('')
             setStatusFilter('all')
-            setGenderFilter('all')
             setClassFilter('all')
             setCurrentPage(1)
             const el = document.getElementById('daftar-murid')

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -8,6 +8,7 @@ import {
   ShieldCheck,
   CheckCircle2,
   ArrowRight,
+  ArrowLeft,
   Maximize2,
   X,
   MessageCircle,
@@ -18,6 +19,7 @@ import {
   Compass
 } from 'lucide-react'
 import { FACILITIES, FacilityItem } from '@/lib/facilities'
+import { getFacilitiesData } from '@/actions/content'
 
 const CATEGORY_FILTERS = [
   { key: 'all', label: 'Semua Fasilitas' },
@@ -31,19 +33,46 @@ const CATEGORY_FILTERS = [
 export default function FasilitasPage() {
   const [activeCategory, setActiveCategory] = useState('all')
   const [selectedFacility, setSelectedFacility] = useState<FacilityItem | null>(null)
+  const [facilitiesList, setFacilitiesList] = useState<FacilityItem[]>(FACILITIES)
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    async function load() {
+      try {
+        const res = await getFacilitiesData()
+        if (res.success && res.data?.length) {
+          setFacilitiesList(res.data)
+        }
+      } catch (e) {
+        console.warn('Failed to load dynamic facilities:', e)
+      }
+    }
+    load()
+  }, [])
 
   const filteredFacilities = activeCategory === 'all'
-    ? FACILITIES
-    : FACILITIES.filter((item) => item.category === activeCategory)
+    ? facilitiesList
+    : facilitiesList.filter((item) => item.category === activeCategory)
 
   return (
     <div className="w-full pt-20 sm:pt-24 pb-16">
       {/* ─── HEADER HERO SECTION ──────────────────────── */}
       <section className="max-w-6xl xl:max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-8 sm:mb-10">
-        <div className="bg-[#102A4E] rounded-[24px] sm:rounded-[32px] py-10 sm:py-14 px-6 sm:px-10 text-center text-white shadow-xl border border-white/10 relative overflow-hidden">
+        <div className="bg-[#102A4E] rounded-[24px] sm:rounded-[32px] py-8 sm:py-12 px-6 sm:px-10 text-center text-white shadow-xl border border-white/10 relative overflow-hidden">
           {/* Subtle Decorative Elements */}
           <div className="absolute -top-16 -right-16 w-56 h-56 bg-emerald-500/10 rounded-full blur-2xl pointer-events-none" />
           <div className="absolute -bottom-16 -left-16 w-56 h-56 bg-amber-400/10 rounded-full blur-2xl pointer-events-none" />
+
+          {/* Breadcrumb back to single page */}
+          <div className="flex items-center justify-start mb-4">
+            <Link
+              href="/#fasilitas"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-white/80 hover:text-white bg-white/10 hover:bg-white/20 px-3.5 py-1.5 rounded-full transition-colors backdrop-blur-xs"
+            >
+              <ArrowLeft size={13} />
+              <span>Kembali ke Beranda</span>
+            </Link>
+          </div>
 
           <span className="inline-flex items-center gap-1.5 bg-white/15 text-emerald-300 px-4 py-1.5 rounded-full text-xs font-extrabold tracking-wider uppercase mb-3 backdrop-blur-sm">
             <Sparkles size={14} className="text-emerald-300" />

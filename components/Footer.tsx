@@ -65,12 +65,12 @@ export default function Footer() {
           <div className="md:col-span-3 space-y-3">
             <h4 className="text-xs font-black uppercase tracking-wider text-emerald-400">Navigasi Sekolah</h4>
             <ul className="space-y-2 text-xs font-semibold text-white/80">
-              <li><Link href="/" className="hover:text-emerald-400 transition-colors">Beranda</Link></li>
-              <li><Link href="/tentang-kami" className="hover:text-emerald-400 transition-colors">Tentang Kami</Link></li>
-              <li><Link href="/fasilitas" className="hover:text-emerald-400 transition-colors">Fasilitas Sekolah</Link></li>
-              <li><Link href="/program" className="hover:text-emerald-400 transition-colors">Program Unggulan</Link></li>
-              <li><Link href="/aktivitas" className="hover:text-emerald-400 transition-colors">Kegiatan Pembelajaran</Link></li>
-              <li><Link href="/galeri" className="hover:text-emerald-400 transition-colors">Galeri Foto</Link></li>
+              <li><Link href="/#" className="hover:text-emerald-400 transition-colors">Beranda</Link></li>
+              <li><Link href="/#tentang-kami" className="hover:text-emerald-400 transition-colors">Tentang Kami</Link></li>
+              <li><Link href="/#fasilitas" className="hover:text-emerald-400 transition-colors">Fasilitas Sekolah</Link></li>
+              <li><Link href="/#program" className="hover:text-emerald-400 transition-colors">Program Unggulan</Link></li>
+              <li><Link href="/#galeri" className="hover:text-emerald-400 transition-colors">Galeri Foto</Link></li>
+              <li><Link href="/#kontak" className="hover:text-emerald-400 transition-colors">Kontak &amp; Lokasi</Link></li>
               <li><Link href="/ppdb" className="hover:text-emerald-400 transition-colors">SPMB Online</Link></li>
             </ul>
           </div>

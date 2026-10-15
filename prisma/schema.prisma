@@ -34,7 +34,8 @@ model Teacher {
   hp           String?    @db.Text
   alamat       String?    @db.Text
   users_tk     User?      @relation("TeacherUser", fields: [user_id], references: [id], onDelete: SetNull)
-  classes_tk   Class[]
+  classes_tk   Class[]    @relation("ClassTeacher1")
+  classes2_tk  Class[]    @relation("ClassTeacher2")
   grades_tk    Grade[]
   materials_tk Material[]
 
@@ -46,13 +47,16 @@ model Class {
   id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   nama         String     @db.Text
   guru_id      String?    @db.Uuid
+  guru_id_2    String?    @db.Uuid
   tahun_ajaran String     @db.Text
-  teachers_tk  Teacher?   @relation(fields: [guru_id], references: [id], onDelete: SetNull)
+  teachers_tk  Teacher?   @relation("ClassTeacher1", fields: [guru_id], references: [id], onDelete: SetNull)
+  teachers2_tk Teacher?   @relation("ClassTeacher2", fields: [guru_id_2], references: [id], onDelete: SetNull)
   students_tk  Student[]
   materials_tk Material[]
   schedules_tk Schedule[]
 
   @@index([guru_id])
+  @@index([guru_id_2])
   @@map("classes_tk")
 }
 

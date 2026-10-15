@@ -50,7 +50,7 @@ const primaryKeyByTable: Record<TableName, string> = {
 const fieldsByTable: Record<TableName, ReadonlySet<string>> = {
   users_tk: new Set(['id', 'username', 'email', 'password_hash', 'initial_password', 'role', 'status', 'created_at']),
   teachers_tk: new Set(['id', 'user_id', 'nama', 'nip', 'hp', 'alamat']),
-  classes_tk: new Set(['id', 'nama', 'guru_id', 'tahun_ajaran']),
+  classes_tk: new Set(['id', 'nama', 'guru_id', 'guru_id_2', 'tahun_ajaran']),
   students_tk: new Set(['id', 'user_id', 'nama', 'nik', 'nisn', 'tempat_lahir', 'tanggal_lahir', 'jenis_kelamin', 'agama', 'alamat', 'kelas_id', 'status']),
   parents_tk: new Set(['id', 'user_id', 'student_id', 'nama_ayah', 'nama_ibu', 'hp', 'email', 'alamat', 'pekerjaan']),
   ppdb_tk: new Set([
@@ -73,7 +73,7 @@ const fieldsByTable: Record<TableName, ReadonlySet<string>> = {
 
 const relationTarget: Partial<Record<TableName, Record<string, TableName>>> = {
   teachers_tk: { users_tk: 'users_tk' },
-  classes_tk: { teachers_tk: 'teachers_tk' },
+  classes_tk: { teachers_tk: 'teachers_tk', teachers2_tk: 'teachers_tk' },
   students_tk: { users_tk: 'users_tk', classes_tk: 'classes_tk', parents_tk: 'parents_tk' },
   parents_tk: { users_tk: 'users_tk', students_tk: 'students_tk' },
   ppdb_documents_tk: { ppdb_tk: 'ppdb_tk' },
@@ -135,7 +135,7 @@ function buildSelection(table: TableName, selection?: string) {
 
   for (const token of tokens) {
     if (token === '*') continue
-    const relationMatch = token.match(/^([a-z_]+)\((.*)\)$/)
+    const relationMatch = token.match(/^([a-z0-9_]+)\((.*)\)$/)
     if (relationMatch) {
       const [, relation, nestedSelection] = relationMatch
       const target = relationTarget[table]?.[relation]

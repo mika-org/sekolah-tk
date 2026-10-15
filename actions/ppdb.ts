@@ -11,6 +11,7 @@ import {
 } from '@/lib/ppdb/form-definition'
 import { saveStoredFile } from '@/lib/storage'
 import { revalidatePath } from 'next/cache'
+import { broadcastPPDBNotification } from '@/lib/notifications/emitter'
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024
 const ALLOWED_FILE_TYPES = new Set([
@@ -180,6 +181,21 @@ export async function saveInitialPPDBForm(payload: {
     }
 
     revalidatePath('/dashboard/admin/ppdb')
+
+    try {
+      broadcastPPDBNotification({
+        type: 'NEW_REGISTRATION',
+        title: 'Pendaftaran Awal Calon Murid',
+        studentName,
+        parentName,
+        phone,
+        message: `Calon murid "${studentName}" mengisi formulir awal pendaftaran.`,
+        link: '/dashboard/admin/ppdb',
+      })
+    } catch (e) {
+      console.warn('Failed to broadcast initial PPDB notification:', e)
+    }
+
     return { success: true, ppdbId: ppdbData.id }
   } catch (err: any) {
     console.error('Error in saveInitialPPDBForm:', err)
@@ -326,6 +342,21 @@ export async function purchasePPDBForm(
     }
 
     revalidatePath('/dashboard/admin/ppdb')
+
+    try {
+      broadcastPPDBNotification({
+        type: 'PAYMENT_SUBMITTED',
+        title: 'Bukti Pembayaran Formulir Masuk',
+        studentName,
+        parentName,
+        phone,
+        message: `Pembayaran formulir untuk calon murid "${studentName}" telah diunggah dan menunggu verifikasi.`,
+        link: '/dashboard/admin/ppdb',
+      })
+    } catch (e) {
+      console.warn('Failed to broadcast purchase PPDB notification:', e)
+    }
+
     return {
       success: true,
       error: '',
@@ -720,6 +751,21 @@ export async function submitPPDB(
 
     revalidatePath('/dashboard/admin/ppdb')
     revalidatePath('/dashboard/orang-tua/ppdb-status')
+
+    try {
+      broadcastPPDBNotification({
+        type: 'FORM_COMPLETED',
+        title: 'Biodata & Berkas SPMB Lengkap',
+        studentName: initialStudentName,
+        parentName: initialParentName,
+        phone: initialPhone,
+        message: `Formulir biodata lengkap & dokumen berkas calon murid "${initialStudentName}" telah diserahkan.`,
+        link: '/dashboard/admin/ppdb',
+      })
+    } catch (e) {
+      console.warn('Failed to broadcast submit PPDB notification:', e)
+    }
+
     return {
       success: true,
       error: '',

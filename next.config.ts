@@ -34,6 +34,25 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  async redirects() {
+    return [
+      {
+        source: '/tentang-kami',
+        destination: '/#tentang-kami',
+        permanent: false,
+      },
+      {
+        source: '/aktivitas',
+        destination: '/program',
+        permanent: false,
+      },
+      {
+        source: '/kontak',
+        destination: '/#kontak',
+        permanent: false,
+      },
+    ]
+  },
 };
 
 export default nextConfig;

@@ -1,6 +1,6 @@
 'use client'
 
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -19,6 +19,7 @@ import {
   ArrowRight,
   MessageCircle
 } from 'lucide-react'
+import { getProgramsData } from '@/actions/content'
 
 const CORE_PROGRAMS = [
   {
@@ -100,7 +101,7 @@ const FLAGSHIP_PROGRAMS = [
   {
     title: "Family Day",
     desc: "Membangun kebersamaan dan kolaborasi sekolah dengan keluarga melalui pengalaman bermain dan belajar yang melibatkan anak bersama orang tua.",
-    image: '/images/fasilitas/1.webp',
+    image: '/images/program_unggulan/family-day.jpg',
   },
   {
     title: "Takhosus Tahfidz",
@@ -170,6 +171,23 @@ const EXTRACURRICULARS = [
 ]
 
 export default function ProgramPage() {
+  const [flagshipPrograms, setFlagshipPrograms] = useState<any[]>(FLAGSHIP_PROGRAMS)
+
+  useEffect(() => {
+    window.scrollTo(0, 0)
+    async function load() {
+      try {
+        const res = await getProgramsData()
+        if (res.success && res.data?.length) {
+          setFlagshipPrograms(res.data)
+        }
+      } catch (e) {
+        console.warn('Failed to load dynamic programs:', e)
+      }
+    }
+    load()
+  }, [])
+
   return (
     <div className="w-full pt-20 sm:pt-24 pb-16">
       {/* ─── HEADER SECTION (Clean Header) ───────── */}
@@ -293,7 +311,7 @@ export default function ProgramPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
-          {FLAGSHIP_PROGRAMS.map((item, idx) => (
+          {flagshipPrograms.map((item, idx) => (
             <div
               key={idx}
               className="bg-white rounded-[22px] overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg transition-all duration-300 flex flex-col group"
