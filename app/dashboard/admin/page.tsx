@@ -21,7 +21,8 @@ import {
   Mail,
   Camera,
   Megaphone,
-  Layers
+  Layers,
+  UploadCloud,
 } from 'lucide-react'
 import { toast } from 'sonner'
 
@@ -103,6 +104,12 @@ export default function AdminDashboard() {
           <p className="text-gray-500 font-semibold text-xs mt-1">Mengelola SPMB, Pembayaran, dan Publikasi Sekolah.</p>
         </div>
         <div className="flex items-center space-x-2">
+          <Link href="/dashboard/admin/import-students">
+            <Button className="bg-[#07A363] hover:bg-[#068f56] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm">
+              <UploadCloud size={15} />
+              Import Siswa Lunas
+            </Button>
+          </Link>
           <Button onClick={loadData} variant="outline" className="border-gray-200 hover:border-gray-300 font-bold rounded-xl text-xs cursor-pointer">
             Muat Ulang Data
           </Button>
