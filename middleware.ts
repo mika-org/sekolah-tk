@@ -9,7 +9,21 @@ export async function middleware(request: NextRequest) {
 
   // Protect dashboard routes
   if (url.pathname.startsWith('/dashboard')) {
+    const isServerAction = Boolean(request.headers.get('next-action'))
+
     if (!user || isJWTExpired(user)) {
+      if (isServerAction) {
+        const response = new NextResponse('Sesi login Anda telah berakhir. Silakan login kembali.', {
+          status: 401,
+          headers: {
+            'content-type': 'text/plain',
+            'x-action-redirect': '/login;replace',
+          },
+        })
+        response.cookies.delete('sekolah_tk_token')
+        return response
+      }
+
       // Clear cookie and redirect to login
       const response = NextResponse.redirect(new URL('/login', request.url))
       response.cookies.delete('sekolah_tk_token')
@@ -20,18 +34,42 @@ export async function middleware(request: NextRequest) {
 
     // Check specific role sub-paths
     if (url.pathname.startsWith('/dashboard/super-admin') && role !== 'super_admin') {
+      if (isServerAction) {
+        return new NextResponse('Tidak memiliki izin.', {
+          status: 403,
+          headers: { 'content-type': 'text/plain', 'x-action-redirect': '/unauthorized;replace' },
+        })
+      }
       url.pathname = '/unauthorized'
       return NextResponse.redirect(url)
     }
     if (url.pathname.startsWith('/dashboard/admin') && role !== 'admin' && role !== 'super_admin') {
+      if (isServerAction) {
+        return new NextResponse('Tidak memiliki izin.', {
+          status: 403,
+          headers: { 'content-type': 'text/plain', 'x-action-redirect': '/unauthorized;replace' },
+        })
+      }
       url.pathname = '/unauthorized'
       return NextResponse.redirect(url)
     }
     if (url.pathname.startsWith('/dashboard/guru') && role !== 'guru') {
+      if (isServerAction) {
+        return new NextResponse('Tidak memiliki izin.', {
+          status: 403,
+          headers: { 'content-type': 'text/plain', 'x-action-redirect': '/unauthorized;replace' },
+        })
+      }
       url.pathname = '/unauthorized'
       return NextResponse.redirect(url)
     }
     if (url.pathname.startsWith('/dashboard/orang-tua') && role !== 'orang_tua') {
+      if (isServerAction) {
+        return new NextResponse('Tidak memiliki izin.', {
+          status: 403,
+          headers: { 'content-type': 'text/plain', 'x-action-redirect': '/unauthorized;replace' },
+        })
+      }
       url.pathname = '/unauthorized'
       return NextResponse.redirect(url)
     }

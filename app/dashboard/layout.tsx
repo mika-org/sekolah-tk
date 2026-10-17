@@ -138,7 +138,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             items: [
               { name: 'Pendaftar SPMB', href: '/dashboard/admin/ppdb', icon: UserCheck },
               { name: 'Verifikasi Pembayaran', href: '/dashboard/admin/payments', icon: DollarSign },
-              { name: 'Import Siswa Lunas', href: '/dashboard/admin/import-students', icon: UploadCloud },
+              { name: 'Import Siswa', href: '/dashboard/admin/import-students', icon: UploadCloud },
               { name: 'Laporan SPMB', href: '/dashboard/super-admin/reports', icon: FileSpreadsheet },
             ],
           },
@@ -183,7 +183,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             items: [
               { name: 'Pendaftar SPMB', href: '/dashboard/admin/ppdb', icon: UserCheck },
               { name: 'Verifikasi Pembayaran', href: '/dashboard/admin/payments', icon: DollarSign },
-              { name: 'Import Siswa Lunas', href: '/dashboard/admin/import-students', icon: UploadCloud },
+              { name: 'Import Siswa', href: '/dashboard/admin/import-students', icon: UploadCloud },
             ],
           },
           {

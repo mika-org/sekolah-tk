@@ -1,7 +1,7 @@
-# Panduan & Format Import Data Siswa (Sudah Mendaftar & Lunas)
+# Panduan & Format Import Data Siswa
 **KB & TK Istiqamah Balikpapan**
 
-Dokumen ini menjelaskan struktur data dan spesifikasi kolom sesuai dengan format tabel data pendaftaran yang digunakan sekolah.
+Dokumen ini menjelaskan struktur data, pemetaan kolom, dan aturan otomatisasi sistem sesuai format tabel data sekolah.
 
 ---
 
@@ -36,7 +36,7 @@ Kolom berikut **fleksibel** dan boleh dikosongkan jika data belum lengkap:
 
 | No | Nama Kolom Header | Tipe Data | Nilai Bawaan (Default) Jika Kosong | Keterangan | Contoh Isi |
 |:--:|:------------------|:----------|:-----------------------------------|:-----------|:-----------|
-| 1 | **`KLP`** | Teks | `NULL` (Belum di-ploting) | Kelompok / Kelas (misal: `TK A`, `TK B`, `KB`). Jika cocok dengan kelas di sistem, langsung diploting ke kelas tersebut. | `TK A` |
+| 1 | **`KLP`** | Teks | `NULL` | **Otomatis Dipetakan ke Kelas**: Kelompok / Kelas (misal: `TK A`, `TK B`, `KB`, `Abu Bakar`). Sistem otomatis mencocokkan dengan kelas yang ada, dan jika kelas belum tersedia, sistem akan otomatis membuatkan kelas baru di database. | `TK A` |
 | 2 | **`TEMPAT LAHIR`** | Teks | `NULL` | Kota/Kabupaten kelahiran anak. | `Balikpapan` |
 | 3 | **`TANGGAL SEKOLAH`**| Tanggal | Hari ini (tanggal import) | Tanggal mulai masuk sekolah atau tanggal registrasi/pelunasan. | `2026-07-15` |
 | 4 | **`UMUR/JULI`** | Teks | Dihitung otomatis / `NULL` | Usia anak per bulan Juli (tersimpan dalam catatan pendaftaran). | `6 Th 2 Bln` |
@@ -86,3 +86,25 @@ Ketika tombol **"Proses Import"** ditekan di menu Admin:
 
 4. **Rekap Kredensial Instan**:
    - Admin dapat langsung menyalin (Copy) atau mendownload daftar username & password seluruh orang tua dalam format Excel untuk dibagikan kepada wali murid.
+
+---
+
+## 5. Fitur Download Data Bermasalah & Penanganan Error (Error Recovery)
+
+Jika terdapat baris data yang tidak lengkap atau bermasalah, sistem menyediakan fitur unduh data bermasalah agar Admin tidak perlu mencari satu per satu secara manual:
+
+1. **Unduh Data Bermasalah Saat Pratinjau (Sebelum Import)**:
+   - Jika saat berkas diunggah sistem menemukan baris yang tidak memenuhi syarat (muncul indikator merah *Ada Masalah*), langsung tersedia tombol:  
+     👉 **`Download Data Bermasalah ([Jumlah])`**
+   - Berkas yang diunduh adalah format Excel (`.xlsx`) yang **hanya berisi baris-baris bermasalah** lengkap dengan kolom khusus: **`PENYEBAB MASALAH / ERROR`**.
+   - **Cara kerja praktis:**
+     1. Klik tombol **Download Data Bermasalah**.
+     2. Buka berkas Excel tersebut, periksa kolom `PENYEBAB MASALAH / ERROR` (misal: *"NAMA ANAK wajib diisi"* atau *"Tanggal Lahir tidak valid"*).
+     3. Lengkapi data yang kurang pada berkas tersebut lalu simpan (*Save*).
+     4. Unggah kembali berkas yang sudah diperbaiki ke sistem.
+
+2. **Unduh Data Gagal di Modal Hasil (Setelah Import)**:
+   - Jika ada data yang gagal disimpan saat proses database dijalankan, pada jendela hasil akhir import akan muncul tombol:  
+     👉 **`Download Data Gagal ([Jumlah])`**
+   - Admin dapat mengunduh daftar murid yang gagal diproses beserta alasan kegagalannya untuk diperiksa dan diimport ulang tanpa mempengaruhi murid yang sudah berhasil.
+

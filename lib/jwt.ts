@@ -23,7 +23,7 @@ export async function generateJWT(user: Omit<JWTPayload, 'exp'>): Promise<string
   })
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
     .setIssuedAt()
-    .setExpirationTime('2h')
+    .setExpirationTime('7d')
     .sign(getSecret())
 }
 

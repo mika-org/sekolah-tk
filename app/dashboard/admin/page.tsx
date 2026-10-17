@@ -107,7 +107,7 @@ export default function AdminDashboard() {
           <Link href="/dashboard/admin/import-students">
             <Button className="bg-[#07A363] hover:bg-[#068f56] text-white font-bold rounded-xl text-xs flex items-center gap-1.5 shadow-sm">
               <UploadCloud size={15} />
-              Import Siswa Lunas
+              Import Siswa
             </Button>
           </Link>
           <Button onClick={loadData} variant="outline" className="border-gray-200 hover:border-gray-300 font-bold rounded-xl text-xs cursor-pointer">

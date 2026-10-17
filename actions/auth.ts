@@ -63,7 +63,7 @@ export async function login(prevState: any, formData: FormData) {
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
     path: '/',
-    maxAge: 2 * 60 * 60 // 2 hours
+    maxAge: 7 * 24 * 60 * 60 // 7 days
   })
 
   // 4. Redirect depending on role

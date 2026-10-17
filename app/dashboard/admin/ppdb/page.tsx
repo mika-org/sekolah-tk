@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useCallback, useEffect, useState, useMemo } from 'react'
+import * as XLSX from 'xlsx'
 import { toast } from 'sonner'
 import { createClient } from '@/lib/database/client'
 import { approvePPDB, resendCredentialsEmail, updatePPDB, type UpdatePPDBPayload } from '@/actions/admin'
@@ -53,6 +54,7 @@ import {
   FileText,
   Clock,
   Users,
+  FileSpreadsheet,
 } from 'lucide-react'
 
 type SnapshotRecord = Record<string, unknown>
@@ -897,6 +899,97 @@ export default function AdminPPDBPage() {
     }
   }, [ppdbList])
 
+  // Export Rekap Seragam & Observasi ke Excel
+  const handleExportRecapToExcel = () => {
+    if (filteredRecapList.length === 0) {
+      toast.info('Tidak ada data rekap yang sesuai filter untuk diunduh.')
+      return
+    }
+
+    try {
+      const exportData = filteredRecapList.map((app, idx) => {
+        const child = (app.child_details as Record<string, any>) || {}
+        const sch = (child.schedules as Record<string, any>) || {}
+        const father = (app.father_details as Record<string, any>) || {}
+        const mother = (app.mother_details as Record<string, any>) || {}
+
+        const formatTgl = (val?: string) => {
+          if (!val) return '-'
+          const d = new Date(val)
+          return isNaN(d.getTime()) ? String(val) : d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' })
+        }
+
+        const parentName = father.nama_ayah || mother.nama_ibu || '-'
+        const parentPhone = father.hp_ayah || mother.hp_ibu || '-'
+
+        let jk = '-'
+        if (child.jenis_kelamin === 'P' || child.jenis_kelamin === 'Perempuan') {
+          jk = 'Perempuan'
+        } else if (child.jenis_kelamin === 'L' || child.jenis_kelamin === 'Laki-laki') {
+          jk = 'Laki-laki'
+        }
+
+        return {
+          No: idx + 1,
+          'ID Pendaftaran': app.id.slice(0, 8).toUpperCase(),
+          'Nama Calon Siswa': app.student_name,
+          'Jenis Kelamin': jk,
+          'Tanggal Lahir': formatTgl(app.birth_date ? String(app.birth_date) : child.birth_date || child.tanggal_lahir),
+          'Nama Orang Tua / Wali': parentName,
+          'No HP / WA Ortu': parentPhone,
+          'Alamat': child.alamat || father.alamat_ayah || mother.alamat_ibu || '-',
+          'Status Observasi': sch.observation_date ? 'Sudah Terjadwal' : 'Belum Terjadwal',
+          'Tanggal Observasi': formatTgl(sch.observation_date),
+          'Waktu Observasi': sch.observation_time || '-',
+          'Catatan Observasi': sch.observation_notes || '-',
+          'Ukuran Seragam': sch.uniform_size || 'Belum Diukur',
+          'Tanggal Ukur Seragam': formatTgl(sch.uniform_measure_date),
+          'Catatan Ukur Seragam': sch.uniform_measure_notes || '-',
+          'Status Pengambilan Seragam': sch.uniform_pickup_status || 'Belum Siap',
+          'Tanggal Ambil Seragam': formatTgl(sch.uniform_pickup_date),
+          'Catatan Pengambilan Seragam': sch.uniform_pickup_notes || '-',
+          'Status PPDB': app.status || '-',
+          'Status Pembayaran': app.payment_status || '-',
+        }
+      })
+
+      const wb = XLSX.utils.book_new()
+      const ws = XLSX.utils.json_to_sheet(exportData)
+
+      ws['!cols'] = [
+        { wch: 6 },  // No
+        { wch: 14 }, // ID Pendaftaran
+        { wch: 28 }, // Nama Calon Siswa
+        { wch: 14 }, // Jenis Kelamin
+        { wch: 16 }, // Tanggal Lahir
+        { wch: 26 }, // Nama Orang Tua / Wali
+        { wch: 18 }, // No HP / WA Ortu
+        { wch: 32 }, // Alamat
+        { wch: 18 }, // Status Observasi
+        { wch: 18 }, // Tanggal Observasi
+        { wch: 16 }, // Waktu Observasi
+        { wch: 28 }, // Catatan Observasi
+        { wch: 16 }, // Ukuran Seragam
+        { wch: 18 }, // Tanggal Ukur Seragam
+        { wch: 26 }, // Catatan Ukur Seragam
+        { wch: 24 }, // Status Pengambilan Seragam
+        { wch: 18 }, // Tanggal Ambil Seragam
+        { wch: 26 }, // Catatan Pengambilan Seragam
+        { wch: 14 }, // Status PPDB
+        { wch: 18 }, // Status Pembayaran
+      ]
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Rekap_Seragam_Observasi')
+
+      const dateStr = new Date().toISOString().slice(0, 10)
+      XLSX.writeFile(wb, `Rekap_Seragam_dan_Observasi_${dateStr}.xlsx`)
+      toast.success(`Berhasil mengunduh rekap ${exportData.length} data calon siswa ke Excel!`)
+    } catch (err: any) {
+      console.error('Export Excel error:', err)
+      toast.error('Gagal mengunduh Excel: ' + (err.message || 'Terjadi kesalahan'))
+    }
+  }
+
   return (
     <div className="space-y-8">
       
@@ -1250,11 +1343,19 @@ export default function AdminPPDBPage() {
                 </Select>
 
                 <Button
+                  onClick={handleExportRecapToExcel}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs cursor-pointer gap-1.5 h-9 shadow-2xs"
+                >
+                  <FileSpreadsheet size={14} /> Download Rekap Excel
+                </Button>
+
+                <Button
                   onClick={() => window.print()}
                   variant="outline"
-                  className="border-gray-200 hover:border-gray-300 font-bold rounded-xl text-xs cursor-pointer gap-1.5 h-9"
+                  className="border-gray-200 hover:border-gray-300 font-bold rounded-xl text-xs cursor-pointer gap-1.5 h-9 text-gray-600"
+                  title="Cetak Dokumen / Simpan PDF"
                 >
-                  <Printer size={14} /> Cetak Rekap
+                  <Printer size={14} /> Cetak
                 </Button>
               </div>
             </CardHeader>

@@ -34,11 +34,12 @@ import { Badge } from '@/components/ui/badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
 import { toast } from 'sonner'
 import {
-  importPaidStudentsAction,
   getExistingClassesAction,
   type StudentImportRow,
   type ImportResultItem,
 } from '@/actions/import-students'
+import { findMatchingClass } from '@/lib/class-matching'
+import { parseDate } from '@/lib/date-parser'
 
 interface ParsedRowWithValidation extends StudentImportRow {
   rowNumber: number
@@ -96,6 +97,7 @@ export default function ImportStudentsPage() {
     results: ImportResultItem[]
   } | null>(null)
   const [showResultModal, setShowResultModal] = useState(false)
+  const [resultTab, setResultTab] = useState<'all' | 'success' | 'failed'>('all')
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null)
   const [copiedAll, setCopiedAll] = useState(false)
 
@@ -123,6 +125,11 @@ export default function ImportStudentsPage() {
     // 2. Tanggal Lahir (Wajib)
     if (!row.tanggal_lahir || !row.tanggal_lahir.toString().trim()) {
       errors.push('Tanggal Lahir wajib diisi (format: YYYY-MM-DD atau DD/MM/YYYY)')
+    } else {
+      const parsed = parseDate(row.tanggal_lahir)
+      if (!parsed) {
+        errors.push('Format tanggal lahir tidak valid (gunakan format YYYY-MM-DD, DD/MM/YYYY, atau misal: 14 Mei 2020)')
+      }
     }
 
     // 3. L/P (Wajib: L / P)
@@ -188,7 +195,7 @@ export default function ImportStudentsPage() {
         email_ortu: String(findVal(['email_ortu', 'email', 'emailorangtua']) || '').trim(),
         pekerjaan_ortu: String(findVal(['pekerjaan_ortu', 'pekerjaan', 'pekerjaanortu']) || '').trim(),
         nominal_bayar: findVal(['nominal_bayar', 'nominal', 'biaya', 'jumlah_bayar']) || 1500000,
-        metode_bayar: String(findVal(['metode_bayar', 'metode', 'carabayar']) || 'Transfer Bank').trim(),
+        metode_bayar: String(findVal(['metode_bayar', 'metode', 'carabayar']) || 'Transfer').trim(),
         tanggal_bayar: String(findVal(['tanggal_bayar', 'tgl_bayar', 'tglbayar', 'tanggal_sekolah', 'tanggalsekolah']) || '').trim(),
       }
     })
@@ -351,8 +358,39 @@ export default function ImportStudentsPage() {
     const toastId = toast.loading(`Sedang memproses ${validRows.length} data siswa...`)
 
     try {
-      const res = await importPaidStudentsAction(validRows)
+      const response = await fetch('/api/admin/import-students', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ rows: validRows }),
+      })
+
+      if (response.status === 401) {
+        toast.dismiss(toastId)
+        toast.error('Sesi login Anda telah berakhir. Mengalihkan ke halaman login...')
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 1500)
+        return
+      }
+
+      let res: any
+      try {
+        res = await response.json()
+      } catch {
+        throw new Error('Gagal memproses respon dari server.')
+      }
+
       toast.dismiss(toastId)
+
+      if (res.isAuthError) {
+        toast.error(res.error || 'Sesi login Anda telah berakhir. Silakan login kembali.')
+        setTimeout(() => {
+          window.location.href = '/login'
+        }, 1500)
+        return
+      }
 
       if (res.success) {
         setImportSummary({
@@ -361,8 +399,17 @@ export default function ImportStudentsPage() {
           totalFailed: res.totalFailed,
           results: res.results,
         })
+        if (res.totalSuccess === 0 && res.totalFailed > 0) {
+          setResultTab('failed')
+          toast.error(`Import selesai: Semua ${res.totalFailed} data siswa gagal diproses.`)
+        } else if (res.totalFailed > 0) {
+          setResultTab('all')
+          toast.warning(`Import selesai: ${res.totalSuccess} berhasil, ${res.totalFailed} data gagal diproses.`)
+        } else {
+          setResultTab('success')
+          toast.success(`Berhasil mengimport seluruh ${res.totalSuccess} data siswa!`)
+        }
         setShowResultModal(true)
-        toast.success(`Berhasil mengimport ${res.totalSuccess} data siswa!`)
         // Clear preview rows to prevent accidental re-import
         setRows([])
         setFileName('')
@@ -371,7 +418,7 @@ export default function ImportStudentsPage() {
       }
     } catch (err: any) {
       toast.dismiss(toastId)
-      toast.error('Gagal memproses import: ' + err.message)
+      toast.error('Gagal memproses import: ' + (err.message || 'Terjadi kesalahan jaringan.'))
     } finally {
       setIsProcessing(false)
     }
@@ -398,7 +445,7 @@ export default function ImportStudentsPage() {
       )
       .join('\n')
 
-    navigator.clipboard.writeText(`DAFTAR AKUN PORTAL ORANG TUA (SISWA BARU LUNAS)\n=========================================\n${formatted}`)
+    navigator.clipboard.writeText(`DAFTAR AKUN PORTAL ORANG TUA (SISWA BARU)\n=========================================\n${formatted}`)
     setCopiedAll(true)
     toast.success(`${successfulItems.length} akun disalin ke clipboard!`)
     setTimeout(() => setCopiedAll(false), 2000)
@@ -429,6 +476,109 @@ export default function ImportStudentsPage() {
     }
   }
 
+  // Export problem rows from preview to Excel
+  const handleExportProblemRowsToExcel = () => {
+    const invalidRows = rows.filter((r) => !r.isValid)
+    if (invalidRows.length === 0) {
+      toast.info('Tidak ada baris data bermasalah.')
+      return
+    }
+
+    try {
+      const exportData = invalidRows.map((r) => ({
+        'NO BARIS ASLI': r.rowNumber,
+        'NAMA ANAK': r.nama_siswa || '',
+        'L/P': r.jenis_kelamin || '',
+        'KLP': r.nama_kelas || r.kelompok || '',
+        'TEMPAT LAHIR': r.tempat_lahir || '',
+        'Tanggal Lahir': r.tanggal_lahir || '',
+        'TANGGAL SEKOLAH': r.tanggal_sekolah || '',
+        'UMUR/JULI': r.umur_juli || '',
+        'NAMA ORANG TUA': r.nama_orang_tua || r.nama_ayah || r.nama_ibu || '',
+        'ALAMAT': r.alamat || '',
+        'NO TLP/HP': r.no_hp || '',
+        'KETERANGAN': r.keterangan || '',
+        'PENYEBAB MASALAH / ERROR': r.errors.join('; '),
+      }))
+
+      const wb = XLSX.utils.book_new()
+      const ws = XLSX.utils.json_to_sheet(exportData)
+      ws['!cols'] = [
+        { wch: 14 }, // NO BARIS ASLI
+        { wch: 25 }, // NAMA ANAK
+        { wch: 8 },  // L/P
+        { wch: 10 }, // KLP
+        { wch: 16 }, // TEMPAT LAHIR
+        { wch: 14 }, // Tanggal Lahir
+        { wch: 16 }, // TANGGAL SEKOLAH
+        { wch: 13 }, // UMUR/JULI
+        { wch: 22 }, // NAMA ORANG TUA
+        { wch: 30 }, // ALAMAT
+        { wch: 16 }, // NO TLP/HP
+        { wch: 14 }, // KETERANGAN
+        { wch: 45 }, // PENYEBAB MASALAH / ERROR
+      ]
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Data_Bermasalah')
+      XLSX.writeFile(wb, `Data_Bermasalah_Import_TK_${new Date().toISOString().slice(0, 10)}.xlsx`)
+      toast.success(`${invalidRows.length} baris data bermasalah berhasil diunduh ke Excel.`)
+    } catch (e: any) {
+      toast.error('Gagal mengunduh berkas data bermasalah: ' + e.message)
+    }
+  }
+
+  // Export failed import results to Excel
+  const handleExportFailedImportToExcel = () => {
+    if (!importSummary?.results) return
+    const failedItems = importSummary.results.filter((r) => r.status !== 'success')
+    if (failedItems.length === 0) {
+      toast.info('Tidak ada baris data yang gagal diproses.')
+      return
+    }
+
+    try {
+      const exportData = failedItems.map((r) => ({
+        'NO BARIS': r.rowNumber,
+        'NAMA ANAK': r.studentName,
+        'L/P': r.rowData?.jenis_kelamin || '',
+        'KLP': r.rowData?.nama_kelas || r.rowData?.kelompok || '',
+        'TEMPAT LAHIR': r.rowData?.tempat_lahir || '',
+        'Tanggal Lahir': r.rowData?.tanggal_lahir || '',
+        'TANGGAL SEKOLAH': r.rowData?.tanggal_sekolah || '',
+        'UMUR/JULI': r.rowData?.umur_juli || '',
+        'NAMA ORANG TUA': r.rowData?.nama_orang_tua || r.rowData?.nama_ayah || r.rowData?.nama_ibu || '',
+        'ALAMAT': r.rowData?.alamat || '',
+        'NO TLP/HP': r.rowData?.no_hp || '',
+        'KETERANGAN': r.rowData?.keterangan || '',
+        'PENYEBAB GAGAL / ERROR': r.error || 'Gagal diproses',
+      }))
+
+      const wb = XLSX.utils.book_new()
+      const ws = XLSX.utils.json_to_sheet(exportData)
+      ws['!cols'] = [
+        { wch: 10 },
+        { wch: 25 },
+        { wch: 8 },
+        { wch: 10 },
+        { wch: 16 },
+        { wch: 14 },
+        { wch: 16 },
+        { wch: 13 },
+        { wch: 22 },
+        { wch: 30 },
+        { wch: 16 },
+        { wch: 14 },
+        { wch: 45 },
+      ]
+
+      XLSX.utils.book_append_sheet(wb, ws, 'Data_Gagal')
+      XLSX.writeFile(wb, `Data_Gagal_Import_TK_${new Date().toISOString().slice(0, 10)}.xlsx`)
+      toast.success(`${failedItems.length} baris data gagal berhasil diunduh ke Excel.`)
+    } catch (e: any) {
+      toast.error('Gagal mengunduh Excel data gagal: ' + e.message)
+    }
+  }
+
   const validCount = rows.filter((r) => r.isValid).length
   const invalidCount = rows.length - validCount
 
@@ -446,14 +596,14 @@ export default function ImportStudentsPage() {
               SPMB & Kesiswaan
             </Link>
             <span>/</span>
-            <span className="text-gray-900 font-semibold">Import Siswa Lunas</span>
+            <span className="text-gray-900 font-semibold">Import Siswa</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold text-[#07265F] tracking-tight flex items-center gap-3">
             <FileSpreadsheet className="w-8 h-8 text-[#07A363]" />
-            Import Data Siswa Lunas
+            Import Data Siswa
           </h1>
           <p className="text-sm text-gray-600 mt-1 max-w-3xl">
-            Unggah data siswa baru yang sudah mendaftar dan lunas. Sistem otomatis mencatat pendaftaran (Diterima),
+            Unggah data siswa baru. Sistem otomatis memetakan kelompok (KLP) ke kelas, mencatat pendaftaran (Diterima),
             pembayaran (Verified), akun portal orang tua, dan murid aktif.
           </p>
         </div>
@@ -611,16 +761,6 @@ export default function ImportStudentsPage() {
                   Pilih Berkas dari Komputer
                 </Button>
               </label>
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleLoadSample}
-                className="border-gray-300 text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-              >
-                <Sparkles className="w-4 h-4 text-amber-500" />
-                Muat Contoh Data Uji Coba
-              </Button>
             </div>
 
             {fileName && (
@@ -666,10 +806,23 @@ export default function ImportStudentsPage() {
                     {validCount} Siap Import
                   </span>
                   {invalidCount > 0 && (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-600 border border-red-200 font-semibold">
-                      <AlertCircle className="w-3.5 h-3.5" />
-                      {invalidCount} Ada Masalah
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-50 text-red-600 border border-red-200 font-semibold">
+                        <AlertCircle className="w-3.5 h-3.5" />
+                        {invalidCount} Ada Masalah
+                      </span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        onClick={handleExportProblemRowsToExcel}
+                        className="border-red-300 text-red-700 bg-red-50 hover:bg-red-100 flex items-center gap-1.5 text-xs font-semibold h-7 px-2.5 cursor-pointer"
+                        title="Unduh baris yang bermasalah beserta keterangan penyebab masalahnya ke berkas Excel"
+                      >
+                        <Download className="w-3.5 h-3.5 text-red-600" />
+                        Download Data Bermasalah ({invalidCount})
+                      </Button>
+                    </div>
                   )}
                 </div>
 
@@ -703,7 +856,7 @@ export default function ImportStudentsPage() {
                   <th className="py-3 px-3 w-24">Status</th>
                   <th className="py-3 px-4 min-w-[170px]">NAMA ANAK (Wajib)</th>
                   <th className="py-3 px-2 w-16 text-center">L/P (Wajib)</th>
-                  <th className="py-3 px-3 min-w-[80px]">KLP</th>
+                  <th className="py-3 px-3 min-w-[130px]">KLP / KELAS</th>
                   <th className="py-3 px-3 min-w-[110px]">TEMPAT LAHIR</th>
                   <th className="py-3 px-3 min-w-[110px]">Tanggal Lahir (Wajib)</th>
                   <th className="py-3 px-3 min-w-[110px]">TANGGAL SEKOLAH</th>
@@ -765,12 +918,24 @@ export default function ImportStudentsPage() {
                         )}
                       </td>
 
-                      {/* KLP */}
+                      {/* KLP / KELAS */}
                       <td className="py-3 px-3">
                         {row.nama_kelas || row.kelompok ? (
-                          <span className="inline-block bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded text-[11px] font-semibold">
-                            {row.nama_kelas || row.kelompok}
-                          </span>
+                          (() => {
+                            const rawKlp = row.nama_kelas || row.kelompok || ''
+                            const matched = findMatchingClass(rawKlp, availableClasses)
+                            return (
+                              <div className="space-y-1">
+                                <span className="inline-block bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-bold">
+                                  KLP: {rawKlp}
+                                </span>
+                                <div className="text-[10px] text-emerald-700 font-bold flex items-center gap-1">
+                                  <Check className="w-3 h-3 text-emerald-600 inline shrink-0" />
+                                  <span>Kelas: {matched ? matched.nama : `${rawKlp} (Auto)`}</span>
+                                </div>
+                              </div>
+                            )
+                          })()
                         ) : (
                           <span className="text-gray-400 italic text-[11px]">-</span>
                         )}
@@ -837,7 +1002,7 @@ export default function ImportStudentsPage() {
 
       {/* Modal: Kamus Data & Panduan Lengkap */}
       <Dialog open={showGuidelineModal} onOpenChange={setShowGuidelineModal}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="w-[94vw] sm:max-w-3xl md:max-w-4xl lg:max-w-5xl max-h-[88vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-[#07265F] flex items-center gap-2">
               <HelpCircle className="w-5 h-5 text-[#07A363]" />
@@ -952,12 +1117,12 @@ export default function ImportStudentsPage() {
                     <td className="p-2.5 text-gray-600">bambang@gmail.com</td>
                   </tr>
                   <tr>
-                    <td className="p-2.5 font-mono text-gray-800">nama_kelas</td>
+                    <td className="p-2.5 font-mono text-gray-800">KLP / nama_kelas</td>
                     <td className="p-2.5">
-                      <Badge variant="outline" className="text-gray-600 text-[10px]">Boleh Kosong</Badge>
+                      <Badge variant="outline" className="text-emerald-700 border-emerald-300 text-[10px]">Otomatis Dipetakan</Badge>
                     </td>
-                    <td className="p-2.5">Nama rombel/kelas untuk plotting langsung.</td>
-                    <td className="p-2.5 text-gray-600">TK A1</td>
+                    <td className="p-2.5">Kelompok/Kelas anak (misal: TK A, TK B, KB, Abu Bakar). Otomatis dipetakan ke kelas di sistem & dibuatkan kelas baru jika belum ada.</td>
+                    <td className="p-2.5 text-gray-600">TK A</td>
                   </tr>
                   <tr>
                     <td className="p-2.5 font-mono text-gray-800">nominal_bayar</td>
@@ -993,149 +1158,374 @@ export default function ImportStudentsPage() {
 
       {/* Modal: Hasil Import & Daftar Akun Kredensial Baru */}
       <Dialog open={showResultModal} onOpenChange={setShowResultModal}>
-        <DialogContent className="max-w-4xl max-h-[88vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-xl font-bold text-[#07265F] flex items-center gap-2">
-              <CheckCircle2 className="w-6 h-6 text-[#07A363]" />
-              Import Siswa Lunas Berhasil Selesai!
-            </DialogTitle>
-            <DialogDescription className="text-xs text-gray-500">
-              Berikut adalah ringkasan proses dan daftar akun portal orang tua yang telah aktif. Simpan atau bagikan kredensial ini kepada orang tua.
-            </DialogDescription>
-          </DialogHeader>
+        <DialogContent className="w-[96vw] sm:max-w-5xl md:max-w-6xl lg:max-w-7xl max-h-[92vh] overflow-hidden flex flex-col p-6">
+          {(() => {
+            const allFailed = importSummary ? importSummary.totalSuccess === 0 && importSummary.totalFailed > 0 : false
+            const isPartial = importSummary ? importSummary.totalSuccess > 0 && importSummary.totalFailed > 0 : false
+            const allSuccess = importSummary ? importSummary.totalSuccess > 0 && importSummary.totalFailed === 0 : false
 
-          {importSummary && (
-            <div className="space-y-6">
-              {/* Stat counters */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="p-3.5 bg-gray-50 rounded-xl border border-gray-200 text-center">
-                  <div className="text-xs text-gray-500 font-medium">Total Diproses</div>
-                  <div className="text-xl font-extrabold text-gray-900 mt-1">{importSummary.totalProcessed}</div>
-                </div>
-                <div className="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200 text-center">
-                  <div className="text-xs text-emerald-700 font-semibold">Berhasil Didaftarkan</div>
-                  <div className="text-xl font-extrabold text-[#07A363] mt-1">{importSummary.totalSuccess}</div>
-                </div>
-                <div className="p-3.5 bg-red-50 rounded-xl border border-red-200 text-center">
-                  <div className="text-xs text-red-600 font-medium">Gagal / Dilewati</div>
-                  <div className="text-xl font-extrabold text-red-600 mt-1">{importSummary.totalFailed}</div>
-                </div>
-              </div>
+            const filteredResults =
+              importSummary?.results.filter((item) => {
+                if (resultTab === 'success') return item.status === 'success'
+                if (resultTab === 'failed') return item.status !== 'success'
+                return true
+              }) || []
 
-              {/* Action buttons on accounts */}
-              <div className="flex flex-wrap items-center justify-between gap-3 bg-[#F8F6F2] p-3 rounded-xl border border-gray-200">
-                <span className="text-xs font-bold text-gray-800">
-                  Daftar Kredensial Login Orang Tua ({importSummary.results.filter((r) => r.status === 'success').length} Akun)
-                </span>
-                <div className="flex items-center gap-2">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={copyAllAccounts}
-                    className="text-xs border-gray-300 flex items-center gap-1.5"
-                  >
-                    {copiedAll ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
-                    {copiedAll ? 'Tersalin!' : 'Salin Semua Akun (Text)'}
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={handleExportAccountsToExcel}
-                    className="text-xs bg-[#07A363] hover:bg-[#068f56] text-white flex items-center gap-1.5"
-                  >
-                    <Download className="w-3.5 h-3.5" />
-                    Download Rekap Akun (.xlsx)
-                  </Button>
-                </div>
-              </div>
+            return (
+              <>
+                <DialogHeader className="shrink-0 pb-2">
+                  <div className="flex items-start gap-3">
+                    <div
+                      className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
+                        allFailed
+                          ? 'bg-red-100 text-red-600 border border-red-200'
+                          : isPartial
+                          ? 'bg-amber-100 text-amber-600 border border-amber-200'
+                          : 'bg-emerald-100 text-[#07A363] border border-emerald-200'
+                      }`}
+                    >
+                      {allFailed ? (
+                        <AlertCircle className="w-6 h-6" />
+                      ) : isPartial ? (
+                        <AlertTriangle className="w-6 h-6" />
+                      ) : (
+                        <CheckCircle2 className="w-6 h-6" />
+                      )}
+                    </div>
+                    <div>
+                      <DialogTitle
+                        className={`text-xl font-bold tracking-tight ${
+                          allFailed ? 'text-red-700' : 'text-[#07265F]'
+                        }`}
+                      >
+                        {allFailed
+                          ? `Hasil Import: Semua Data Gagal (${importSummary?.totalFailed} Siswa)`
+                          : isPartial
+                          ? `Hasil Import: Sebagian Berhasil (${importSummary?.totalSuccess} Berhasil, ${importSummary?.totalFailed} Gagal)`
+                          : 'Import Siswa Berhasil Selesai!'}
+                      </DialogTitle>
+                      <DialogDescription className="text-xs text-gray-500 mt-1 leading-relaxed">
+                        {allFailed
+                          ? 'Seluruh baris data siswa yang diunggah gagal diproses ke database. Harap tinjau kendala pada tabel di bawah atau unduh berkas data gagal untuk diperbaiki.'
+                          : isPartial
+                          ? `${importSummary?.totalSuccess} siswa berhasil didaftarkan ke sistem dan akun portal telah aktif. ${importSummary?.totalFailed} data gagal diproses dan perlu diperiksa.`
+                          : 'Seluruh data siswa berhasil didaftarkan, pendaftaran (Diterima) & pembayaran (Verified) tercatat, serta akun portal orang tua telah aktif.'}
+                      </DialogDescription>
+                    </div>
+                  </div>
+                </DialogHeader>
 
-              {/* Table of accounts */}
-              <div className="overflow-x-auto border border-gray-200 rounded-xl max-h-[320px]">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead className="sticky top-0 bg-[#F8F6F2] font-bold text-gray-700 text-[11px] border-b border-gray-200">
-                    <tr>
-                      <th className="py-2.5 px-3">#</th>
-                      <th className="py-2.5 px-3">Nama Siswa</th>
-                      <th className="py-2.5 px-3">Kelas</th>
-                      <th className="py-2.5 px-3">Username Ortu</th>
-                      <th className="py-2.5 px-3">Password Awal</th>
-                      <th className="py-2.5 px-3 text-center">Aksi</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-100">
-                    {importSummary.results.map((item, idx) => {
-                      if (item.status !== 'success') {
-                        return (
-                          <tr key={idx} className="bg-red-50/50">
-                            <td className="py-2.5 px-3 text-gray-400 font-mono">{idx + 1}</td>
-                            <td className="py-2.5 px-3 font-semibold text-gray-800">{item.studentName}</td>
-                            <td colSpan={3} className="py-2.5 px-3 text-red-600 font-medium">
-                              Gagal: {item.error}
-                            </td>
-                            <td className="py-2.5 px-3 text-center">
-                              <Badge className="bg-red-100 text-red-800 text-[10px]">Gagal</Badge>
-                            </td>
-                          </tr>
-                        )
-                      }
+                {importSummary && (
+                  <div className="flex-1 overflow-y-auto space-y-4 pr-1 py-1">
+                    {/* Stat counters filter cards */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <button
+                        type="button"
+                        onClick={() => setResultTab('all')}
+                        className={`p-3.5 rounded-xl border text-center transition-all cursor-pointer ${
+                          resultTab === 'all'
+                            ? 'bg-blue-50/80 border-[#07265F] ring-2 ring-blue-200 shadow-sm'
+                            : 'bg-gray-50 border-gray-200 hover:bg-gray-100/70 text-gray-700'
+                        }`}
+                      >
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-gray-500">
+                          Total Diproses
+                        </div>
+                        <div className="text-2xl font-extrabold text-[#07265F] mt-0.5">
+                          {importSummary.totalProcessed}
+                        </div>
+                      </button>
 
-                      return (
-                        <tr key={idx} className="hover:bg-gray-50/80 transition-colors">
-                          <td className="py-2.5 px-3 text-gray-400 font-mono">{idx + 1}</td>
-                          <td className="py-2.5 px-3 font-bold text-gray-900">{item.studentName}</td>
-                          <td className="py-2.5 px-3 text-gray-700">
-                            {item.className ? (
-                              <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded text-[11px] font-semibold border border-emerald-200">
-                                {item.className}
-                              </span>
-                            ) : (
-                              <span className="text-gray-400 italic">Belum di-plot</span>
-                            )}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono font-semibold text-primary-blue">
-                            {item.username}
-                          </td>
-                          <td className="py-2.5 px-3 font-mono text-emerald-700 font-bold bg-emerald-50/50">
-                            {item.password}
-                          </td>
-                          <td className="py-2.5 px-3 text-center">
+                      <button
+                        type="button"
+                        onClick={() => setResultTab('success')}
+                        className={`p-3.5 rounded-xl border text-center transition-all cursor-pointer ${
+                          resultTab === 'success'
+                            ? 'bg-emerald-50 border-[#07A363] ring-2 ring-emerald-200 shadow-sm'
+                            : 'bg-emerald-50/40 border-emerald-200 hover:bg-emerald-50 text-gray-700'
+                        }`}
+                      >
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 flex items-center justify-center gap-1">
+                          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                          Berhasil
+                        </div>
+                        <div className="text-2xl font-extrabold text-[#07A363] mt-0.5">
+                          {importSummary.totalSuccess}
+                        </div>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setResultTab('failed')}
+                        className={`p-3.5 rounded-xl border text-center transition-all cursor-pointer ${
+                          resultTab === 'failed'
+                            ? 'bg-red-50 border-red-500 ring-2 ring-red-200 shadow-sm'
+                            : 'bg-red-50/40 border-red-200 hover:bg-red-50 text-gray-700'
+                        }`}
+                      >
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-red-600 flex items-center justify-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 text-red-600" />
+                          Gagal / Dilewati
+                        </div>
+                        <div className="text-2xl font-extrabold text-red-600 mt-0.5">
+                          {importSummary.totalFailed}
+                        </div>
+                      </button>
+                    </div>
+
+                    {/* Filter Tabs & Action Bar */}
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-[#F8F6F2] p-3 rounded-xl border border-gray-200">
+                      {/* Tabs */}
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setResultTab('all')}
+                          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                            resultTab === 'all'
+                              ? 'bg-[#07265F] text-white shadow-sm'
+                              : 'text-gray-600 hover:bg-white/80'
+                          }`}
+                        >
+                          Semua ({importSummary.totalProcessed})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setResultTab('success')}
+                          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                            resultTab === 'success'
+                              ? 'bg-[#07A363] text-white shadow-sm'
+                              : 'text-emerald-700 hover:bg-emerald-50'
+                          }`}
+                        >
+                          Berhasil ({importSummary.totalSuccess})
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setResultTab('failed')}
+                          className={`px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 ${
+                            resultTab === 'failed'
+                              ? 'bg-red-600 text-white shadow-sm'
+                              : 'text-red-600 hover:bg-red-50'
+                          }`}
+                        >
+                          Gagal ({importSummary.totalFailed})
+                        </button>
+                      </div>
+
+                      {/* Download / Copy Actions */}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {importSummary.totalSuccess > 0 && (
+                          <>
                             <Button
                               size="sm"
-                              variant="ghost"
-                              onClick={() => copyAccount(item, idx)}
-                              className="h-7 px-2 text-xs text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                              variant="outline"
+                              onClick={copyAllAccounts}
+                              className="text-xs border-gray-300 h-8 flex items-center gap-1.5"
                             >
-                              {copiedIndex === idx ? (
-                                <Check className="w-3.5 h-3.5 text-emerald-600" />
-                              ) : (
-                                <Copy className="w-3.5 h-3.5" />
-                              )}
+                              {copiedAll ? <Check className="w-3.5 h-3.5 text-emerald-600" /> : <Copy className="w-3.5 h-3.5" />}
+                              {copiedAll ? 'Tersalin!' : 'Salin Akun'}
                             </Button>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          )}
+                            <Button
+                              size="sm"
+                              onClick={handleExportAccountsToExcel}
+                              className="text-xs bg-[#07A363] hover:bg-[#068f56] text-white h-8 flex items-center gap-1.5 font-semibold"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              Download Rekap Akun (.xlsx)
+                            </Button>
+                          </>
+                        )}
+                        {importSummary.totalFailed > 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={handleExportFailedImportToExcel}
+                            className="text-xs border-red-300 text-red-700 bg-red-50 hover:bg-red-100 h-8 flex items-center gap-1.5 font-semibold cursor-pointer shadow-sm"
+                          >
+                            <Download className="w-3.5 h-3.5 text-red-600" />
+                            Download Data Gagal ({importSummary.totalFailed})
+                          </Button>
+                        )}
+                      </div>
+                    </div>
 
-          <DialogFooter className="flex sm:justify-between items-center gap-2">
-            <Button
-              variant="outline"
-              onClick={() => router.push('/dashboard/super-admin/students')}
-              className="text-xs border-gray-300 text-gray-700 flex items-center gap-1.5"
-            >
-              <Users className="w-3.5 h-3.5 text-primary-blue" />
-              Buka Master Data Murid
-            </Button>
-            <Button
-              onClick={() => setShowResultModal(false)}
-              className="bg-[#07265F] hover:bg-[#0a3582] text-white text-xs"
-            >
-              Selesai & Tutup
-            </Button>
-          </DialogFooter>
+                    {/* Table of items */}
+                    <div className="border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                      <div className="max-h-[440px] overflow-y-auto">
+                        <table className="w-full text-left text-xs border-collapse">
+                          <thead className="sticky top-0 bg-[#F8F6F2] font-bold text-gray-700 text-[11px] border-b border-gray-200 z-10">
+                            <tr>
+                              <th className="py-2.5 px-3 w-12 text-center">#</th>
+                              <th className="py-2.5 px-4 w-72">Nama Siswa</th>
+                              <th className="py-2.5 px-3 w-44">Kelas</th>
+                              <th className="py-2.5 px-4">
+                                {resultTab === 'failed'
+                                  ? 'Keterangan Kendala / Penyebab Gagal'
+                                  : resultTab === 'success'
+                                  ? 'Kredensial Login Orang Tua'
+                                  : 'Informasi / Kredensial'}
+                              </th>
+                              <th className="py-2.5 px-3 w-32 text-center">Status / Aksi</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-gray-100">
+                            {filteredResults.length === 0 ? (
+                              <tr>
+                                <td colSpan={5} className="py-8 text-center text-gray-400">
+                                  Tidak ada data pada kategori ini.
+                                </td>
+                              </tr>
+                            ) : (
+                              filteredResults.map((item, idx) => {
+                                const isSuccess = item.status === 'success'
+
+                                if (!isSuccess) {
+                                  return (
+                                    <tr key={idx} className="bg-red-50/30 hover:bg-red-50/60 transition-colors">
+                                      <td className="py-2.5 px-3 text-center text-gray-400 font-mono">
+                                        {item.rowNumber || idx + 1}
+                                      </td>
+                                      <td className="py-2.5 px-4">
+                                        <div className="font-bold text-gray-900">{item.studentName}</div>
+                                        {item.rowData?.nama_orang_tua && (
+                                          <div className="text-[10px] text-gray-500">
+                                            Ortu: {item.rowData.nama_orang_tua}
+                                          </div>
+                                        )}
+                                      </td>
+                                      <td className="py-2.5 px-3">
+                                        <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-[11px] font-medium border border-gray-200 inline-block">
+                                          {item.className || item.rowData?.nama_kelas || item.rowData?.kelompok || 'Belum di-plot'}
+                                        </span>
+                                      </td>
+                                      <td className="py-2.5 px-4">
+                                        <div className="bg-red-50 border border-red-200/90 rounded-lg p-2.5 text-[11px] leading-relaxed text-red-800 break-words whitespace-normal">
+                                          <div className="font-semibold text-red-900 flex items-center gap-1 mb-0.5">
+                                            <AlertCircle className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                                            <span>Kendala Proses:</span>
+                                          </div>
+                                          <span className="font-medium text-red-700">
+                                            {item.error || 'Terjadi kesalahan sistem saat menyimpan ke database.'}
+                                          </span>
+                                        </div>
+                                      </td>
+                                      <td className="py-2.5 px-3 text-center">
+                                        <Badge className="bg-red-100 text-red-800 border-red-200 text-[10px] font-semibold">
+                                          Gagal
+                                        </Badge>
+                                      </td>
+                                    </tr>
+                                  )
+                                }
+
+                                return (
+                                  <tr key={idx} className="hover:bg-emerald-50/30 transition-colors">
+                                    <td className="py-2.5 px-3 text-center text-gray-400 font-mono">
+                                      {item.rowNumber || idx + 1}
+                                    </td>
+                                    <td className="py-2.5 px-4">
+                                      <div className="font-bold text-gray-900">{item.studentName}</div>
+                                      {item.rowData?.nama_orang_tua && (
+                                        <div className="text-[10px] text-gray-500">
+                                          Ortu: {item.rowData.nama_orang_tua}
+                                        </div>
+                                      )}
+                                    </td>
+                                    <td className="py-2.5 px-3">
+                                      {item.className ? (
+                                        <span className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded text-[11px] font-semibold border border-emerald-200 inline-block">
+                                          {item.className}
+                                        </span>
+                                      ) : (
+                                        <span className="text-gray-400 italic">Belum di-plot</span>
+                                      )}
+                                    </td>
+                                    <td className="py-2.5 px-4">
+                                      <div className="flex flex-wrap items-center gap-2.5">
+                                        <div className="flex items-center gap-1.5 bg-blue-50/90 px-2.5 py-1 rounded-lg border border-blue-200/80 text-[11px]">
+                                          <span className="text-gray-500 text-[10px] uppercase font-bold tracking-wider">User:</span>
+                                          <span className="font-mono font-bold text-primary-blue">
+                                            {item.username}
+                                          </span>
+                                        </div>
+                                        <div className="flex items-center gap-1.5 bg-emerald-50/90 px-2.5 py-1 rounded-lg border border-emerald-200 text-[11px]">
+                                          <span className="text-emerald-700 text-[10px] uppercase font-bold tracking-wider">Pass:</span>
+                                          <span className="font-mono font-extrabold text-emerald-800">
+                                            {item.password}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </td>
+                                    <td className="py-2.5 px-3 text-center">
+                                      <div className="flex items-center justify-center gap-1">
+                                        <Badge className="bg-emerald-100 text-emerald-800 border-emerald-200 text-[10px] font-semibold">
+                                          Aktif
+                                        </Badge>
+                                        <Button
+                                          size="sm"
+                                          variant="ghost"
+                                          onClick={() => copyAccount(item, idx)}
+                                          title="Salin Kredensial"
+                                          className="h-7 w-7 p-0 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                                        >
+                                          {copiedIndex === idx ? (
+                                            <Check className="w-3.5 h-3.5 text-emerald-600" />
+                                          ) : (
+                                            <Copy className="w-3.5 h-3.5" />
+                                          )}
+                                        </Button>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                )
+                              })
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <DialogFooter className="shrink-0 pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:justify-between items-center gap-2">
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    {importSummary && importSummary.totalSuccess > 0 ? (
+                      <Button
+                        variant="outline"
+                        onClick={() => router.push('/dashboard/super-admin/students')}
+                        className="text-xs border-gray-300 text-gray-700 flex items-center gap-1.5 w-full sm:w-auto"
+                      >
+                        <Users className="w-3.5 h-3.5 text-primary-blue" />
+                        Buka Master Data Murid
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-gray-500">
+                        {importSummary?.totalFailed ? `${importSummary.totalFailed} baris data perlu diperbaiki sebelum import ulang` : ''}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    {importSummary && importSummary.totalFailed > 0 && (
+                      <Button
+                        variant="outline"
+                        onClick={handleExportFailedImportToExcel}
+                        className="text-xs border-red-300 text-red-700 bg-red-50 hover:bg-red-100 flex items-center gap-1.5 font-semibold"
+                      >
+                        <Download className="w-3.5 h-3.5 text-red-600" />
+                        Download Data Gagal ({importSummary.totalFailed})
+                      </Button>
+                    )}
+                    <Button
+                      onClick={() => setShowResultModal(false)}
+                      className="bg-[#07265F] hover:bg-[#0a3582] text-white text-xs px-5 font-semibold"
+                    >
+                      Selesai & Tutup
+                    </Button>
+                  </div>
+                </DialogFooter>
+              </>
+            )
+          })()}
         </DialogContent>
       </Dialog>
     </div>

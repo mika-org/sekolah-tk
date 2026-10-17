@@ -3,8 +3,10 @@
 import { randomUUID } from 'node:crypto'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
-import { requireSessionRole } from '@/lib/auth/session'
+import { requireSessionRole, getSessionUser } from '@/lib/auth/session'
 import { revalidatePath } from 'next/cache'
+import { findMatchingClass } from '@/lib/class-matching'
+import { parseDate } from '@/lib/date-parser'
 
 export interface StudentImportRow {
   nama_siswa: string
@@ -40,6 +42,7 @@ export interface ImportResultItem {
   studentId?: string
   className?: string
   error?: string
+  rowData?: StudentImportRow
 }
 
 export interface ImportStudentsResponse {
@@ -49,39 +52,7 @@ export interface ImportStudentsResponse {
   totalFailed: number
   results: ImportResultItem[]
   error?: string
-}
-
-function parseDate(dateStr: string | undefined): Date | null {
-  if (!dateStr) return null
-  const clean = dateStr.toString().trim()
-  if (!clean) return null
-
-  // If already standard ISO or YYYY-MM-DD
-  if (/^\d{4}-\d{2}-\d{2}/.test(clean)) {
-    const d = new Date(clean)
-    if (!isNaN(d.getTime())) return d
-  }
-
-  // If DD/MM/YYYY or DD-MM-YYYY
-  const dmyMatch = clean.match(/^(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})/)
-  if (dmyMatch) {
-    const day = parseInt(dmyMatch[1], 10)
-    const month = parseInt(dmyMatch[2], 10) - 1
-    const year = parseInt(dmyMatch[3], 10)
-    const d = new Date(year, month, day)
-    if (!isNaN(d.getTime())) return d
-  }
-
-  // Handle Excel serial date if numeric string
-  const num = Number(clean)
-  if (!isNaN(num) && num > 30000 && num < 60000) {
-    // Excel base date Dec 30 1899
-    const d = new Date((num - 25569) * 86400 * 1000)
-    if (!isNaN(d.getTime())) return d
-  }
-
-  const fallback = new Date(clean)
-  return isNaN(fallback.getTime()) ? null : fallback
+  isAuthError?: boolean
 }
 
 function formatPasswordFromDate(date: Date | null): string {
@@ -94,7 +65,10 @@ function formatPasswordFromDate(date: Date | null): string {
 
 export async function getExistingClassesAction() {
   try {
-    await requireSessionRole(['super_admin', 'admin'])
+    const user = await getSessionUser()
+    if (!user || !['super_admin', 'admin'].includes(user.role)) {
+      return { success: false, classes: [], error: 'Unauthorized' }
+    }
     const classes = await prisma.class.findMany({
       select: {
         id: true,
@@ -109,11 +83,81 @@ export async function getExistingClassesAction() {
   }
 }
 
+function formatDatabaseError(err: any): string {
+  if (!err) return 'Terjadi kesalahan tidak diketahui saat menyimpan ke database.'
+  const msg: string = typeof err === 'string' ? err : err.message || String(err)
+
+  // 1. PostgreSQL check constraints
+  if (msg.includes('payments_tk_method_check') || msg.includes('violates check constraint "payments_tk_method_check"')) {
+    return 'Metode pembayaran tidak valid untuk database (hanya boleh Transfer, QRIS, atau Cash).'
+  }
+  if (msg.includes('violates check constraint')) {
+    const match = msg.match(/violates check constraint "([^"]+)"/)
+    return `Melanggar batasan data database (${match ? match[1] : 'check constraint'}).`
+  }
+
+  // 2. Unique constraints
+  if (msg.includes('users_tk_username_key') || (msg.includes('Unique constraint') && msg.includes('username'))) {
+    return 'Username akun sudah digunakan oleh pengguna lain di sistem.'
+  }
+  if (msg.includes('students_tk_nik_key') || (msg.includes('Unique constraint') && msg.includes('nik'))) {
+    return 'NIK siswa sudah terdaftar pada siswa lain di database.'
+  }
+  if (msg.includes('students_tk_nisn_key') || (msg.includes('Unique constraint') && msg.includes('nisn'))) {
+    return 'NISN siswa sudah terdaftar pada siswa lain di database.'
+  }
+  if (msg.includes('payments_tk_invoice_number_key') || (msg.includes('Unique constraint') && msg.includes('invoice_number'))) {
+    return 'Nomor invoice pembayaran sudah ada di database.'
+  }
+
+  // 3. Foreign key constraints
+  if (msg.includes('Foreign key constraint') || msg.includes('violates foreign key constraint')) {
+    return 'Data relasi (kelas atau pengguna) tidak ditemukan di database.'
+  }
+
+  // 4. Extract clean Database error message if present (e.g. Message: `...`)
+  const dbMsgMatch = msg.match(/Message:\s*`?([^`\n\r]+)`?/i)
+  if (dbMsgMatch && dbMsgMatch[1]) {
+    const cleanMsg = dbMsgMatch[1].trim()
+    if (!cleanMsg.includes('__TURBOPACK__') && !cleanMsg.includes('imported__module')) {
+      return cleanMsg
+    }
+  }
+
+  // 5. Clean lines: filter out Turbopack and internal stack traces
+  const lines = msg.split('\n').map((l) => l.trim()).filter(Boolean)
+  const nonTurbopack = lines.find(
+    (l) =>
+      !l.includes('__TURBOPACK__') &&
+      !l.includes('imported__module') &&
+      !l.includes('.next\\server') &&
+      !l.includes('at ') &&
+      !l.startsWith('→') &&
+      !l.match(/^\d+\s*\|/)
+  )
+  if (nonTurbopack) {
+    return nonTurbopack.replace(/`[^`]*` invocation/g, 'operasi database').slice(0, 160)
+  }
+
+  return 'Gagal memproses baris data ke database.'
+}
+
 export async function importPaidStudentsAction(
   rows: StudentImportRow[]
 ): Promise<ImportStudentsResponse> {
   try {
-    await requireSessionRole(['super_admin', 'admin'])
+    const user = await getSessionUser()
+    if (!user || !['super_admin', 'admin'].includes(user.role)) {
+      return {
+        success: false,
+        totalProcessed: rows?.length || 0,
+        totalSuccess: 0,
+        totalFailed: rows?.length || 0,
+        results: [],
+        error: 'Sesi login Anda telah berakhir atau tidak memiliki izin. Silakan login kembali.',
+        isAuthError: true,
+      }
+    }
 
     if (!Array.isArray(rows) || rows.length === 0) {
       return {
@@ -149,6 +193,7 @@ export async function importPaidStudentsAction(
           studentName: studentName || `Baris #${rowNumber}`,
           status: 'error',
           error: 'Nama siswa wajib diisi (minimal 2 karakter).',
+          rowData: row,
         })
         continue
       }
@@ -162,6 +207,7 @@ export async function importPaidStudentsAction(
           studentName,
           status: 'error',
           error: 'Tanggal lahir wajib diisi dengan format valid (YYYY-MM-DD atau DD/MM/YYYY).',
+          rowData: row,
         })
         continue
       }
@@ -176,6 +222,7 @@ export async function importPaidStudentsAction(
           studentName,
           status: 'error',
           error: 'Jenis kelamin wajib diisi ("L" untuk Laki-laki atau "P" untuk Perempuan).',
+          rowData: row,
         })
         continue
       }
@@ -195,6 +242,7 @@ export async function importPaidStudentsAction(
             studentName,
             status: 'error',
             error: 'Wajib mengisi Nama Orang Tua (atau Nama Ayah / Nama Ibu).',
+            rowData: row,
           })
           continue
         }
@@ -210,32 +258,49 @@ export async function importPaidStudentsAction(
       const rawEmail = (row.email_ortu || '').trim().toLowerCase()
       const job = (row.pekerjaan_ortu || '').trim() || null
 
-      // Target class / KLP lookup
+      // Target class / KLP auto-mapping
       const rawClass = (row.nama_kelas || row.kelompok || '').trim()
       let targetClassId: string | null = null
-      let assignedClassName = rawClass || 'Belum di-plot'
+      let assignedClassName = 'Belum di-plot'
 
       if (rawClass) {
-        const queryClass = rawClass.toLowerCase()
-        const matched = allClasses.find((c) => {
-          const cName = c.nama.toLowerCase()
-          return (
-            cName === queryClass ||
-            cName.includes(queryClass) ||
-            queryClass.includes(cName) ||
-            (queryClass === 'a' && cName.includes('tk a')) ||
-            (queryClass === 'b' && cName.includes('tk b'))
-          )
-        })
+        let matched = findMatchingClass(rawClass, allClasses)
+        if (!matched) {
+          // KLP otomatis dibuatkan kelas baru di database jika belum ada, sehingga siswa langsung terpetakan ke kelas
+          try {
+            const newClass = await prisma.class.create({
+              data: {
+                id: randomUUID(),
+                nama: rawClass,
+                tahun_ajaran: '2026/2027',
+              },
+            })
+            allClasses.push({ id: newClass.id, nama: newClass.nama })
+            matched = newClass
+          } catch (e) {
+            console.warn(`Gagal auto-create kelas untuk KLP '${rawClass}':`, e)
+          }
+        }
+
         if (matched) {
           targetClassId = matched.id
           assignedClassName = matched.nama
+        } else {
+          assignedClassName = rawClass
         }
       }
 
       // Payment details
       const paymentAmount = row.nominal_bayar ? Number(row.nominal_bayar) : 1500000
-      const paymentMethod = (row.metode_bayar || 'Transfer Bank').trim()
+      let paymentMethod: 'Transfer' | 'QRIS' | 'Cash' = 'Transfer'
+      const rawMethod = (row.metode_bayar || '').toString().trim().toLowerCase()
+      if (rawMethod.includes('qris')) {
+        paymentMethod = 'QRIS'
+      } else if (rawMethod.includes('cash') || rawMethod.includes('tunai')) {
+        paymentMethod = 'Cash'
+      } else {
+        paymentMethod = 'Transfer'
+      }
       const paymentDate = parseDate(row.tanggal_bayar || row.tanggal_sekolah) || new Date()
 
       try {
@@ -412,6 +477,7 @@ export async function importPaidStudentsAction(
           password: passwordStr,
           studentId: studentRecord.id,
           className: assignedClassName,
+          rowData: row,
         })
       } catch (insertError: any) {
         console.error(`Error importing row #${rowNumber} (${studentName}):`, insertError)
@@ -420,7 +486,8 @@ export async function importPaidStudentsAction(
           rowNumber,
           studentName,
           status: 'error',
-          error: insertError.message || 'Gagal menyimpan ke basis data.',
+          error: formatDatabaseError(insertError),
+          rowData: row,
         })
       }
     }
@@ -430,7 +497,7 @@ export async function importPaidStudentsAction(
       await prisma.activityLog.create({
         data: {
           id: randomUUID(),
-          activity: `Import data siswa lunas selesai: ${totalSuccess} siswa berhasil didaftarkan & akun portal dibuat, ${totalFailed} gagal.`,
+          activity: `Import data siswa selesai: ${totalSuccess} siswa berhasil didaftarkan & akun portal dibuat, ${totalFailed} gagal.`,
         },
       })
     } catch {}
