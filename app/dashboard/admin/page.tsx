@@ -23,13 +23,16 @@ import {
   Megaphone,
   Layers,
   UploadCloud,
+  Globe,
 } from 'lucide-react'
 import { toast } from 'sonner'
+import { cn } from '@/lib/utils'
 
 export default function AdminDashboard() {
   const [ppdbList, setPpdbList] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedApp, setSelectedApp] = useState<any>(null)
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'ppdb' | 'import'>('all')
   
   // Credentials modal state
   const [credsModalOpen, setCredsModalOpen] = useState(false)
@@ -78,11 +81,25 @@ export default function AdminDashboard() {
     }
   }
 
+  const isImported = (app: any) => {
+    const cd = app.child_details || {}
+    return Boolean(cd.imported === true || cd.import_date || cd.imported === 'true')
+  }
+
   // Statistics
   const total = ppdbList.length
+  const onlineCount = ppdbList.filter(app => !isImported(app)).length
+  const importCount = ppdbList.filter(app => isImported(app)).length
   const pending = ppdbList.filter(app => ['Submitted', 'Verifikasi Berkas'].includes(app.status)).length
   const accepted = ppdbList.filter(app => app.status === 'Diterima').length
   const rejected = ppdbList.filter(app => app.status === 'Ditolak').length
+
+  const filteredPpdbList = ppdbList.filter(app => {
+    const isImp = isImported(app)
+    if (sourceFilter === 'ppdb' && isImp) return false
+    if (sourceFilter === 'import' && !isImp) return false
+    return true
+  })
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -128,6 +145,9 @@ export default function AdminDashboard() {
                 <div>
                   <div className="text-[10px] uppercase font-bold text-gray-400">Total Pendaftar</div>
                   <div className="text-2xl font-black text-primary-blue">{total}</div>
+                  <div className="text-[10px] text-gray-400 font-semibold mt-0.5">
+                    {onlineCount} Online • {importCount} Import
+                  </div>
                 </div>
               </div>
               <ArrowUpRight size={18} className="text-gray-300 group-hover:text-primary-blue transition-colors" />
@@ -193,18 +213,54 @@ export default function AdminDashboard() {
         {/* SPMB Applicants List */}
         <div className="lg:col-span-8 space-y-6">
           <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-            <CardHeader className="p-8 border-b border-gray-50 flex flex-row items-center justify-between">
+            <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <CardTitle className="text-lg font-black text-primary-blue">Aplikasi SPMB Aktif</CardTitle>
-                <CardDescription className="text-xs font-semibold text-gray-400">Daftar calon siswa baru yang mendaftar secara daring.</CardDescription>
+                <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
+                  <span>Aplikasi SPMB &amp; Data Siswa</span>
+                  <Badge className="text-[10px] font-bold px-2 py-0.5 bg-gray-100 text-gray-700">
+                    {sourceFilter === 'all' ? `Semua (${filteredPpdbList.length})` :
+                     sourceFilter === 'ppdb' ? `PPDB Online (${filteredPpdbList.length})` :
+                     `Import Siswa (${filteredPpdbList.length})`}
+                  </Badge>
+                </CardTitle>
+                <CardDescription className="text-xs font-semibold text-gray-400">
+                  {sourceFilter === 'ppdb' ? 'Calon siswa mendaftar mandiri via web.' :
+                   sourceFilter === 'import' ? 'Data siswa yang diimport dari berkas sekolah.' :
+                   'Daftar pendaftar daring dan data import.'}
+                </CardDescription>
               </div>
-              <TrendingUp className="text-primary-green" />
+
+              <div className="flex items-center gap-1.5 p-1 bg-[#F8F6F2] rounded-xl border border-gray-200/80">
+                <button
+                  type="button"
+                  onClick={() => setSourceFilter('all')}
+                  className={cn("px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer", sourceFilter === 'all' ? "bg-white text-primary-blue shadow-xs font-black" : "text-gray-500 hover:text-primary-blue")}
+                >
+                  Semua ({total})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSourceFilter('ppdb')}
+                  className={cn("px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer", sourceFilter === 'ppdb' ? "bg-sky-600 text-white shadow-xs font-black" : "text-gray-500 hover:text-sky-700")}
+                >
+                  <Globe size={11} />
+                  <span>Online ({onlineCount})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSourceFilter('import')}
+                  className={cn("px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 cursor-pointer", sourceFilter === 'import' ? "bg-purple-600 text-white shadow-xs font-black" : "text-gray-500 hover:text-purple-700")}
+                >
+                  <UploadCloud size={11} />
+                  <span>Import ({importCount})</span>
+                </button>
+              </div>
             </CardHeader>
             <CardContent className="p-0">
               {loading ? (
                 <div className="p-12 text-center text-gray-400">Memuat data...</div>
-              ) : ppdbList.length === 0 ? (
-                <div className="p-12 text-center text-gray-400">Belum ada data pendaftar.</div>
+              ) : filteredPpdbList.length === 0 ? (
+                <div className="p-12 text-center text-gray-400">Belum ada data pendaftar yang sesuai.</div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm border-collapse">
@@ -217,10 +273,21 @@ export default function AdminDashboard() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-100">
-                      {ppdbList.map((app) => (
+                      {filteredPpdbList.map((app) => (
                         <tr key={app.id} className="hover:bg-gray-55/20 transition-colors">
                           <td className="p-4 pl-8">
-                            <div className="font-bold text-primary-blue">{app.student_name}</div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-bold text-primary-blue">{app.student_name}</span>
+                              {isImported(app) ? (
+                                <Badge className="bg-purple-50 text-purple-700 border-purple-200 text-[9px] font-bold px-1.5 py-0.2 rounded-full inline-flex items-center gap-0.5">
+                                  <UploadCloud size={9} /> Import
+                                </Badge>
+                              ) : (
+                                <Badge className="bg-sky-50 text-sky-700 border-sky-200 text-[9px] font-bold px-1.5 py-0.2 rounded-full inline-flex items-center gap-0.5">
+                                  <Globe size={9} /> Online
+                                </Badge>
+                              )}
+                            </div>
                             <div className="text-[10px] text-gray-400 font-semibold mt-0.5">ID: {app.id.substring(0, 8)}...</div>
                           </td>
                           <td className="p-4 font-semibold text-gray-600">

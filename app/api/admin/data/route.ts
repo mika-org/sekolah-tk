@@ -112,6 +112,40 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
+    if (table === 'students_tk_with_classes' && data) {
+      const { data: ppdbList } = await supabase
+        .from('ppdb_tk')
+        .select('id, student_name, child_details')
+
+      const ppdbMap = new Map<string, { isImport: boolean; importDate?: string }>()
+      if (ppdbList) {
+        for (const p of ppdbList) {
+          const cd = (p.child_details as any) || {}
+          const isImp = Boolean(cd.imported === true || cd.import_date || cd.imported === 'true')
+          const keyName = (p.student_name || '').trim().toLowerCase()
+          if (keyName) {
+            ppdbMap.set(keyName, { isImport: isImp, importDate: cd.import_date })
+          }
+          if (cd.nik) {
+            ppdbMap.set(String(cd.nik).trim(), { isImport: isImp, importDate: cd.import_date })
+          }
+        }
+      }
+
+      const enriched = (data as any[]).map((student: any) => {
+        const byNik = student.nik ? ppdbMap.get(String(student.nik).trim()) : null
+        const byName = student.nama ? ppdbMap.get(student.nama.trim().toLowerCase()) : null
+        const match = byNik || byName
+        const source = match ? (match.isImport ? 'import' : 'ppdb') : 'manual'
+        return {
+          ...student,
+          source,
+          import_date: match?.importDate || null,
+        }
+      })
+      return NextResponse.json({ data: enriched })
+    }
+
     return NextResponse.json({ data: data || [] })
   } catch (err: any) {
     console.error('[API /api/admin/data] Catch error:', err)

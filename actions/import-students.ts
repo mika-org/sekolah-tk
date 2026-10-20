@@ -389,6 +389,7 @@ export async function importPaidStudentsAction(
           tanggal_sekolah: row.tanggal_sekolah || null,
           keterangan: row.keterangan || null,
           nama_orang_tua: parentCombined || null,
+          source: 'import',
           imported: true,
           import_date: new Date().toISOString(),
         }

@@ -55,9 +55,18 @@ import {
   Clock,
   Users,
   FileSpreadsheet,
+  Globe,
+  UploadCloud,
+  Filter,
 } from 'lucide-react'
 
 type SnapshotRecord = Record<string, unknown>
+
+export function isImportedPpdb(app: { child_details?: SnapshotRecord | null } | null | undefined): boolean {
+  if (!app?.child_details) return false
+  const cd = app.child_details as Record<string, any>
+  return Boolean(cd.imported === true || cd.import_date || cd.imported === 'true')
+}
 
 interface PPDBApplication {
   id: string
@@ -284,6 +293,7 @@ export default function AdminPPDBPage() {
   // Search & Pagination State
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'ppdb' | 'import'>('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -319,6 +329,7 @@ export default function AdminPPDBPage() {
   const [recapSearch, setRecapSearch] = useState('')
   const [recapUniformFilter, setRecapUniformFilter] = useState('all')
   const [recapObsFilter, setRecapObsFilter] = useState('all')
+  const [recapSourceFilter, setRecapSourceFilter] = useState<'all' | 'ppdb' | 'import'>('all')
   const [recapPage, setRecapPage] = useState(1)
   const [recapPageSize, setRecapPageSize] = useState(10)
 
@@ -825,6 +836,10 @@ export default function AdminPPDBPage() {
 
   const filteredList = useMemo(() => {
     return ppdbList.filter((app) => {
+      const isImport = isImportedPpdb(app)
+      if (sourceFilter === 'ppdb' && isImport) return false
+      if (sourceFilter === 'import' && !isImport) return false
+
       const matchSearch =
         !searchQuery ||
         app.student_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -832,7 +847,7 @@ export default function AdminPPDBPage() {
       const matchStatus = statusFilter === 'all' || app.status === statusFilter
       return matchSearch && matchStatus
     })
-  }, [ppdbList, searchQuery, statusFilter])
+  }, [ppdbList, searchQuery, statusFilter, sourceFilter])
 
   const totalPages = Math.ceil(filteredList.length / pageSize) || 1
   const paginatedList = useMemo(() => {
@@ -840,9 +855,39 @@ export default function AdminPPDBPage() {
     return filteredList.slice(start, start + pageSize)
   }, [filteredList, currentPage, pageSize])
 
+  // Statistics for Source Breakdown (PPDB Online vs Import Siswa)
+  const sourceStats = useMemo(() => {
+    let onlineCount = 0
+    let importCount = 0
+    let onlinePending = 0
+    let importAccepted = 0
+
+    ppdbList.forEach((app) => {
+      if (isImportedPpdb(app)) {
+        importCount++
+        if (app.status === 'Diterima') importAccepted++
+      } else {
+        onlineCount++
+        if (['Submitted', 'Verifikasi Berkas'].includes(app.status)) onlinePending++
+      }
+    })
+
+    return {
+      total: ppdbList.length,
+      onlineCount,
+      importCount,
+      onlinePending,
+      importAccepted,
+    }
+  }, [ppdbList])
+
   // Filtered list for SPMB Recap Tab (Point 2, 3, 4, 5)
   const filteredRecapList = useMemo(() => {
     return ppdbList.filter((app) => {
+      const isImport = isImportedPpdb(app)
+      if (recapSourceFilter === 'ppdb' && isImport) return false
+      if (recapSourceFilter === 'import' && !isImport) return false
+
       const child = (app.child_details as Record<string, any>) || {}
       const sch = child.schedules || {}
       const father = (app.father_details as Record<string, any>) || {}
@@ -869,7 +914,7 @@ export default function AdminPPDBPage() {
 
       return true
     })
-  }, [ppdbList, recapSearch, recapUniformFilter, recapObsFilter])
+  }, [ppdbList, recapSearch, recapUniformFilter, recapObsFilter, recapSourceFilter])
 
   const totalRecapPages = Math.ceil(filteredRecapList.length / recapPageSize) || 1
   const paginatedRecapList = useMemo(() => {
@@ -908,6 +953,7 @@ export default function AdminPPDBPage() {
 
     try {
       const exportData = filteredRecapList.map((app, idx) => {
+        const isImport = isImportedPpdb(app)
         const child = (app.child_details as Record<string, any>) || {}
         const sch = (child.schedules as Record<string, any>) || {}
         const father = (app.father_details as Record<string, any>) || {}
@@ -932,6 +978,7 @@ export default function AdminPPDBPage() {
         return {
           No: idx + 1,
           'ID Pendaftaran': app.id.slice(0, 8).toUpperCase(),
+          'Sumber Data': isImport ? 'Import Siswa' : 'PPDB Online',
           'Nama Calon Siswa': app.student_name,
           'Jenis Kelamin': jk,
           'Tanggal Lahir': formatTgl(app.birth_date ? String(app.birth_date) : child.birth_date || child.tanggal_lahir),
@@ -959,6 +1006,7 @@ export default function AdminPPDBPage() {
       ws['!cols'] = [
         { wch: 6 },  // No
         { wch: 14 }, // ID Pendaftaran
+        { wch: 16 }, // Sumber Data
         { wch: 28 }, // Nama Calon Siswa
         { wch: 14 }, // Jenis Kelamin
         { wch: 16 }, // Tanggal Lahir
@@ -1006,6 +1054,77 @@ export default function AdminPPDBPage() {
         </div>
       </div>
 
+      {/* Quick Summary Cards (Pemisahan PPDB Online vs Hasil Import Siswa) */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        {/* Card 1: Semua Data */}
+        <div
+          onClick={() => { setSourceFilter('all'); setCurrentPage(1); }}
+          className={cn(
+            "p-5 rounded-3xl bg-white border-2 cursor-pointer transition-all hover:shadow-md",
+            sourceFilter === 'all'
+              ? "border-primary-blue shadow-sm ring-2 ring-primary-blue/20"
+              : "border-transparent shadow-xs hover:border-gray-200"
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-gray-400 uppercase tracking-wider">Semua Data</span>
+            <div className="w-9 h-9 rounded-xl bg-gray-100 text-primary-blue flex items-center justify-center font-bold">
+              <Users size={18} />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-primary-blue mt-2">{sourceStats.total}</div>
+          <p className="text-xs text-gray-500 font-semibold mt-1">Gabungan pendaftar online &amp; import</p>
+        </div>
+
+        {/* Card 2: PPDB Online */}
+        <div
+          onClick={() => { setSourceFilter('ppdb'); setCurrentPage(1); }}
+          className={cn(
+            "p-5 rounded-3xl bg-white border-2 cursor-pointer transition-all hover:shadow-md",
+            sourceFilter === 'ppdb'
+              ? "border-sky-500 shadow-sm ring-2 ring-sky-500/20"
+              : "border-transparent shadow-xs hover:border-sky-200"
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-sky-600 uppercase tracking-wider flex items-center gap-1">
+              <Globe size={13} /> PPDB Online
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold">
+              <Globe size={18} />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-sky-700 mt-2">{sourceStats.onlineCount}</div>
+          <p className="text-xs text-sky-600 font-semibold mt-1">
+            {sourceStats.onlinePending > 0 ? `${sourceStats.onlinePending} berkas menunggu review` : 'Pendaftaran mandiri lewat web'}
+          </p>
+        </div>
+
+        {/* Card 3: Hasil Import Siswa */}
+        <div
+          onClick={() => { setSourceFilter('import'); setCurrentPage(1); }}
+          className={cn(
+            "p-5 rounded-3xl bg-white border-2 cursor-pointer transition-all hover:shadow-md",
+            sourceFilter === 'import'
+              ? "border-purple-500 shadow-sm ring-2 ring-purple-500/20"
+              : "border-transparent shadow-xs hover:border-purple-200"
+          )}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-[11px] font-bold text-purple-600 uppercase tracking-wider flex items-center gap-1">
+              <UploadCloud size={13} /> Hasil Import Siswa
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold">
+              <UploadCloud size={18} />
+            </div>
+          </div>
+          <div className="text-2xl font-black text-purple-700 mt-2">{sourceStats.importCount}</div>
+          <p className="text-xs text-purple-600 font-semibold mt-1">
+            {sourceStats.importAccepted} murid diimport via Excel/CSV
+          </p>
+        </div>
+      </div>
+
       <Tabs defaultValue="applicants" className="w-full space-y-6">
         <TabsList className="bg-[#F8F6F2] p-1.5 rounded-2xl border border-gray-200/80 w-full sm:w-auto grid grid-cols-2 max-w-md print:hidden">
           <TabsTrigger value="applicants" className="rounded-xl font-bold text-xs data-[state=active]:bg-primary-blue data-[state=active]:text-white">
@@ -1019,14 +1138,88 @@ export default function AdminPPDBPage() {
         <TabsContent value="applicants" className="space-y-6">
           {/* SPMB Applicants List */}
           <Card className="bg-white rounded-[32px] shadow-sm border-none overflow-hidden">
-        <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <CardTitle className="text-lg font-black text-primary-blue">Aplikasi SPMB Aktif</CardTitle>
-            <CardDescription className="text-xs font-semibold text-gray-400">Daftar calon siswa baru yang mendaftar secara daring ({filteredList.length} pendaftar).</CardDescription>
+        <CardHeader className="p-6 sm:p-8 border-b border-gray-50 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <CardTitle className="text-lg font-black text-primary-blue flex items-center gap-2">
+                <span>Daftar Pendaftar &amp; Siswa</span>
+                <Badge className={cn(
+                  "text-[10px] font-bold px-2.5 py-0.5 rounded-full border",
+                  sourceFilter === 'all' && "bg-gray-100 text-gray-700 border-gray-200",
+                  sourceFilter === 'ppdb' && "bg-sky-50 text-sky-700 border-sky-200",
+                  sourceFilter === 'import' && "bg-purple-50 text-purple-700 border-purple-200"
+                )}>
+                  {sourceFilter === 'all' ? `Semua Sumber (${filteredList.length})` :
+                   sourceFilter === 'ppdb' ? `PPDB Online (${filteredList.length})` :
+                   `Hasil Import (${filteredList.length})`}
+                </Badge>
+              </CardTitle>
+              <CardDescription className="text-xs font-semibold text-gray-400 mt-0.5">
+                {sourceFilter === 'all'
+                  ? `Menampilkan seluruh calon murid daring dan data import (${filteredList.length} pendaftar).`
+                  : sourceFilter === 'ppdb'
+                  ? `Khusus calon murid baru yang mendaftar secara daring lewat web (${filteredList.length} pendaftar).`
+                  : `Khusus siswa yang dimasukkan melalui berkas import Excel/CSV (${filteredList.length} siswa).`}
+              </CardDescription>
+            </div>
+
+            {/* Quick Segment Pills */}
+            <div className="flex items-center gap-1.5 p-1 bg-[#F8F6F2] rounded-2xl border border-gray-200/80 self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => { setSourceFilter('all'); setCurrentPage(1); }}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer",
+                  sourceFilter === 'all'
+                    ? "bg-white text-primary-blue shadow-xs font-black"
+                    : "text-gray-500 hover:text-primary-blue"
+                )}
+              >
+                Semua ({sourceStats.total})
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSourceFilter('ppdb'); setCurrentPage(1); }}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer",
+                  sourceFilter === 'ppdb'
+                    ? "bg-sky-600 text-white shadow-xs font-black"
+                    : "text-gray-500 hover:text-sky-700"
+                )}
+              >
+                <Globe size={13} />
+                <span>PPDB Online</span>
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.2 rounded-full",
+                  sourceFilter === 'ppdb' ? "bg-white/20 text-white" : "bg-gray-200 text-gray-700"
+                )}>
+                  {sourceStats.onlineCount}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setSourceFilter('import'); setCurrentPage(1); }}
+                className={cn(
+                  "px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer",
+                  sourceFilter === 'import'
+                    ? "bg-purple-600 text-white shadow-xs font-black"
+                    : "text-gray-500 hover:text-purple-700"
+                )}
+              >
+                <UploadCloud size={13} />
+                <span>Hasil Import</span>
+                <span className={cn(
+                  "text-[10px] px-1.5 py-0.2 rounded-full",
+                  sourceFilter === 'import' ? "bg-white/20 text-white" : "bg-gray-200 text-gray-700"
+                )}>
+                  {sourceStats.importCount}
+                </span>
+              </button>
+            </div>
           </div>
 
-          {/* Search & Status Filters */}
-          <div className="flex flex-wrap items-center gap-2.5">
+          {/* Search, Source Filter & Status Filter */}
+          <div className="flex flex-wrap items-center justify-between gap-2.5 pt-2 border-t border-gray-50">
             <TableSearchFilter
               value={searchQuery}
               onChange={(val) => {
@@ -1036,26 +1229,47 @@ export default function AdminPPDBPage() {
               placeholder="Cari nama calon siswa..."
             />
 
-            <Select
-              value={statusFilter}
-              onValueChange={(val) => {
-                if (val) {
-                  setStatusFilter(val)
-                  setCurrentPage(1)
-                }
-              }}
-            >
-              <SelectTrigger className="h-9 w-40 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
-                <SelectValue placeholder="Semua Status" />
-              </SelectTrigger>
-              <SelectContent className="rounded-xl">
-                <SelectItem value="all">Semua Status</SelectItem>
-                <SelectItem value="Submitted">Submitted</SelectItem>
-                <SelectItem value="Verifikasi Berkas">Verifikasi Berkas</SelectItem>
-                <SelectItem value="Diterima">Diterima</SelectItem>
-                <SelectItem value="Ditolak">Ditolak</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2 flex-wrap">
+              <Select
+                value={sourceFilter}
+                onValueChange={(val) => {
+                  if (val) {
+                    setSourceFilter(val as any)
+                    setCurrentPage(1)
+                  }
+                }}
+              >
+                <SelectTrigger className="h-9 w-44 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
+                  <SelectValue placeholder="Semua Sumber" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="all">Semua Sumber Data</SelectItem>
+                  <SelectItem value="ppdb">🌐 PPDB Online (Web)</SelectItem>
+                  <SelectItem value="import">📥 Hasil Import (Excel)</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={statusFilter}
+                onValueChange={(val) => {
+                  if (val) {
+                    setStatusFilter(val)
+                    setCurrentPage(1)
+                  }
+                }}
+              >
+                <SelectTrigger className="h-9 w-40 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
+                  <SelectValue placeholder="Semua Status" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl">
+                  <SelectItem value="all">Semua Status</SelectItem>
+                  <SelectItem value="Submitted">Submitted</SelectItem>
+                  <SelectItem value="Verifikasi Berkas">Verifikasi Berkas</SelectItem>
+                  <SelectItem value="Diterima">Diterima</SelectItem>
+                  <SelectItem value="Ditolak">Ditolak</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -1077,6 +1291,7 @@ export default function AdminPPDBPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-100">
                   {paginatedList.map((app) => {
+                    const isImport = isImportedPpdb(app)
                     const child = (app.child_details as Record<string, any>) || {}
                     const father = (app.father_details as Record<string, any>) || {}
                     const mother = (app.mother_details as Record<string, any>) || {}
@@ -1087,8 +1302,31 @@ export default function AdminPPDBPage() {
                     return (
                       <tr key={app.id} className="hover:bg-gray-50/50 transition-colors">
                         <td className="p-4 pl-8">
-                          <div className="font-bold text-primary-blue">{app.student_name}</div>
-                          <div className="text-[10px] text-gray-400 font-semibold mt-0.5">ID: {app.id.substring(0, 8)}...</div>
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-bold text-primary-blue">{app.student_name}</span>
+                            {isImport ? (
+                              <Badge className="bg-purple-50 text-purple-700 border-purple-200 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                                <UploadCloud size={10} /> Import Siswa
+                              </Badge>
+                            ) : (
+                              <Badge className="bg-sky-50 text-sky-700 border-sky-200 text-[10px] font-bold px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                                <Globe size={10} /> PPDB Online
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-[10px] text-gray-400 font-semibold mt-1">
+                            <span>ID: {app.id.substring(0, 8)}...</span>
+                            {isImport && child.kelompok && (
+                              <span className="text-purple-600 font-bold bg-purple-50 px-1.5 py-0.2 rounded border border-purple-100">
+                                KLP: {child.kelompok}
+                              </span>
+                            )}
+                            {isImport && child.keterangan && (
+                              <span className="text-gray-500 font-medium">
+                                ({child.keterangan})
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="p-4 font-semibold text-gray-600">
                           {new Date(app.birth_date).toLocaleDateString('id-ID', {
@@ -1308,6 +1546,23 @@ export default function AdminPPDBPage() {
                 />
 
                 <Select
+                  value={recapSourceFilter}
+                  onValueChange={(val) => {
+                    setRecapSourceFilter((val || 'all') as any)
+                    setRecapPage(1)
+                  }}
+                >
+                  <SelectTrigger className="h-9 w-40 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
+                    <SelectValue placeholder="Sumber Data" />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl">
+                    <SelectItem value="all">Semua Sumber</SelectItem>
+                    <SelectItem value="ppdb">🌐 PPDB Online</SelectItem>
+                    <SelectItem value="import">📥 Hasil Import</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                <Select
                   value={recapObsFilter}
                   onValueChange={(val) => {
                     setRecapObsFilter(val || 'all')
@@ -1378,6 +1633,7 @@ export default function AdminPPDBPage() {
                     </thead>
                     <tbody className="divide-y divide-gray-100 font-medium">
                       {paginatedRecapList.map((app, idx) => {
+                        const isImport = isImportedPpdb(app)
                         const child = (app.child_details as Record<string, any>) || {}
                         const sch = child.schedules || {}
                         const father = (app.father_details as Record<string, any>) || {}
@@ -1391,7 +1647,18 @@ export default function AdminPPDBPage() {
                               {(recapPage - 1) * recapPageSize + idx + 1}
                             </td>
                             <td className="p-4">
-                              <div className="font-extrabold text-primary-blue text-sm">{app.student_name}</div>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <span className="font-extrabold text-primary-blue text-sm">{app.student_name}</span>
+                                {isImport ? (
+                                  <Badge className="bg-purple-50 text-purple-700 border-purple-200 text-[9px] font-bold px-1.5 py-0.2 rounded-full inline-flex items-center gap-0.5">
+                                    <UploadCloud size={9} /> Import
+                                  </Badge>
+                                ) : (
+                                  <Badge className="bg-sky-50 text-sky-700 border-sky-200 text-[9px] font-bold px-1.5 py-0.2 rounded-full inline-flex items-center gap-0.5">
+                                    <Globe size={9} /> PPDB Online
+                                  </Badge>
+                                )}
+                              </div>
                               <div className="text-[10px] text-gray-500 font-semibold mt-0.5">
                                 Ortu: {parentName} ({parentPhone})
                               </div>
@@ -2001,35 +2268,62 @@ export default function AdminPPDBPage() {
               }
             }
 
+            const isImport = isImportedPpdb(selectedApp)
+
             return (
               <div className="space-y-8 pt-5">
                 {/* ══════════════════════════════════════════════════════════════ */}
-                {/* SECTION 1 (ATAS): DATA PENDAFTARAN AWAL PPDB                  */}
+                {/* SECTION 1 (ATAS): DATA PENDAFTARAN AWAL / HASIL IMPORT         */}
                 {/* ══════════════════════════════════════════════════════════════ */}
-                <div className="rounded-3xl border border-primary-green/20 bg-gradient-to-br from-[#F0FAF5] via-[#F8FCF9] to-[#F3F9F5] p-6 shadow-xs">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-primary-green/15">
+                <div className={cn(
+                  "rounded-3xl border p-6 shadow-xs",
+                  isImport
+                    ? "border-purple-200 bg-gradient-to-br from-[#FAF5FF] via-[#FCF9FF] to-[#F5EEFD]"
+                    : "border-primary-green/20 bg-gradient-to-br from-[#F0FAF5] via-[#F8FCF9] to-[#F3F9F5]"
+                )}>
+                  <div className={cn(
+                    "flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b",
+                    isImport ? "border-purple-100" : "border-primary-green/15"
+                  )}>
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-2xl bg-primary-green text-white flex items-center justify-center font-bold shadow-md shadow-primary-green/20">
-                        <FileText size={20} />
+                      <div className={cn(
+                        "w-10 h-10 rounded-2xl text-white flex items-center justify-center font-bold shadow-md",
+                        isImport ? "bg-purple-600 shadow-purple-600/20" : "bg-primary-green shadow-primary-green/20"
+                      )}>
+                        {isImport ? <UploadCloud size={20} /> : <FileText size={20} />}
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
-                          <h3 className="text-base font-black text-primary-blue">Data Pendaftaran Awal PPDB</h3>
-                          <Badge className="bg-primary-green/15 text-primary-green border border-primary-green/30 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
-                            Formulir Pendaftaran Awal
+                          <h3 className="text-base font-black text-primary-blue">
+                            {isImport ? 'Data Hasil Import Siswa' : 'Data Pendaftaran Awal PPDB'}
+                          </h3>
+                          <Badge className={cn(
+                            "text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border",
+                            isImport
+                              ? "bg-purple-100 text-purple-800 border-purple-200"
+                              : "bg-primary-green/15 text-primary-green border-primary-green/30"
+                          )}>
+                            {isImport ? '📥 Berkas Import Excel / CSV' : '🌐 Formulir Pendaftaran Mandiri'}
                           </Badge>
                         </div>
                         <p className="text-xs font-semibold text-gray-500">
-                          Data utama calon murid &amp; wali yang diinput saat pendaftaran / pembelian formulir
+                          {isImport
+                            ? 'Data siswa dimasukkan secara kolektif dari berkas data sekolah dengan akun portal otomatis'
+                            : 'Data utama calon murid & wali yang diinput saat pendaftaran / pembelian formulir daring'}
                         </p>
                       </div>
                     </div>
-                    {regDate && (
+                    {isImport && child.import_date ? (
+                      <div className="flex items-center gap-1.5 text-xs text-purple-700 font-semibold bg-white/90 px-3 py-1.5 rounded-xl border border-purple-200 shadow-2xs self-start sm:self-auto">
+                        <Clock size={13} className="text-purple-600" />
+                        <span>Diimport: {new Date(child.import_date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                      </div>
+                    ) : regDate ? (
                       <div className="flex items-center gap-1.5 text-xs text-gray-500 font-semibold bg-white/90 px-3 py-1.5 rounded-xl border border-gray-200/60 shadow-2xs self-start sm:self-auto">
                         <Calendar size={13} className="text-primary-green" />
                         <span>Daftar: {new Date(regDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       </div>
-                    )}
+                    ) : null}
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-5 mt-5">
@@ -2055,6 +2349,10 @@ export default function AdminPPDBPage() {
                               <Copy size={11} />
                             </button>
                           </div>
+                        ) : isImport ? (
+                          <Badge variant="outline" className="text-[10px] text-purple-700 border-purple-200 bg-purple-50 font-bold">
+                            Data Siswa Terimport
+                          </Badge>
                         ) : (
                           <Badge variant="outline" className="text-[10px] text-amber-600 border-amber-200 bg-amber-50 font-bold">
                             Kode Akses: Belum Terbit
@@ -2101,6 +2399,24 @@ export default function AdminPPDBPage() {
                         <span className="sm:col-span-2 font-medium text-gray-700 leading-relaxed">
                           {initialAddress}
                         </span>
+
+                        {isImport && child.kelompok && (
+                          <>
+                            <span className="text-gray-500 font-semibold">Kelompok / Kelas:</span>
+                            <span className="sm:col-span-2 font-bold text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md inline-block w-fit">
+                              {child.kelompok}
+                            </span>
+                          </>
+                        )}
+
+                        {isImport && child.keterangan && (
+                          <>
+                            <span className="text-gray-500 font-semibold">Keterangan:</span>
+                            <span className="sm:col-span-2 font-medium text-gray-700">
+                              {child.keterangan}
+                            </span>
+                          </>
+                        )}
 
                         {selectedDetails.user && (
                           <div className="sm:col-span-3 pt-3 mt-1 border-t border-emerald-100 bg-emerald-50/60 p-3.5 rounded-2xl border border-emerald-200/70 space-y-2">

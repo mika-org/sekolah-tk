@@ -38,7 +38,9 @@ import {
   CheckCircle2,
   KeyRound,
   Copy,
-  ArrowUpRight
+  ArrowUpRight,
+  Globe,
+  UploadCloud,
 } from 'lucide-react'
 import Link from 'next/link'
 import { toast } from 'sonner'
@@ -128,6 +130,7 @@ export default function MasterMuridPage() {
   const [search, setSearch] = useState('')
   const [classFilter, setClassFilter] = useState('all')
   const [statusFilter, setStatusFilter] = useState('all')
+  const [sourceFilter, setSourceFilter] = useState('all')
   const [currentPage, setCurrentPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
 
@@ -366,9 +369,13 @@ export default function MasterMuridPage() {
           ? !s.kelas_id
           : s.kelas_id === classFilter
       const matchStatus = statusFilter === 'all' || s.status === statusFilter
-      return matchSearch && matchClass && matchStatus
+      const matchSource =
+        sourceFilter === 'all'
+          ? true
+          : s.source === sourceFilter
+      return matchSearch && matchClass && matchStatus && matchSource
     })
-  }, [students, search, classFilter, statusFilter])
+  }, [students, search, classFilter, statusFilter, sourceFilter])
 
   const totalPages = Math.ceil(filtered.length / pageSize) || 1
   const paginatedStudents = useMemo(() => {
@@ -508,6 +515,26 @@ export default function MasterMuridPage() {
             </Select>
 
             <Select
+              value={sourceFilter}
+              onValueChange={(val) => {
+                if (val) {
+                  setSourceFilter(val)
+                  setCurrentPage(1)
+                }
+              }}
+            >
+              <SelectTrigger className="h-9 w-36 bg-[#F8F6F2] border-transparent rounded-xl text-xs font-semibold">
+                <SelectValue placeholder="Sumber Data" />
+              </SelectTrigger>
+              <SelectContent className="rounded-xl">
+                <SelectItem value="all">Semua Sumber</SelectItem>
+                <SelectItem value="import">📥 Hasil Import</SelectItem>
+                <SelectItem value="ppdb">🌐 PPDB Online</SelectItem>
+                <SelectItem value="manual">✍️ Input Langsung</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select
               value={statusFilter}
               onValueChange={(val) => {
                 if (val) {
@@ -569,13 +596,25 @@ export default function MasterMuridPage() {
                             {s.nama?.charAt(0).toUpperCase()}
                           </button>
                           <div>
-                            <button
-                              type="button"
-                              onClick={() => handleOpenDetail(s)}
-                              className="font-bold text-primary-blue text-left hover:underline cursor-pointer"
-                            >
-                              {s.nama}
-                            </button>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => handleOpenDetail(s)}
+                                className="font-bold text-primary-blue text-left hover:underline cursor-pointer"
+                              >
+                                {s.nama}
+                              </button>
+                              {s.source === 'import' && (
+                                <Badge className="bg-purple-50 text-purple-700 border-purple-200 text-[9px] font-bold px-1.5 py-0.2 rounded-full inline-flex items-center gap-0.5">
+                                  <UploadCloud size={9} /> Import
+                                </Badge>
+                              )}
+                              {s.source === 'ppdb' && (
+                                <Badge className="bg-sky-50 text-sky-700 border-sky-200 text-[9px] font-bold px-1.5 py-0.2 rounded-full inline-flex items-center gap-0.5">
+                                  <Globe size={9} /> PPDB
+                                </Badge>
+                              )}
+                            </div>
                             {s.tempat_lahir && <div className="text-[10px] text-gray-400 font-semibold">{s.tempat_lahir}{s.tanggal_lahir ? `, ${new Date(s.tanggal_lahir).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}` : ''}</div>}
                           </div>
                         </div>
